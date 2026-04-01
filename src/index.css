@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+
+/* 1. Soporte para Modo Oscuro (Reemplaza el antiguo darkMode: 'class') */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 2. Paleta y Tipografía de Joyería KOB (Reemplaza el theme del config) */
+@theme {
+  --color-kob-gold-50: #fbf8ed;
+  --color-kob-gold-500: #d4af37;
+  --color-kob-gold-600: #b8860b;
+  --color-kob-silver: #c0c0c0;
+  --color-kob-black: #1a1a1a;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+}
+
+/* 3. Estilos Globales (Uso limitado de @apply según el manual) */
+@layer base {
+  h1 {
+    @apply font-serif text-4xl font-bold text-kob-black dark:text-white;
+  }
+}
