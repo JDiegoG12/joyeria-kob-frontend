@@ -1,0 +1,429 @@
+/**
+ * @file tokens.css
+ * @description Sistema central de tokens de diseño de Joyería KOB.
+ *
+ * Este es el único archivo que debes modificar para cambiar colores,
+ * tipografía, espaciados y cualquier valor visual global de la app.
+ * Ningún componente debe tener valores hardcodeados — siempre deben
+ * referenciar una variable definida aquí.
+ *
+ * ## Cómo usar los tokens en componentes
+ *
+ * En CSS / clases de Tailwind con arbitrary values:
+ * ```tsx
+ * <div className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
+ * ```
+ *
+ * En CSS puro dentro de un archivo .css:
+ * ```css
+ * .mi-clase {
+ *   background-color: var(--bg-primary);
+ *   color: var(--text-primary);
+ * }
+ * ```
+ *
+ * En estilos inline de React (casos excepcionales):
+ * ```tsx
+ * <div style={{ height: 'var(--navbar-height)' }}>
+ * ```
+ *
+ * ## Modo oscuro
+ * Los tokens semánticos (--bg-*, --text-*, --border-*) cambian
+ * automáticamente cuando la clase `dark` está en el <html>.
+ * Los tokens de marca (--color-gold-*, --color-black) nunca cambian.
+ *
+ * ## Cómo agregar un nuevo token
+ * 1. Agrégalo en :root con un nombre semántico (qué hace, no qué color es).
+ * 2. Si necesita valor diferente en oscuro, agrégalo también en .dark {}.
+ * 3. Documenta brevemente para qué se usa.
+ */
+
+@layer base {
+    :root {
+
+        /* ════════════════════════════════════════════════════════════
+       COLORES DE MARCA
+       Valores fijos de la identidad visual de KOB.
+       Nunca cambian entre modo claro y oscuro.
+       Úsalos solo para definir tokens semánticos, no directamente
+       en componentes.
+    ════════════════════════════════════════════════════════════ */
+
+        --color-gold-50: #fbf8ed;
+        /* Fondo cálido suave            */
+        --color-gold-100: #f5ecca;
+        /* Hover de fondos dorados        */
+        --color-gold-500: #d4af37;
+        /* Dorado principal de la marca   */
+        --color-gold-600: #b8860b;
+        /* Dorado oscuro para hover       */
+        --color-gold-700: #96700a;
+        /* Dorado muy oscuro para active  */
+        --color-silver: #c0c0c0;
+        /* Plateado de acento secundario  */
+        --color-silver-dark: #a0a0a0;
+        /* Plateado oscuro                */
+        --color-black: #1a1a1a;
+        /* Negro suave principal          */
+        --color-white: #ffffff;
+        /* Blanco puro                    */
+
+        /* Estados de feedback */
+        --color-success: #22c55e;
+        --color-warning: #f59e0b;
+        --color-error: #ef4444;
+        --color-info: #3b82f6;
+
+
+        /* ════════════════════════════════════════════════════════════
+       COLORES SEMÁNTICOS — MODO CLARO
+       Estos tokens son los que debes usar en componentes.
+       Se redefinen en .dark {} para el modo oscuro.
+    ════════════════════════════════════════════════════════════ */
+
+        /* Fondos */
+        --bg-primary: var(--color-gold-50);
+        /* Fondo general de la app     */
+        --bg-secondary: var(--color-white);
+        /* Fondo de tarjetas y panels  */
+        --bg-tertiary: #f0ece0;
+        /* Fondo de inputs y subtablas */
+        --bg-sidebar: var(--color-white);
+        /* Fondo del sidebar           */
+        --bg-topbar: var(--color-white);
+        /* Fondo del navbar/topbar     */
+        --bg-hover: var(--color-gold-100);
+        /* Hover sobre items de nav    */
+        --bg-active: var(--color-gold-50);
+        /* Item activo en sidebar      */
+        --bg-overlay: rgba(0, 0, 0, 0.4);
+        /* Overlay del cajón móvil     */
+
+        /* Texto */
+        --text-primary: var(--color-black);
+        /* Texto principal             */
+        --text-secondary: #555555;
+        /* Texto de apoyo              */
+        --text-muted: #999999;
+        /* Texto deshabilitado/hints   */
+        --text-inverse: var(--color-white);
+        /* Texto sobre fondos oscuros  */
+        --text-accent: var(--color-gold-600);
+        /* Links y texto destacado     */
+
+        /* Bordes */
+        --border-color: #e8e0cc;
+        /* Borde general suave         */
+        --border-strong: #d0c8b0;
+        /* Borde más visible           */
+        --border-accent: var(--color-gold-500);
+        /* Borde dorado de énfasis     */
+
+        /* Acento interactivo */
+        --accent: var(--color-gold-500);
+        /* Color principal de acción   */
+        --accent-hover: var(--color-gold-600);
+        /* Hover sobre acento          */
+        --accent-active: var(--color-gold-700);
+        /* Click sobre acento          */
+        --accent-text: var(--color-white);
+        /* Texto sobre fondo de acento */
+        --accent-subtle: var(--color-gold-100);
+        /* Fondo suave con acento      */
+
+
+        /* ════════════════════════════════════════════════════════════
+       TIPOGRAFÍA
+       Cambia las fuentes aquí y se actualizan en toda la app.
+    ════════════════════════════════════════════════════════════ */
+
+        /* Familias */
+        --font-display: 'Playfair Display', serif;
+        /* Títulos hero y de sección   */
+        --font-heading: 'Playfair Display', serif;
+        /* Subtítulos h2, h3, h4       */
+        --font-body: 'Inter', sans-serif;
+        /* Texto de párrafo            */
+        --font-ui: 'Inter', sans-serif;
+        /* Labels, botones, navegación */
+        --font-mono: 'JetBrains Mono', monospace;
+        /* Código, IDs, SKUs           */
+
+        /* Escala de tamaños */
+        --text-xs: 0.75rem;
+        /* 12px — etiquetas muy pequeñas   */
+        --text-sm: 0.875rem;
+        /* 14px — texto de apoyo           */
+        --text-base: 1rem;
+        /* 16px — cuerpo de texto          */
+        --text-lg: 1.125rem;
+        /* 18px — destacado en párrafo     */
+        --text-xl: 1.25rem;
+        /* 20px — subtítulos menores       */
+        --text-2xl: 1.5rem;
+        /* 24px — subtítulos               */
+        --text-3xl: 1.875rem;
+        /* 30px — títulos de sección       */
+        --text-4xl: 2.25rem;
+        /* 36px — títulos grandes          */
+        --text-5xl: 3rem;
+        /* 48px — hero principal           */
+
+        /* Pesos */
+        --font-normal: 400;
+        --font-medium: 500;
+        --font-semibold: 600;
+        --font-bold: 700;
+
+        /* Interlineado */
+        --leading-tight: 1.25;
+        --leading-normal: 1.5;
+        --leading-relaxed: 1.75;
+
+        /* Espaciado entre letras */
+        --tracking-tight: -0.02em;
+        /* Títulos grandes display         */
+        --tracking-normal: 0em;
+        --tracking-wide: 0.05em;
+        /* Labels en mayúsculas            */
+        --tracking-widest: 0.15em;
+        /* Texto decorativo de marca       */
+
+
+        /* ════════════════════════════════════════════════════════════
+       LAYOUT
+       Dimensiones fijas de la estructura de la app.
+    ════════════════════════════════════════════════════════════ */
+
+        --navbar-height: 64px;
+        --topbar-height: 64px;
+        --sidebar-width: 260px;
+        /* Sidebar expandido               */
+        --sidebar-width-collapsed: 64px;
+        /* Sidebar solo con íconos         */
+        --footer-height: auto;
+        --content-max-width: 1280px;
+        /* Ancho máximo del área central   */
+
+
+        /* ════════════════════════════════════════════════════════════
+       EFECTOS VISUALES
+    ════════════════════════════════════════════════════════════ */
+
+        /* Sombras */
+        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.08);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+        --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
+        --shadow-gold: 0 4px 16px rgba(212, 175, 55, 0.25);
+        /* Sombra dorada especial */
+
+        /* Bordes redondeados */
+        --radius-xs: 2px;
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-xl: 16px;
+        --radius-2xl: 24px;
+        --radius-full: 9999px;
+
+        /* Transiciones */
+        --transition-fast: 150ms ease;
+        --transition-normal: 250ms ease;
+        --transition-slow: 400ms ease;
+
+        /* Opacidades */
+        --opacity-disabled: 0.45;
+        --opacity-hover: 0.85;
+
+        /*Logo*/
+        --logo-body: #1a1a1a;
+        --logo-cutout: #ffffff;
+    }
+
+
+    /* ════════════════════════════════════════════════════════════
+     TOKENS SEMÁNTICOS — MODO OSCURO
+     Solo se redefinen los tokens que cambian visualmente.
+     Los tokens de marca, layout y tipografía no cambian.
+  ════════════════════════════════════════════════════════════ */
+
+    .dark {
+
+        /* Fondos */
+        --bg-primary: var(--color-black);
+        /* #1a1a1a                     */
+        --bg-secondary: #242424;
+        --bg-tertiary: #2e2e2e;
+        --bg-sidebar: #1f1f1f;
+        --bg-topbar: #1f1f1f;
+        --bg-hover: #2a2a2a;
+        --bg-active: #2f2b22;
+        /* Tono cálido oscuro          */
+        --bg-overlay: rgba(0, 0, 0, 0.65);
+
+        /* Texto */
+        --text-primary: var(--color-white);
+        --text-secondary: #cccccc;
+        --text-muted: #777777;
+        --text-inverse: var(--color-black);
+        --text-accent: var(--color-gold-500);
+
+        /* Bordes */
+        --border-color: #333333;
+        --border-strong: #444444;
+        --border-accent: var(--color-gold-500);
+
+        /* Acento (no cambia — el dorado funciona en ambos modos) */
+        --accent: var(--color-gold-500);
+        --accent-hover: var(--color-gold-600);
+        --accent-active: var(--color-gold-700);
+        --accent-text: var(--color-white);
+        --accent-subtle: #2a2516;
+        /* Dorado muy oscuro suave     */
+
+        /* Sombras más pronunciadas en oscuro */
+        --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.25);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+        --shadow-gold: 0 4px 16px rgba(212, 175, 55, 0.15);
+
+        /*Logo*/
+        --logo-body: #ffffff;
+        --logo-cutout: #1a1a1a;
+    }
+
+
+    /* ════════════════════════════════════════════════════════════
+     ESTILOS BASE GLOBALES
+     Aplica los tokens al HTML desde el inicio.
+  ════════════════════════════════════════════════════════════ */
+
+    * {
+        box-sizing: border-box;
+        border-color: var(--border-color);
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: var(--text-base);
+        line-height: var(--leading-normal);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        transition: background-color var(--transition-normal),
+            color var(--transition-normal);
+    }
+
+    /* Escala tipográfica base */
+    h1 {
+        font-family: var(--font-display);
+        font-size: var(--text-4xl);
+        font-weight: var(--font-bold);
+        line-height: var(--leading-tight);
+        letter-spacing: var(--tracking-tight);
+        color: var(--text-primary);
+    }
+
+    h2 {
+        font-family: var(--font-heading);
+        font-size: var(--text-3xl);
+        font-weight: var(--font-bold);
+        line-height: var(--leading-tight);
+        letter-spacing: var(--tracking-tight);
+        color: var(--text-primary);
+    }
+
+    h3 {
+        font-family: var(--font-heading);
+        font-size: var(--text-2xl);
+        font-weight: var(--font-semibold);
+        line-height: var(--leading-tight);
+        color: var(--text-primary);
+    }
+
+    h4 {
+        font-family: var(--font-heading);
+        font-size: var(--text-xl);
+        font-weight: var(--font-semibold);
+        color: var(--text-primary);
+    }
+
+    h5,
+    h6 {
+        font-family: var(--font-ui);
+        font-size: var(--text-lg);
+        font-weight: var(--font-semibold);
+        color: var(--text-primary);
+    }
+
+    p {
+        font-family: var(--font-body);
+        font-size: var(--text-base);
+        line-height: var(--leading-relaxed);
+        color: var(--text-secondary);
+    }
+
+    a {
+        color: var(--text-accent);
+        text-decoration: none;
+        transition: color var(--transition-fast);
+    }
+
+    a:hover {
+        color: var(--accent-hover);
+    }
+
+    /* Scrollbar personalizada */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--bg-tertiary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--border-strong);
+        border-radius: var(--radius-full);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-gold-500);
+    }
+}
+
+@layer components {
+    .main-content {
+        padding: 2rem;
+    }
+
+    @media (min-width: 1024px) {
+        .main-content-with-sidebar {
+            margin-left: var(--sidebar-width);
+        }
+    }
+
+    /* Móvil: desde top:0, altura completa, padding empuja bajo el navbar */
+    .sidebar-panel {
+        top: 0;
+        height: 100vh;
+        padding-top: var(--navbar-height);
+    }
+
+    /* Desktop: arranca justo debajo del navbar, sin padding extra */
+    @media (min-width: 1024px) {
+        .sidebar-panel {
+            top: var(--navbar-height);
+            height: calc(100vh - var(--navbar-height));
+            padding-top: 0;
+        }
+    }
+}
