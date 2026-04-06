@@ -1,20 +1,20 @@
 /**
  * @file kob-logo.tsx
- * @description Logo SVG de Joyería KOB para el navbar.
+ * @description Logo SVG de Joyería KOB para el navbar y el sidebar admin.
  *
  * ## Soporte de modo oscuro
- * El SVG usa dos colores semánticos en lugar de valores hardcodeados:
+ * El SVG usa dos tokens semánticos en lugar de valores hardcodeados:
  *
- * - `var(--logo-body)`: color del cuerpo del logo (símbolo + texto KOB).
- *   - Claro: `#1a1a1a` (negro suave)
- *   - Oscuro: `#ffffff` (blanco)
+ * - `var(--logo-body)`: cuerpo del logo (letras KOB + símbolo de joya + barra).
+ *   - Claro:  `#1a1a1a`
+ *   - Oscuro: `#ffffff`
  *
- * - `var(--logo-cutout)`: color del recorte interior del logo (letras talladas).
- *   - Claro: `#ffffff` (blanco, contrasta con el negro del cuerpo)
- *   - Oscuro: `#1a1a1a` (negro, contrasta con el blanco del cuerpo)
+ * - `var(--logo-cutout)`: recorte interior sobre la barra (texto tallado).
+ *   - Claro:  `#ffffff`
+ *   - Oscuro: `#1a1a1a`
  *
- * Ambas variables se definen en `tokens.css` y cambian automáticamente
- * cuando la clase `dark` está en el `<html>`. No se necesita lógica en React.
+ * Ambos tokens se definen en `tokens.css` y cambian automáticamente
+ * con la clase `dark` en `<html>`. No se necesita lógica en React.
  *
  * ## Tokens requeridos en `tokens.css`
  * ```css
@@ -29,16 +29,15 @@
  * ```
  *
  * ## Cómo reemplazar el SVG en el futuro
- * Si el SVG cambia, identificar qué paths son "cuerpo" y qué paths son
- * "recorte interior", y asignarles `fill="var(--logo-body)"` o
- * `fill="var(--logo-cutout)"` respectivamente.
- * No usar valores de color hardcodeados como `fill="#000"` o `fill="#fff"`.
+ * 1. Identificar qué paths son "cuerpo" → `fill="var(--logo-body)"`
+ * 2. Identificar qué paths son "recorte interior" → `fill="var(--logo-cutout)"`
+ * 3. Nunca usar `fill="#000"`, `fill="#fff"` ni `fill` implícito (negro por defecto).
  */
 
 /**
  * Logo oficial de la marca Joyería KOB.
  * Cambia automáticamente entre su versión clara y oscura
- * según el tema activo, sin necesidad de props ni lógica condicional.
+ * según el tema activo, sin props ni lógica condicional.
  */
 export const KobLogo = () => (
   <svg
@@ -56,15 +55,15 @@ export const KobLogo = () => (
     </defs>
 
     {/*
-      Cuerpo principal del logo: símbolo de joya + letras KOB + barra.
-      Usa --logo-body para invertirse automáticamente en modo oscuro.
+      Cuerpo principal: letras KOB + barra horizontal.
+      Usa --logo-body para invertirse en modo oscuro.
     */}
     <path
       fill="var(--logo-body)"
-      d="M290.545 162.015c0 4.98-1.246 9.43-3.734 13.344-2.492 3.918-5.695 6.617-9.61 8.094 12.282.637 21.227 5.453 26.844 14.453 2.852 4.555 4.282 10.164 4.282 16.828 0 6.668-2.57 12.758-7.704 18.266-5.125 5.5-11.664 9.418-19.609 11.75-7.937 2.32-16.297 3.484-25.078 3.484-21.918 0-37.59-5.816-47.016-17.453-6.03-7.414-9.047-17.422-9.047-30.016 0-2.125.106-4.242.313-6.359l1.594-.156c.738 18.21 7.25 31.23 19.531 39.062V146.14c-.105-3.914-1.852-6.773-5.234-8.578-1.493-.844-3.133-1.265-4.922-1.265h-2.078v-1.594h40.343c11.75 0 21.54 2.355 29.375 7.062 7.832 4.711 11.75 11.461 11.75 20.25Zm-40.968 78.766c9.843 0 17.539-2.594 23.093-7.781 5.563-5.188 8.344-12.016 8.344-20.485 0-5.289-.98-9.765-2.937-13.422-1.961-3.656-4.528-6.378-7.704-8.171-5.824-3.5-12.437-5.25-19.843-5.25v-1.422c3.383 0 6.242-1.219 8.578-3.657 4.02-4.238 6.031-10.007 6.031-17.312 0-7.3-1.617-12.695-4.844-16.188-3.23-3.5-8.289-5.351-15.172-5.562v99.094c1.489.105 2.973.156 4.454.156ZM58.034 244.265c2.75 0 5.101-.976 7.062-2.937 1.957-1.957 2.988-4.313 3.094-7.063V146.14c-.106-3.812-1.852-6.672-5.234-8.578-1.48-.844-3.122-1.265-4.922-1.265H55.97v-1.594h48.266l-.156 1.594h-1.907c-2.75 0-5.132.953-7.14 2.859-2.012 1.898-3.016 4.227-3.016 6.984v88.125c0 2.75 1.004 5.106 3.016 7.063 2.008 1.96 4.39 2.937 7.14 2.937h1.907l.156 1.594H55.97v-1.594ZM215.72 272.86c-7.73 4.02-14.773 6.031-21.125 6.031-6.355 0-12.07-.902-17.14-2.703-12.606-4.554-25.47-14.98-38.594-31.281l-41.766-51.453 37.64-49.86c.845-1.062 1.266-2.015 1.266-2.859 0-.844-.156-1.582-.468-2.219-.856-1.593-2.34-2.39-4.453-2.39h-1.594v-1.422h36.375v1.422h-.64c-7.095 0-12.868 2.543-17.313 7.625l-30.969 36.843 43.203 53.672c9.633 12.707 18.688 21.914 27.156 27.625 8.47 5.72 17.891 8.844 28.266 9.375Zm0 0"
+      d="M271.245 176.625c-1.907 2.011-4.075 3.492-6.5 4.437 10.375 1.492 18.257 5.172 23.656 11.047 5.394 5.875 8.094 13.047 8.094 21.516 0 10.273-4.133 18.586-12.391 24.937-8.25 6.344-19.102 9.516-32.547 9.516-13.45 0-23.984-3.305-31.61-9.922-7.616-6.613-11.421-15.957-11.421-28.031v-1.907l1.75-.312c2.113 15.773 8.676 25.992 19.687 30.656V146.14c-.21-2.863-1.293-5.218-3.25-7.062-1.96-1.852-4.32-2.781-7.078-2.781h-1.906v-1.594h26.687c9.946 0 17.91 2.277 23.891 6.828 5.988 4.555 8.984 10.512 8.984 17.875 0 7.355-2.015 13.094-6.046 17.219ZM240.29 139.78v101.625c3.489.531 7.508.797 12.063.797 10.164 0 18.078-2.723 23.734-8.172 5.664-5.457 8.5-12.523 8.5-21.203 0-4.656-.875-8.781-2.625-12.375-1.742-3.602-3.933-6.41-6.578-8.422-6.992-5.406-16.84-8.11-29.547-8.11h-.156l-.156-1.421h.156c5.395 0 10.024-1.77 13.89-5.313 3.864-3.55 5.798-9.031 5.798-16.437 0-13.977-7.672-20.969-23.016-20.969ZM98.776 244.265h2.062v1.594H66.073v-1.594h2.062c2.75 0 5.102-.976 7.063-2.937 1.957-1.957 2.988-4.313 3.094-7.063V146.14c-.106-2.757-1.137-5.086-3.094-6.984-1.961-1.906-4.313-2.86-7.063-2.86h-2.062v-1.593h34.765v1.594h-2.062c-2.75 0-5.106.953-7.063 2.859-1.96 1.898-2.992 4.227-3.093 6.984v88.125c0 2.75 1.004 5.106 3.015 7.063 2.008 1.96 4.39 2.937 7.14 2.937Zm110.047 25.407v1.593a51.963 51.963 0 0 1-12.063 1.438c-17.367 0-34.199-8.684-50.5-26.047l-52.562-56.063 37.484-47c.844-1.062 1.266-2.015 1.266-2.859 0-.844-.164-1.582-.485-2.219-.843-1.593-2.375-2.39-4.593-2.39h-1.594v-1.422h33.5v1.422h-.625c-6.992 0-12.711 2.492-17.156 7.468l-37 42.72 54 57.64c6.976 7.52 14.832 13.687 23.562 18.5 8.738 4.812 17.66 7.219 26.766 7.219Zm0 0"
     />
 
-    {/* Símbolo de joya (rombo/diamante) encima de la barra */}
+    {/* Símbolo de joya (diamante) — mismo token que el cuerpo */}
     <g clipPath="url(#kob-logo-clip)">
       <path
         fill="var(--logo-body)"
@@ -79,8 +78,8 @@ export const KobLogo = () => (
     />
 
     {/*
-      Texto interior tallado sobre la barra (letras blancas sobre negro).
-      Usa --logo-cutout para invertirse: blanco en claro, negro en oscuro.
+      Texto tallado sobre la barra (recorte interior).
+      Usa --logo-cutout: blanco en claro, negro en oscuro.
     */}
     <path
       fill="var(--logo-cutout)"
