@@ -51,6 +51,7 @@ import { AdminJewelryPage } from '@/features/catalog/pages/admin-jewelry-page';
 import { NotFoundPage } from '@/features/shared/pages/not-found-page';
 import { PlaceholderPage } from '@/features/shared/pages/placeholder-page';
 
+import { AdminCategoriesPage } from '@/features/categories/pages/admin-categories-page';
 /**
  * Instancia del enrutador principal de la aplicación.
  * Usa `createBrowserRouter` para soporte de rutas anidadas y layouts compartidos.
@@ -104,7 +105,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/admin/categorias',
-        element: <PlaceholderPage title="Categorías" />,
+        element: <AdminCategoriesPage />,
       },
       {
         path: '/admin/clientes',
