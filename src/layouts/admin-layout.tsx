@@ -82,13 +82,15 @@ export const AdminLayout = () => {
 
         {/* Contenido del panel actual */}
         <main
-          className="flex-1 overflow-auto transition-all duration-300"
-          style={{
-            padding: '2rem',
-            marginLeft: collapsed
-              ? 'var(--sidebar-width-collapsed)'
-              : 'var(--sidebar-width)',
-          }}
+          className="flex-1 overflow-auto transition-all duration-300 lg:ml-[var(--sidebar-current-width)]"
+          style={
+            {
+              padding: '2rem',
+              '--sidebar-current-width': collapsed
+                ? 'var(--sidebar-width-collapsed)'
+                : 'var(--sidebar-width)',
+            } as React.CSSProperties
+          }
         >
           <Outlet />
         </main>
