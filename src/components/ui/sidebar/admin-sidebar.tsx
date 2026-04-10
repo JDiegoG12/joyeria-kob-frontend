@@ -8,6 +8,7 @@
  *   El ancho alterna entre `--sidebar-width` y `--sidebar-width-collapsed`.
  * - **Tablet/Móvil**: cajón `fixed` que se desliza desde la izquierda,
  *   controlado por `isOpen`/`onClose` desde `AdminLayout`.
+ *   El botón de cierre vive en el topbar (toggle hamburguesa/X).
  *
  * ## Posicionamiento
  * Usa la clase `.sidebar-panel` de `tokens.css` para manejar `top` y
@@ -27,9 +28,6 @@
  * Un ítem con `children` tiene DOS zonas de clic independientes:
  * - **Label + ícono** → navega a `item.path` (NavLink normal)
  * - **Botón chevron** → expande/colapsa los subítems sin navegar
- *
- * Esto permite al usuario ir a /admin/joyas directamente Y también
- * expandir el submenú para acceder a /admin/categorias.
  *
  * ## Cómo agregar una nueva sección
  * Agrega un objeto al array `NAV_ITEMS`:
@@ -65,7 +63,6 @@ import {
   Ticket,
   ChevronDown,
   ChevronRight,
-  X,
 } from 'lucide-react';
 import { KobLogo } from '@/components/ui/navbar/kob-logo';
 
@@ -87,10 +84,6 @@ interface NavItem {
 
 // ─── Estructura de navegación ─────────────────────────────────────────────────
 
-/**
- * Definición de la navegación del panel admin.
- * Los ítems con `children` son navegables Y tienen submenú colapsable.
- */
 const NAV_ITEMS: NavItem[] = [
   {
     label: 'Métricas',
@@ -133,16 +126,13 @@ interface AdminSidebarProps {
 /**
  * Sidebar de navegación del panel de administración.
  * Gestiona el estado de expansión de subítems localmente.
+ * El botón de cierre en mobile vive en el topbar — no en este componente.
  */
 export const AdminSidebar = ({
   isOpen,
   isCollapsed,
   onClose,
 }: AdminSidebarProps) => {
-  /**
-   * Paths de los ítems con subítems que están expandidos.
-   * Joyas abierto por defecto al ser la sección principal del CRUD.
-   */
   const [expandedItems, setExpandedItems] = useState<string[]>([
     '/admin/joyas',
   ]);
@@ -155,7 +145,7 @@ export const AdminSidebar = ({
 
   return (
     <>
-      {/* ── Overlay — solo móvil/tablet ───────────────────────────────────────── */}
+      {/* ── Overlay — solo móvil/tablet ─────────────────────────────────────── */}
       <div
         className={`fixed inset-0 z-30 transition-opacity duration-300 lg:hidden ${
           isOpen
@@ -167,7 +157,7 @@ export const AdminSidebar = ({
         aria-hidden="true"
       />
 
-      {/* ── Panel ─────────────────────────────────────────────────────────────── */}
+      {/* ── Panel ───────────────────────────────────────────────────────────── */}
       <aside
         className={`
           fixed left-0 z-40 flex flex-col
@@ -187,9 +177,9 @@ export const AdminSidebar = ({
         }}
         aria-label="Navegación del panel admin"
       >
-        {/* Cabecera */}
+        {/* Cabecera — solo logo, sin botón X (el toggle está en el topbar) */}
         <div
-          className="flex flex-shrink-0 items-center justify-between px-4 py-4"
+          className="flex flex-shrink-0 items-center justify-center px-4 py-4"
           style={{ borderBottom: '1px solid var(--border-color)' }}
         >
           <div
@@ -199,14 +189,6 @@ export const AdminSidebar = ({
           >
             <KobLogo />
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1.5 transition-colors lg:hidden"
-            style={{ color: 'var(--text-muted)' }}
-            aria-label="Cerrar menú"
-          >
-            <X size={20} />
-          </button>
         </div>
 
         {/* Navegación */}
@@ -255,27 +237,12 @@ interface NavItemComponentProps {
   item: NavItem;
   isCollapsed: boolean;
   isExpanded: boolean;
-  /** Expande/colapsa los subítems SIN navegar. */
   onToggleExpand: () => void;
-  /** Cierra el cajón móvil al navegar. */
   onClose: () => void;
 }
 
 /**
  * Ítem de navegación del sidebar admin.
- *
- * ## Ítems sin subítems
- * Son un `NavLink` simple que navega y cierra el cajón móvil.
- *
- * ## Ítems con subítems
- * La fila tiene DOS zonas de clic independientes:
- * - **Zona izquierda** (ícono + label): `NavLink` → navega a `item.path`
- * - **Zona derecha** (chevron): botón → expande/colapsa subítems sin navegar
- *
- * Esta separación es clave: el usuario puede ir a /admin/joyas
- * Y también expandir el submenú para acceder a /admin/categorias,
- * sin que ambas acciones estén acopladas.
- *
  * @internal Solo se usa dentro de `AdminSidebar`.
  */
 const NavItemComponent = ({
@@ -291,14 +258,7 @@ const NavItemComponent = ({
   if (hasChildren) {
     return (
       <div>
-        {/* ── Fila del ítem padre: NavLink + botón chevron separados ── */}
         <div className="flex items-center">
-          {/*
-           * NavLink ocupa la mayor parte del ancho.
-           * Al hacer clic navega a item.path y cierra el cajón móvil.
-           * El chevron NO está dentro de este NavLink para que sus
-           * clics no se propaguen y disparen navegación.
-           */}
           <NavLink
             to={item.path}
             onClick={onClose}
@@ -334,11 +294,6 @@ const NavItemComponent = ({
             )}
           </NavLink>
 
-          {/*
-           * Botón chevron independiente — solo expande/colapsa.
-           * Separado del NavLink para que el clic no navegue.
-           * Oculto cuando el sidebar está colapsado.
-           */}
           {!isCollapsed && (
             <button
               onClick={onToggleExpand}
@@ -358,7 +313,6 @@ const NavItemComponent = ({
           )}
         </div>
 
-        {/* Subítems — visibles si el padre está expandido y no colapsado */}
         {isExpanded && !isCollapsed && (
           <ul className="mt-1 flex flex-col gap-0.5 pl-4">
             {item.children!.map((child) => (
@@ -372,7 +326,6 @@ const NavItemComponent = ({
     );
   }
 
-  // Ítem sin subítems — NavLink simple
   return (
     <NavLink
       to={item.path}
@@ -416,8 +369,6 @@ interface SubNavItemProps {
 
 /**
  * Subítem de navegación dentro de un ítem padre expandido.
- * Siempre muestra label — no aparece en modo colapsado.
- *
  * @internal Solo se usa dentro de `NavItemComponent`.
  */
 const SubNavItem = ({ item, onClose }: SubNavItemProps) => {

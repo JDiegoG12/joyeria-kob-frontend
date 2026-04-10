@@ -213,19 +213,6 @@ export const SubcategoryForm = ({
                       'var(--border-color)';
                   }}
                 />
-
-                {/* Vista previa del slug — informativa, no editable */}
-                {name.trim() && (
-                  <p
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: 'var(--text-xs)',
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    /{slug}
-                  </p>
-                )}
               </div>
 
               {/* Descripción opcional */}
