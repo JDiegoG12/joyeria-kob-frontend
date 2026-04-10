@@ -3,7 +3,8 @@
  * @description Barra superior fija del panel de administración de Joyería KOB.
  *
  * ## Contenido (de izquierda a derecha)
- * - **Botón hamburguesa** — abre el cajón del sidebar en móvil/tablet
+ * - **Botón hamburguesa/X** — toggle del cajón del sidebar en móvil/tablet.
+ *   Muestra ≡ cuando está cerrado y ✕ cuando está abierto.
  * - **Botón colapsar** — colapsa el sidebar a solo íconos en desktop
  * - **Nombre de sección** — muestra el título de la ruta activa actual
  * - **Toggle de tema** — alterna entre modo claro y oscuro
@@ -23,7 +24,8 @@
  * Se monta desde `AdminLayout`. No se usa en ningún otro lugar.
  * ```tsx
  * <AdminTopbar
- *   onOpenSidebar={() => setSidebarOpen(true)}
+ *   onToggleSidebar={() => setSidebarOpen(prev => !prev)}
+ *   isSidebarOpen={sidebarOpen}
  *   onToggleCollapse={() => setCollapsed(prev => !prev)}
  *   isCollapsed={collapsed}
  * />
@@ -34,6 +36,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu,
+  X,
   PanelLeftClose,
   PanelLeftOpen,
   Sun,
@@ -64,8 +67,13 @@ const SECTION_LABELS: Record<string, string> = {
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface AdminTopbarProps {
-  /** Abre el cajón del sidebar en móvil/tablet. */
-  onOpenSidebar: () => void;
+  /**
+   * Toggle del cajón del sidebar en móvil/tablet.
+   * Abre si está cerrado, cierra si está abierto.
+   */
+  onToggleSidebar: () => void;
+  /** Estado actual del sidebar móvil — determina el ícono (≡ o ✕). */
+  isSidebarOpen: boolean;
   /** Colapsa o expande el sidebar en desktop. */
   onToggleCollapse: () => void;
   /** Estado actual del sidebar para mostrar el ícono correcto. */
@@ -79,7 +87,8 @@ interface AdminTopbarProps {
  * Lee la ruta activa para mostrar el nombre de la sección actual.
  */
 export const AdminTopbar = ({
-  onOpenSidebar,
+  onToggleSidebar,
+  isSidebarOpen,
   onToggleCollapse,
   isCollapsed,
 }: AdminTopbarProps) => {
@@ -102,14 +111,15 @@ export const AdminTopbar = ({
     >
       {/* ── Izquierda: controles del sidebar + nombre de sección ─────────────── */}
       <div className="flex flex-1 items-center gap-2">
-        {/* Hamburguesa — solo móvil/tablet */}
+        {/* Toggle sidebar — solo móvil/tablet. Alterna entre ≡ y ✕ */}
         <button
-          onClick={onOpenSidebar}
+          onClick={onToggleSidebar}
           className="rounded-md p-2 transition-colors lg:hidden"
           style={{ color: 'var(--text-secondary)' }}
-          aria-label="Abrir menú"
+          aria-label={isSidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={isSidebarOpen}
         >
-          <Menu size={20} />
+          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
 
         {/* Botón colapsar sidebar — solo desktop */}
@@ -142,7 +152,6 @@ export const AdminTopbar = ({
             fontWeight: 'var(--font-semibold)',
             color: 'var(--text-primary)',
             letterSpacing: 'var(--tracking-tight)',
-            // Sobreescribe el h1 global de tokens.css para el topbar
             lineHeight: 1,
           }}
         >

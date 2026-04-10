@@ -7,16 +7,19 @@
  * - **Mobile**: Bottom Sheet arrastrable con swipe to dismiss.
  *
  * ## Modos del drawer
- * - `view`   → Detalle: descripción, lista de subcategorías con acciones,
- *              botones Editar / Eliminar en el footer.
+ * - `view`   → Detalle: descripción, lista de subcategorías con acciones
+ *              (editar/eliminar siempre visibles), botones Editar/Eliminar footer.
  * - `edit`   → Formulario precargado para editar la categoría padre.
  * - `create` → Formulario vacío para nueva categoría raíz.
  *
- * ## Edición y eliminación de subcategorías
- * Cada subcategoría en la lista tiene dos botones (editar / eliminar)
- * que aparecen al hacer hover. Al pulsar editar, el `<li>` se transforma
- * en un mini formulario inline controlado por `editingSubId`. Al pulsar
- * eliminar, abre el `DeleteConfirmModal` apuntando a esa subcategoría.
+ * ## Botones de subcategoría
+ * Editar y eliminar son siempre visibles (no dependen de hover) para
+ * garantizar accesibilidad en dispositivos touch.
+ *
+ * ## Edición inline de subcategorías
+ * Al pulsar editar, el `<li>` se transforma en un mini formulario
+ * controlado por `editingSubId`. Soporta Enter para guardar y Escape
+ * para cancelar.
  *
  * ## Swipe to dismiss (mobile)
  * Al soltar con velocidad o distancia suficiente hacia abajo, cierra
@@ -46,7 +49,6 @@ import type {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Formatea una fecha ISO a formato legible en español. */
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString('es-CO', {
     year: 'numeric',
@@ -54,7 +56,6 @@ const formatDate = (iso: string): string =>
     day: 'numeric',
   });
 
-/** Slug URL-friendly desde texto libre. */
 const toSlug = (text: string): string =>
   text
     .toLowerCase()
@@ -66,21 +67,12 @@ const toSlug = (text: string): string =>
 
 // ─── Tipo interno para el modal de eliminación ────────────────────────────────
 
-/**
- * Entidad pendiente de confirmación en el modal de eliminación.
- * - `'category'`    → elimina la categoría padre seleccionada en el store.
- * - `'subcategory'` → elimina la subcategoría con `id` y `name` dados.
- */
 type PendingDelete =
   | { type: 'category' }
   | { type: 'subcategory'; id: number; name: string };
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-/**
- * Drawer/Bottom Sheet del sistema Master-Detail de categorías.
- * Lee el estado directamente del `useCategoryStore`.
- */
 export const CategoryDrawer = () => {
   const {
     drawerMode,
@@ -102,8 +94,6 @@ export const CategoryDrawer = () => {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const isOpen = drawerMode !== 'closed';
-
-  // ── Handlers de datos ───────────────────────────────────────────────────────
 
   const handleCreate = async (data: CategoryCreateInput) => {
     await createCategory(data);
@@ -150,13 +140,9 @@ export const CategoryDrawer = () => {
     setPendingDelete({ type: 'subcategory', id: sub.id, name: sub.name });
   };
 
-  // ── Swipe to dismiss (mobile) ───────────────────────────────────────────────
-
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     if (info.offset.y > 120 || info.velocity.y > 500) closeDrawer();
   };
-
-  // ── Título del drawer ───────────────────────────────────────────────────────
 
   const drawerTitle =
     drawerMode === 'create'
@@ -175,7 +161,7 @@ export const CategoryDrawer = () => {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* ── Overlay ─────────────────────────────────────────────────── */}
+            {/* Overlay */}
             <motion.div
               key="drawer-overlay"
               initial={{ opacity: 0 }}
@@ -188,7 +174,7 @@ export const CategoryDrawer = () => {
               aria-hidden="true"
             />
 
-            {/* ── Panel Desktop ────────────────────────────────────────────── */}
+            {/* Panel Desktop */}
             <motion.aside
               key="drawer-desktop"
               role="dialog"
@@ -224,7 +210,7 @@ export const CategoryDrawer = () => {
               />
             </motion.aside>
 
-            {/* ── Panel Mobile: Bottom Sheet ───────────────────────────────── */}
+            {/* Panel Mobile: Bottom Sheet */}
             <motion.aside
               key="drawer-mobile"
               role="dialog"
@@ -276,7 +262,6 @@ export const CategoryDrawer = () => {
         )}
       </AnimatePresence>
 
-      {/* Modal de confirmación — categoría o subcategoría */}
       {pendingDelete && (
         <DeleteConfirmModal
           categoryName={deleteTargetName}
@@ -324,15 +309,11 @@ const DrawerContent = ({
   onEditSubmit,
   onSubcategorySuccess,
 }: DrawerContentProps) => {
-  /**
-   * ID de la subcategoría que está siendo editada inline.
-   * `null` cuando ninguna está en modo edición.
-   */
   const [editingSubId, setEditingSubId] = useState<number | null>(null);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      {/* ── Cabecera ───────────────────────────────────────────────────────── */}
+      {/* Cabecera */}
       <div
         className="flex flex-shrink-0 items-center justify-between px-6 py-5"
         style={{ borderBottom: '1px solid var(--border-color)' }}
@@ -377,10 +358,10 @@ const DrawerContent = ({
         </button>
       </div>
 
-      {/* ── Cuerpo scrolleable ─────────────────────────────────────────────── */}
+      {/* Cuerpo scrolleable */}
       <div className="flex-1 overflow-y-auto px-6 py-5">
         <AnimatePresence mode="wait">
-          {/* Modo: formulario create o edit de la categoría padre */}
+          {/* Formulario create / edit de la categoría padre */}
           {(drawerMode === 'create' || drawerMode === 'edit') && (
             <motion.div
               key={`form-${drawerMode}`}
@@ -404,7 +385,7 @@ const DrawerContent = ({
             </motion.div>
           )}
 
-          {/* Modo: vista de detalle */}
+          {/* Vista de detalle */}
           {drawerMode === 'view' && selectedCategory && (
             <motion.div
               key="view"
@@ -416,7 +397,6 @@ const DrawerContent = ({
             >
               {/* Metadatos */}
               <div className="flex flex-col gap-2">
-                {/* Fecha de creación */}
                 <div className="flex items-center gap-2">
                   <Calendar size={13} style={{ color: 'var(--text-muted)' }} />
                   <span
@@ -430,7 +410,6 @@ const DrawerContent = ({
                   </span>
                 </div>
 
-                {/* Categoría padre, si existe */}
                 {selectedCategory.parent && (
                   <div className="flex items-center gap-2">
                     <Layers size={13} style={{ color: 'var(--text-muted)' }} />
@@ -519,7 +498,6 @@ const DrawerContent = ({
                   <ul className="flex flex-col gap-2">
                     {selectedCategory.children.map((child: Category) =>
                       editingSubId === child.id ? (
-                        /* ── Fila en modo edición inline ──────────────────── */
                         <SubcategoryEditRow
                           key={child.id}
                           child={child}
@@ -530,10 +508,9 @@ const DrawerContent = ({
                           }}
                         />
                       ) : (
-                        /* ── Fila en modo vista ───────────────────────────── */
                         <li
                           key={child.id}
-                          className="group flex items-center justify-between rounded-xl px-4 py-3"
+                          className="flex items-center justify-between rounded-xl px-4 py-3"
                           style={{
                             backgroundColor: 'var(--bg-tertiary)',
                             border: '1px solid var(--border-color)',
@@ -552,12 +529,17 @@ const DrawerContent = ({
                             {child.name}
                           </span>
 
-                          {/* Botones — visibles en hover */}
-                          <div className="ml-3 flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          {/*
+                           * Botones SIEMPRE visibles — sin opacity-0/group-hover.
+                           * Los dispositivos touch no tienen hover, por lo que
+                           * ocultar las acciones solo en hover las hace inaccesibles
+                           * en mobile. Se muestran siempre con tamaño compacto.
+                           */}
+                          <div className="ml-3 flex flex-shrink-0 items-center gap-0.5">
                             {/* Editar */}
                             <button
                               onClick={() => setEditingSubId(child.id)}
-                              className="rounded-lg p-1.5 transition-colors"
+                              className="rounded-lg p-2 transition-colors"
                               style={{ color: 'var(--text-muted)' }}
                               aria-label={`Editar ${child.name}`}
                               title={`Editar ${child.name}`}
@@ -576,13 +558,13 @@ const DrawerContent = ({
                                   'var(--text-muted)';
                               }}
                             >
-                              <Edit2 size={13} />
+                              <Edit2 size={14} />
                             </button>
 
                             {/* Eliminar */}
                             <button
                               onClick={() => onDeleteSubcategory(child)}
-                              className="rounded-lg p-1.5 transition-colors"
+                              className="rounded-lg p-2 transition-colors"
                               style={{ color: 'var(--text-muted)' }}
                               aria-label={`Eliminar ${child.name}`}
                               title={`Eliminar ${child.name}`}
@@ -602,7 +584,7 @@ const DrawerContent = ({
                                   'var(--text-muted)';
                               }}
                             >
-                              <Trash2 size={13} />
+                              <Trash2 size={14} />
                             </button>
                           </div>
                         </li>
@@ -612,7 +594,7 @@ const DrawerContent = ({
                 )}
               </section>
 
-              {/* Formulario inline para añadir subcategoría */}
+              {/* Formulario inline añadir subcategoría */}
               <section>
                 <SubcategoryForm
                   parentId={selectedCategory.id}
@@ -624,7 +606,7 @@ const DrawerContent = ({
         </AnimatePresence>
       </div>
 
-      {/* ── Footer: acciones — solo en modo view ──────────────────────────── */}
+      {/* Footer — solo en modo view */}
       {drawerMode === 'view' && selectedCategory && (
         <div
           className="flex flex-shrink-0 gap-2 px-6 py-4"
@@ -693,19 +675,13 @@ const DrawerContent = ({
 // ─── Subcomponente: fila de edición inline de subcategoría ───────────────────
 
 interface SubcategoryEditRowProps {
-  /** Subcategoría que se está editando. */
   child: Category;
-  /** Cancela la edición y vuelve al modo vista. */
   onCancel: () => void;
-  /** Se dispara tras guardar exitosamente. */
   onSaved: () => void;
 }
 
 /**
- * Reemplaza el `<li>` de una subcategoría por un input inline cuando
- * el usuario pulsa el botón de editar. Al confirmar llama a `updateCategory`
- * del store y notifica al padre mediante `onSaved`.
- *
+ * Reemplaza el `<li>` de una subcategoría con un formulario inline.
  * @internal Solo se usa dentro de `DrawerContent`.
  */
 const SubcategoryEditRow = ({
@@ -739,7 +715,6 @@ const SubcategoryEditRow = ({
 
   return (
     <motion.li
-      key={child.id}
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
@@ -751,7 +726,6 @@ const SubcategoryEditRow = ({
         boxShadow: '0 0 0 3px var(--accent-subtle)',
       }}
     >
-      {/* Input nombre */}
       <input
         type="text"
         value={name}
@@ -772,7 +746,6 @@ const SubcategoryEditRow = ({
         }}
       />
 
-      {/* Input descripción */}
       <input
         type="text"
         value={description}
@@ -792,7 +765,6 @@ const SubcategoryEditRow = ({
         }}
       />
 
-      {/* Error */}
       {error && (
         <p
           style={{
@@ -805,14 +777,14 @@ const SubcategoryEditRow = ({
         </p>
       )}
 
-      {/* Acciones */}
       <div className="flex items-center justify-end gap-2">
         <button
           onClick={onCancel}
           disabled={isSaving}
-          className="rounded-lg px-3 py-1.5 text-xs transition-colors"
+          className="rounded-lg px-3 py-1.5 transition-colors"
           style={{
             fontFamily: 'var(--font-ui)',
+            fontSize: 'var(--text-xs)',
             fontWeight: 'var(--font-medium)',
             color: 'var(--text-secondary)',
             border: '1px solid var(--border-color)',
@@ -833,9 +805,10 @@ const SubcategoryEditRow = ({
         <button
           onClick={() => void handleSave()}
           disabled={isSaving}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-opacity"
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition-opacity"
           style={{
             fontFamily: 'var(--font-ui)',
+            fontSize: 'var(--text-xs)',
             fontWeight: 'var(--font-semibold)',
             backgroundColor: 'var(--accent)',
             color: 'var(--accent-text)',
