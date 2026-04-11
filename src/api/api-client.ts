@@ -13,6 +13,19 @@
  * const response = await apiClient.get<IJewelryProduct[]>('/joyas');
  * ```
  *
+ * ## Content-Type
+ * No se define un `Content-Type` global en la instancia.
+ * Esto es intencional:
+ *
+ * - Para peticiones JSON, Axios asigna automáticamente
+ *   `application/json` cuando corresponde.
+ * - Para peticiones con `FormData`, Axios asigna automáticamente
+ *   `multipart/form-data` con su boundary correcto.
+ *
+ * Definir `Content-Type: application/json` de forma global rompe
+ * las peticiones que envían archivos, como la edición o creación
+ * de productos con imágenes.
+ *
  * ## Interceptor de request
  * Antes de cada petición, lee el token del `auth.store` y lo adjunta
  * como header `Authorization: Bearer <token>`. Si no hay token, la
@@ -38,9 +51,6 @@ import { useAuthStore } from '@/store/auth.store';
  */
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // ─── Interceptor de request: adjunta el JWT en cada petición ─────────────────
