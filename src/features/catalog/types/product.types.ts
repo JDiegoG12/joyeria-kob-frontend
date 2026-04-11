@@ -5,12 +5,39 @@ export interface Category {
   name: string;
   slug: string;
 }
+
+export interface ProductSpecifications {
+  [key: string]: unknown;
+}
+
 export interface Product {
   id: string;
   name: string;
   description: string;
-  priceCop: number;
-  material: string;
+  categoryId: number;
+  category?: Category;
+  baseWeight: number;
+  additionalValue: number;
+  laborCost: number;
+  calculatedPrice: number;
   stock: number;
-  imageUrl?: string;
+  status: ProductStatus;
+  images: string[];
+  specifications: ProductSpecifications;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpdateProductPayload {
+  name?: string;
+  description?: string;
+  categoryId?: number;
+  baseWeight?: number;
+  additionalValue?: number;
+  laborCost?: number;
+  stock?: number;
+  status?: ProductStatus;
+  specifications?: ProductSpecifications;
+  imageFiles?: File[];
+  imagesToDelete?: string[];
 }

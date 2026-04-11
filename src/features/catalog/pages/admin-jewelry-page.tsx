@@ -1,39 +1,37 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ProductCard } from '../components/product-card';
+import { ProductEditForm } from '../components/product-edit-form';
+import { ProductFilters } from '../components/product-filters';
 import { productService } from '../services/product.service';
 import type { Product } from '../types/product.types';
 
 export const AdminJewelryPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
-  const [material, setMaterial] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await productService.getAll();
+      setProducts(data);
+    } catch (err) {
+      console.error(err);
+      setError('No se pudieron cargar los productos.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const data = await productService.getAll();
-        console.log('PRODUCTOS FRONT:', data);
-        setProducts(data);
-      } catch (err) {
-        console.error(err);
-        setError('No se pudieron cargar los productos.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     void loadProducts();
   }, []);
-
-  const materials = useMemo(() => {
-    const unique = new Set(
-      products.map((product) => product.material).filter(Boolean),
-    );
-    return Array.from(unique);
-  }, [products]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -43,13 +41,62 @@ export const AdminJewelryPage = () => {
         product.name.toLowerCase().includes(searchLower) ||
         product.description.toLowerCase().includes(searchLower);
 
-      const matchesMaterial = material
-        ? product.material.toLowerCase() === material.toLowerCase()
+      const matchesStatus = statusFilter
+        ? product.status === statusFilter
         : true;
 
-      return matchesSearch && matchesMaterial;
+      return matchesSearch && matchesStatus;
     });
-  }, [products, search, material]);
+  }, [products, search, statusFilter]);
+
+  const handleToggleVisibility = async (product: Product) => {
+    const actionText = product.status === 'HIDDEN' ? 'activar' : 'ocultar';
+
+    const confirmed = window.confirm(
+      `¿Seguro que deseas ${actionText} la joya "${product.name}"?`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setActionLoadingId(product.id);
+
+      if (product.status === 'HIDDEN') {
+        await productService.activate(product.id);
+      } else {
+        await productService.hide(product.id);
+      }
+
+      await loadProducts();
+    } catch (err) {
+      console.error(err);
+      window.alert('No se pudo actualizar el estado del producto.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleEdit = (product: Product) => {
+    setSelectedProduct(product);
+    setIsEditOpen(true);
+  };
+
+  const handleCloseEdit = () => {
+    setSelectedProduct(null);
+    setIsEditOpen(false);
+  };
+
+  const handleEditSuccess = async () => {
+    await loadProducts();
+    handleCloseEdit();
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+  };
+
+  const serverUrl = import.meta.env.VITE_API_URL.replace('/api', '');
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] p-10">
@@ -63,38 +110,13 @@ export const AdminJewelryPage = () => {
           </p>
         </div>
 
-        <div className="mb-8 flex flex-col gap-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 shadow-sm md:flex-row">
-          <input
-            type="text"
-            placeholder="Buscar joya..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 rounded-xl border border-[var(--border-color)] bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-          />
-
-          <select
-            value={material}
-            onChange={(e) => setMaterial(e.target.value)}
-            className="rounded-xl border border-[var(--border-color)] bg-transparent px-4 py-3"
-          >
-            <option value="">Todos los materiales</option>
-            {materials.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-
-          <button
-            onClick={() => {
-              setSearch('');
-              setMaterial('');
-            }}
-            className="rounded-xl border border-[var(--border-color)] px-5 py-3 transition hover:bg-[var(--bg-tertiary)]"
-          >
-            Limpiar
-          </button>
-        </div>
+        <ProductFilters
+          search={search}
+          statusFilter={statusFilter}
+          onSearchChange={setSearch}
+          onStatusFilterChange={setStatusFilter}
+          onClear={handleClearFilters}
+        />
 
         {loading ? (
           <p>Cargando productos...</p>
@@ -104,58 +126,33 @@ export const AdminJewelryPage = () => {
           <p>No hay productos para mostrar.</p>
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 shadow-md transition duration-300 hover:shadow-lg"
-              >
-                <div className="mb-4 flex h-44 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-900">
-                  <span className="text-sm text-[var(--text-muted)]">
-                    {product.imageUrl ? 'Imagen cargada' : product.material}
-                  </span>
-                </div>
+            {filteredProducts.map((product) => {
+              const isProcessing = actionLoadingId === product.id;
 
-                <h3 className="text-lg font-semibold">{product.name}</h3>
-
-                <p className="mt-1 line-clamp-2 text-sm text-[var(--text-secondary)]">
-                  {product.description}
-                </p>
-
-                <p className="mt-3 text-sm text-[var(--text-secondary)]">
-                  Material: {product.material}
-                </p>
-
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  Stock: {product.stock}
-                </p>
-
-                <p className="mt-3 text-xl font-semibold text-[var(--accent)]">
-                  ${product.priceCop.toLocaleString('es-CO')}
-                </p>
-
-                <span
-                  className={`mt-2 inline-block rounded-full px-3 py-1 text-xs ${
-                    product.stock > 0
-                      ? 'bg-green-500/20 text-green-600 dark:text-green-400'
-                      : 'bg-red-500/20 text-red-600 dark:text-red-400'
-                  }`}
-                >
-                  {product.stock > 0 ? 'Disponible' : 'Sin stock'}
-                </span>
-
-                <div className="mt-4 flex gap-2">
-                  <button className="flex-1 rounded-xl bg-[var(--accent)] py-2 text-white transition hover:opacity-90">
-                    Editar
-                  </button>
-
-                  <button className="flex-1 rounded-xl border border-[var(--border-color)] py-2 transition hover:bg-[var(--bg-tertiary)]">
-                    Ocultar
-                  </button>
-                </div>
-              </div>
-            ))}
+              return (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  serverUrl={serverUrl}
+                  isProcessing={isProcessing}
+                  onEdit={handleEdit}
+                  onToggleVisibility={(selectedProduct) => {
+                    void handleToggleVisibility(selectedProduct);
+                  }}
+                />
+              );
+            })}
           </div>
         )}
+
+        <ProductEditForm
+          product={selectedProduct}
+          isOpen={isEditOpen}
+          onClose={handleCloseEdit}
+          onSuccess={() => {
+            void handleEditSuccess();
+          }}
+        />
       </div>
     </div>
   );
