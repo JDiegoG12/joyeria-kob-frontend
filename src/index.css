@@ -6,11 +6,11 @@
 
 @theme {
   /* Tailwind apunta a los tokens — una sola fuente de verdad */
-  --color-kob-gold-50: var(--color-gold-50);
-  --color-kob-gold-500: var(--color-gold-500);
-  --color-kob-gold-600: var(--color-gold-600);
-  --color-kob-silver: var(--color-silver);
+  --color-kob-primary: var(--color-brand-500);
+  --color-kob-primary-hover: var(--color-brand-600);
+  --color-kob-primary-dark: var(--color-brand-700);
   --color-kob-black: var(--color-black);
+  --color-kob-white: var(--color-white);
 
   --font-sans: var(--font-body);
   --font-serif: var(--font-display);

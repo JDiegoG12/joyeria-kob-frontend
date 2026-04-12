@@ -30,7 +30,13 @@
  * ## Modo oscuro
  * Los tokens semánticos (--bg-*, --text-*, --border-*) cambian
  * automáticamente cuando la clase `dark` está en el <html>.
- * Los tokens de marca (--color-gold-*, --color-black) nunca cambian.
+ * Los tokens de marca (--color-brand-*) nunca cambian.
+ *
+ * ## Paleta del cliente
+ * Light: bg #F3F3F3 · card #FFFFFF · text #000000 · text-secondary #4C4B49
+ *        primary #1800AD · primary-hover #3A3DFF
+ * Dark:  bg #121212 · card #1A1A1A · text #F3F3F3 · text-secondary #7A7771
+ *        primary #3A3DFF · primary-hover #5A5DFF
  *
  * ## Cómo agregar un nuevo token
  * 1. Agrégalo en :root con un nombre semántico (qué hace, no qué color es).
@@ -42,33 +48,40 @@
     :root {
 
         /* ════════════════════════════════════════════════════════════
-       COLORES DE MARCA
-       Valores fijos de la identidad visual de KOB.
-       Nunca cambian entre modo claro y oscuro.
-       Úsalos solo para definir tokens semánticos, no directamente
-       en componentes.
-    ════════════════════════════════════════════════════════════ */
+           COLORES DE MARCA
+           Valores fijos de la identidad visual de KOB.
+           Nunca cambian entre modo claro y oscuro.
+           Úsalos solo para definir tokens semánticos, no directamente
+           en componentes.
+        ════════════════════════════════════════════════════════════ */
 
-        --color-gold-50: #fbf8ed;
-        /* Fondo cálido suave            */
-        --color-gold-100: #f5ecca;
-        /* Hover de fondos dorados        */
-        --color-gold-500: #d4af37;
-        /* Dorado principal de la marca   */
-        --color-gold-600: #b8860b;
-        /* Dorado oscuro para hover       */
-        --color-gold-700: #96700a;
-        /* Dorado muy oscuro para active  */
-        --color-silver: #c0c0c0;
-        /* Plateado de acento secundario  */
-        --color-silver-dark: #a0a0a0;
-        /* Plateado oscuro                */
-        --color-black: #1a1a1a;
-        /* Negro suave principal          */
+        /* Paleta primaria (azul de marca) */
+        --color-brand-50: #eeeeff;
+        /* Tinte muy suave para fondos sutiles   */
+        --color-brand-100: #d5d6ff;
+        /* Hover de fondos con acento            */
+        --color-brand-500: #1800AD;
+        /* Azul primario — acción principal      */
+        --color-brand-600: #3A3DFF;
+        /* Azul claro — hover en light mode      */
+        --color-brand-700: #10007a;
+        /* Azul oscuro — active/pressed          */
+
+        /* Paleta primaria oscuro */
+        --color-brand-dark-400: #5A5DFF;
+        /* Hover en dark mode                */
+        --color-brand-dark-500: #3A3DFF;
+        /* Acento base en dark mode          */
+        --color-brand-dark-700: #2a2dcc;
+        /* Active en dark mode               */
+
+        /* Neutros */
+        --color-black: #000000;
+        /* Negro puro del cliente                */
         --color-white: #ffffff;
-        /* Blanco puro                    */
+        /* Blanco puro                           */
 
-        /* Estados de feedback */
+        /* Estados de feedback — sin cambios */
         --color-success: #22c55e;
         --color-warning: #f59e0b;
         --color-error: #ef4444;
@@ -76,139 +89,115 @@
 
 
         /* ════════════════════════════════════════════════════════════
-       COLORES SEMÁNTICOS — MODO CLARO
-       Estos tokens son los que debes usar en componentes.
-       Se redefinen en .dark {} para el modo oscuro.
-    ════════════════════════════════════════════════════════════ */
+           COLORES SEMÁNTICOS — MODO CLARO
+           Mapeados directamente desde la paleta del cliente.
+        ════════════════════════════════════════════════════════════ */
 
         /* Fondos */
-        --bg-primary: var(--color-gold-50);
-        /* Fondo general de la app     */
-        --bg-secondary: var(--color-white);
-        /* Fondo de tarjetas y panels  */
-        --bg-tertiary: #f0ece0;
-        /* Fondo de inputs y subtablas */
-        --bg-sidebar: var(--color-white);
-        /* Fondo del sidebar           */
-        --bg-topbar: var(--color-white);
-        /* Fondo del navbar/topbar     */
-        --bg-hover: var(--color-gold-100);
-        /* Hover sobre items de nav    */
-        --bg-active: var(--color-gold-50);
-        /* Item activo en sidebar      */
+        --bg-primary: #F3F3F3;
+        /* --bg del cliente           */
+        --bg-secondary: #FFFFFF;
+        /* --card del cliente         */
+        --bg-tertiary: #E8E8E8;
+        /* Intermedio bg/card         */
+        --bg-sidebar: #FFFFFF;
+        /* Mismo que card             */
+        --bg-topbar: #FFFFFF;
+        /* Mismo que card             */
+        --bg-hover: rgba(24, 0, 173, 0.06);
+        /* Tinte suave del primario   */
+        --bg-active: rgba(24, 0, 173, 0.04);
+        /* Tinte más suave aún        */
         --bg-overlay: rgba(0, 0, 0, 0.4);
-        /* Overlay del cajón móvil     */
+        /* Overlay del cajón móvil    */
 
         /* Texto */
-        --text-primary: var(--color-black);
-        /* Texto principal             */
-        --text-secondary: #555555;
-        /* Texto de apoyo              */
-        --text-muted: #999999;
-        /* Texto deshabilitado/hints   */
-        --text-inverse: var(--color-white);
-        /* Texto sobre fondos oscuros  */
-        --text-accent: var(--color-gold-600);
-        /* Links y texto destacado     */
+        --text-primary: #000000;
+        /* --text del cliente         */
+        --text-secondary: #4C4B49;
+        /* --text-secondary cliente   */
+        --text-muted: #6E6E6E;
+        /* Más suave que secondary    */
+        --text-inverse: #FFFFFF;
+        /* Texto sobre fondos oscuros */
+        --text-accent: #1800AD;
+        /* Links — color primario     */
 
         /* Bordes */
-        --border-color: #e8e0cc;
-        /* Borde general suave         */
-        --border-strong: #d0c8b0;
-        /* Borde más visible           */
-        --border-accent: var(--color-gold-500);
-        /* Borde dorado de énfasis     */
+        --border-color: #DCDCDC;
+        /* Borde general suave        */
+        --border-strong: #C4C4C4;
+        /* Borde más visible          */
+        --border-accent: #1800AD;
+        /* Borde de énfasis primario  */
 
         /* Acento interactivo */
-        --accent: var(--color-gold-500);
-        /* Color principal de acción   */
-        --accent-hover: var(--color-gold-600);
-        /* Hover sobre acento          */
-        --accent-active: var(--color-gold-700);
-        /* Click sobre acento          */
-        --accent-text: var(--color-white);
-        /* Texto sobre fondo de acento */
-        --accent-subtle: var(--color-gold-100);
-        /* Fondo suave con acento      */
+        --accent: #1800AD;
+        /* --primary del cliente      */
+        --accent-hover: #3A3DFF;
+        /* --primary-hover cliente    */
+        --accent-active: #10007a;
+        /* Pressed — más oscuro       */
+        --accent-text: #FFFFFF;
+        /* Texto sobre fondo acento   */
+        --accent-subtle: rgba(24, 0, 173, 0.08);
+        /* Fondo suave con acento     */
 
 
         /* ════════════════════════════════════════════════════════════
-       TIPOGRAFÍA
-       Cambia las fuentes aquí y se actualizan en toda la app.
-    ════════════════════════════════════════════════════════════ */
+           TIPOGRAFÍA 
+        ════════════════════════════════════════════════════════════ */
 
-        /* Familias */
-        --font-display: 'Playfair Display', serif;
-        /* Títulos hero y de sección   */
-        --font-heading: 'Playfair Display', serif;
-        /* Subtítulos h2, h3, h4       */
+        --font-display: 'Bodoni Moda', serif;
+        --font-heading: 'Bodoni Moda', serif;
         --font-body: 'Inter', sans-serif;
-        /* Texto de párrafo            */
         --font-ui: 'Inter', sans-serif;
-        /* Labels, botones, navegación */
-        --font-mono: 'JetBrains Mono', monospace;
-        /* Código, IDs, SKUs           */
 
         /* Escala de tamaños */
         --text-xs: 0.75rem;
-        /* 12px — etiquetas muy pequeñas   */
         --text-sm: 0.875rem;
-        /* 14px — texto de apoyo           */
         --text-base: 1rem;
-        /* 16px — cuerpo de texto          */
         --text-lg: 1.125rem;
-        /* 18px — destacado en párrafo     */
         --text-xl: 1.25rem;
-        /* 20px — subtítulos menores       */
         --text-2xl: 1.5rem;
-        /* 24px — subtítulos               */
         --text-3xl: 1.875rem;
-        /* 30px — títulos de sección       */
-        --text-4xl: 2.25rem;
-        /* 36px — títulos grandes          */
-        --text-5xl: 3rem;
-        /* 48px — hero principal           */
+        --text-4xl: 3.25rem;
+        --text-5xl: 4rem;
 
         /* Pesos */
         --font-normal: 400;
         --font-medium: 500;
-        --font-semibold: 600;
-        --font-bold: 700;
+        --font-semibold: 500;
+        --font-bold: 600;
 
         /* Interlineado */
-        --leading-tight: 1.25;
+        --leading-tight: 1.1;
         --leading-normal: 1.5;
         --leading-relaxed: 1.75;
 
         /* Espaciado entre letras */
-        --tracking-tight: -0.02em;
-        /* Títulos grandes display         */
-        --tracking-normal: 0em;
+        --tracking-tight: -0.035em;
+        --tracking-normal: -0.01em;
         --tracking-wide: 0.05em;
-        /* Labels en mayúsculas            */
         --tracking-widest: 0.15em;
-        /* Texto decorativo de marca       */
+        --tracking-display: -0.05em;
 
 
         /* ════════════════════════════════════════════════════════════
-       LAYOUT
-       Dimensiones fijas de la estructura de la app.
-    ════════════════════════════════════════════════════════════ */
+           LAYOUT — sin cambios
+        ════════════════════════════════════════════════════════════ */
 
         --navbar-height: 64px;
         --topbar-height: 64px;
         --sidebar-width: 260px;
-        /* Sidebar expandido               */
         --sidebar-width-collapsed: 64px;
-        /* Sidebar solo con íconos         */
         --footer-height: auto;
         --content-max-width: 1280px;
-        /* Ancho máximo del área central   */
 
 
         /* ════════════════════════════════════════════════════════════
-       EFECTOS VISUALES
-    ════════════════════════════════════════════════════════════ */
+           EFECTOS VISUALES
+        ════════════════════════════════════════════════════════════ */
 
         /* Sombras */
         --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -216,8 +205,8 @@
         --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
         --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
         --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
-        --shadow-gold: 0 4px 16px rgba(212, 175, 55, 0.25);
-        /* Sombra dorada especial */
+        --shadow-accent: 0 4px 16px rgba(24, 0, 173, 0.18);
+        /* Sombra de acción primaria */
 
         /* Bordes redondeados */
         --radius-xs: 2px;
@@ -237,68 +226,75 @@
         --opacity-disabled: 0.45;
         --opacity-hover: 0.85;
 
-        /*Logo*/
-        --logo-body: #1a1a1a;
+        /* Logo */
+        --logo-body: #000000;
         --logo-cutout: #ffffff;
     }
 
 
     /* ════════════════════════════════════════════════════════════
-     TOKENS SEMÁNTICOS — MODO OSCURO
-     Solo se redefinen los tokens que cambian visualmente.
-     Los tokens de marca, layout y tipografía no cambian.
-  ════════════════════════════════════════════════════════════ */
+       TOKENS SEMÁNTICOS — MODO OSCURO
+       Solo se redefinen los tokens que cambian visualmente.
+       Tipografía, layout y radios no cambian nunca.
+    ════════════════════════════════════════════════════════════ */
 
     .dark {
 
         /* Fondos */
-        --bg-primary: var(--color-black);
-        /* #1a1a1a                     */
-        --bg-secondary: #242424;
-        --bg-tertiary: #2e2e2e;
-        --bg-sidebar: #1f1f1f;
-        --bg-topbar: #1f1f1f;
-        --bg-hover: #2a2a2a;
-        --bg-active: #2f2b22;
-        /* Tono cálido oscuro          */
+        --bg-primary: #121212;
+        /* --bg dark del cliente      */
+        --bg-secondary: #1A1A1A;
+        /* --card dark del cliente    */
+        --bg-tertiary: #222222;
+        /* Intermedio bg/card         */
+        --bg-sidebar: #1A1A1A;
+        --bg-topbar: #1A1A1A;
+        --bg-hover: rgba(58, 61, 255, 0.10);
+        /* Tinte suave del primario   */
+        --bg-active: rgba(58, 61, 255, 0.07);
         --bg-overlay: rgba(0, 0, 0, 0.65);
 
         /* Texto */
-        --text-primary: var(--color-white);
-        --text-secondary: #cccccc;
-        --text-muted: #777777;
-        --text-inverse: var(--color-black);
-        --text-accent: var(--color-gold-500);
+        --text-primary: #F3F3F3;
+        /* --text dark del cliente    */
+        --text-secondary: #A8A5A2;
+        /* --text-secondary dark      */
+        --text-muted: #878480;
+        /* Más apagado que secondary  */
+        --text-inverse: #000000;
+        --text-accent: #3A3DFF;
+        /* --primary dark del cliente */
 
         /* Bordes */
-        --border-color: #333333;
-        --border-strong: #444444;
-        --border-accent: var(--color-gold-500);
+        --border-color: #2C2C2C;
+        --border-strong: #3A3A3A;
+        --border-accent: #3A3DFF;
 
-        /* Acento (no cambia — el dorado funciona en ambos modos) */
-        --accent: var(--color-gold-500);
-        --accent-hover: var(--color-gold-600);
-        --accent-active: var(--color-gold-700);
-        --accent-text: var(--color-white);
-        --accent-subtle: #2a2516;
-        /* Dorado muy oscuro suave     */
+        /* Acento interactivo */
+        --accent: #3A3DFF;
+        /* --primary dark del cliente */
+        --accent-hover: #5A5DFF;
+        /* --primary-hover dark       */
+        --accent-active: #2a2dcc;
+        /* Pressed — más oscuro       */
+        --accent-text: #FFFFFF;
+        --accent-subtle: rgba(58, 61, 255, 0.12);
 
         /* Sombras más pronunciadas en oscuro */
-        --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.25);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
-        --shadow-gold: 0 4px 16px rgba(212, 175, 55, 0.15);
+        --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.30);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.40);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.50);
+        --shadow-accent: 0 4px 16px rgba(58, 61, 255, 0.20);
 
-        /*Logo*/
-        --logo-body: #ffffff;
-        --logo-cutout: #1a1a1a;
+        /* Logo */
+        --logo-body: #F3F3F3;
+        --logo-cutout: #121212;
     }
 
 
     /* ════════════════════════════════════════════════════════════
-     ESTILOS BASE GLOBALES
-     Aplica los tokens al HTML desde el inicio.
-  ════════════════════════════════════════════════════════════ */
+       ESTILOS BASE GLOBALES
+    ════════════════════════════════════════════════════════════ */
 
     * {
         box-sizing: border-box;
@@ -327,7 +323,7 @@
         font-size: var(--text-4xl);
         font-weight: var(--font-bold);
         line-height: var(--leading-tight);
-        letter-spacing: var(--tracking-tight);
+        letter-spacing: var(--tracking-display);
         color: var(--text-primary);
     }
 
@@ -357,7 +353,7 @@
 
     h5,
     h6 {
-        font-family: var(--font-ui);
+        font-family: var(--font-heading);
         font-size: var(--text-lg);
         font-weight: var(--font-semibold);
         color: var(--text-primary);
@@ -396,7 +392,7 @@
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background: var(--color-gold-500);
+        background: var(--accent);
     }
 }
 
