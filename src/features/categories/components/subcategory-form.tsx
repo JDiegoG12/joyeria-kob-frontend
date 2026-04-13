@@ -1,19 +1,18 @@
 /**
  * @file subcategory-form.tsx
- * @description Formulario inline para añadir una subcategoría dentro del Drawer.
+ * @description Formulario colapsable para añadir una subcategoría directa dentro del Drawer.
  *
- * Se renderiza colapsado y se expande al pulsar "Añadir subcategoría".
- * Al guardar exitosamente, colapsa y limpia los campos.
+ * Comportamiento
+ * - Se muestra colapsado por defecto para mantener la UI limpia.
+ * - Al expandir, enfoca automáticamente el campo de nombre.
+ * - Al guardar o cancelar, se colapsa y limpia el estado interno.
  *
- * ## Slug
- * Se genera internamente desde el nombre. No se expone al usuario.
+ * Slug
+ * Se genera internamente desde el nombre. No se expone al usuario para evitar confusión.
  *
- * ## Uso
+ * Uso:
  * ```tsx
- * <SubcategoryForm
- *   parentId={selectedCategory.id}
- *   onSuccess={handleSuccess}
- * />
+ * <SubcategoryForm parentId={parentId} onSuccess={handleReload} />
  * ```
  */
 
@@ -24,6 +23,12 @@ import { useCategoryStore } from '@/store/category.store';
 
 // ─── Utilidades ───────────────────────────────────────────────────────────────
 
+/**
+ * Convierte texto libre en slug URL-friendly.
+ *
+ * @param text - Texto a convertir.
+ * @returns Slug normalizado.
+ */
 const toSlug = (text: string): string =>
   text
     .toLowerCase()
@@ -38,16 +43,17 @@ const toSlug = (text: string): string =>
 interface SubcategoryFormProps {
   /** ID de la categoría padre a la que pertenecerá la nueva subcategoría. */
   parentId: number;
-  /** Se dispara tras crear la subcategoría exitosamente. */
+  /** Se dispara tras crear la subcategoría exitosamente para refrescar la UI. */
   onSuccess: () => void;
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 /**
- * Formulario colapsable para añadir una subcategoría directa.
- * Se expande al pulsar el botón y se colapsa al guardar o cancelar.
- * El slug se genera internamente — no se pide al usuario.
+ * Formulario inline colapsable para crear subcategorías.
+ * Gestiona su propio estado de apertura, validación y enfoque automático.
+ * Incluye guardas de nulidad en todos los eventos de estilo para evitar
+ * errores de renderizado asíncrono en React 19.
  */
 export const SubcategoryForm = ({
   parentId,
@@ -55,28 +61,20 @@ export const SubcategoryForm = ({
 }: SubcategoryFormProps) => {
   const { createCategory, isSaving, mutationError, clearMutationError } =
     useCategoryStore();
-
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  /** Slug derivado siempre desde el nombre. Nunca se expone al usuario. */
   const slug = toSlug(name);
 
-  // Foco al abrir
+  // Foco automático al expandir
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 150);
+      const timer = setTimeout(() => inputRef.current?.focus(), 150);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
-
-  // Limpia error de validación al corregir el nombre
-  useEffect(() => {
-    if (validationError) setValidationError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name]);
 
   const handleOpen = () => {
     clearMutationError();
@@ -90,12 +88,13 @@ export const SubcategoryForm = ({
     setValidationError(null);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault(); //  Bloquea recarga nativa
     setValidationError(null);
 
     if (!name.trim()) {
       setValidationError('El nombre es obligatorio.');
-      return;
+      return; // Sale sin llamar al store
     }
 
     try {
@@ -108,8 +107,30 @@ export const SubcategoryForm = ({
       handleCancel();
       onSuccess();
     } catch {
-      // El error ya está en mutationError del store
+      // Toast y mutationError ya se gestionan en el store
     }
+  };
+
+  // Helpers seguros para manipulación inline de estilos
+  const setHoverStyle = (e: React.MouseEvent<HTMLElement>, bgColor: string) => {
+    if (!e.currentTarget) return;
+    e.currentTarget.style.backgroundColor = bgColor;
+  };
+
+  const setFocusStyle = (
+    e: React.FocusEvent<HTMLElement>,
+    borderColor: string,
+    boxShadow: string,
+  ) => {
+    if (!e.currentTarget) return;
+    e.currentTarget.style.borderColor = borderColor;
+    e.currentTarget.style.boxShadow = boxShadow;
+  };
+
+  const resetFocusStyle = (e: React.FocusEvent<HTMLElement>) => {
+    if (!e.currentTarget) return;
+    e.currentTarget.style.borderColor = 'var(--border-color)';
+    e.currentTarget.style.boxShadow = 'none';
   };
 
   return (
@@ -117,50 +138,54 @@ export const SubcategoryForm = ({
       className="rounded-xl overflow-hidden"
       style={{ border: '1px solid var(--border-color)' }}
     >
-      {/* Botón para expandir/colapsar */}
-      <button
+      {/* Botón toggle */}
+      <motion.button
         onClick={isOpen ? handleCancel : handleOpen}
-        className="flex w-full items-center justify-between px-4 py-3 transition-colors"
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        className="flex w-full cursor-pointer items-center justify-between px-4 py-3 transition-colors"
         style={{
           backgroundColor: isOpen ? 'var(--accent-subtle)' : 'transparent',
         }}
-        onMouseEnter={(e) => {
+        onHoverStart={(e) => {
           if (!isOpen)
-            (e.currentTarget as HTMLElement).style.backgroundColor =
-              'var(--bg-hover)';
+            setHoverStyle(
+              e as unknown as React.MouseEvent<HTMLElement>,
+              'var(--bg-hover)',
+            );
         }}
-        onMouseLeave={(e) => {
+        onHoverEnd={(e) => {
           if (!isOpen)
-            (e.currentTarget as HTMLElement).style.backgroundColor =
-              'transparent';
+            setHoverStyle(
+              e as unknown as React.MouseEvent<HTMLElement>,
+              'transparent',
+            );
         }}
       >
-        <div className="flex items-center gap-2">
-          <Plus
-            size={15}
-            style={{ color: isOpen ? 'var(--accent)' : 'var(--text-muted)' }}
-          />
-          <span
-            style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-sm)',
-              fontWeight: 'var(--font-medium)',
-              color: isOpen ? 'var(--accent)' : 'var(--text-secondary)',
-            }}
-          >
-            Añadir subcategoría
-          </span>
-        </div>
+        <Plus
+          size={15}
+          style={{ color: isOpen ? 'var(--accent)' : 'var(--text-muted)' }}
+        />
+        <span
+          style={{
+            fontFamily: 'var(--font-ui)',
+            fontSize: 'var(--text-sm)',
+            fontWeight: 'var(--font-medium)',
+            color: isOpen ? 'var(--accent)' : 'var(--text-secondary)',
+          }}
+        >
+          Añadir subcategoría
+        </span>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
           <ChevronDown size={15} style={{ color: 'var(--text-muted)' }} />
         </motion.div>
-      </button>
+      </motion.button>
 
       {/* Formulario colapsable */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             key="subcategory-form"
@@ -171,10 +196,10 @@ export const SubcategoryForm = ({
             style={{ overflow: 'hidden' }}
           >
             <div
-              className="flex flex-col gap-4 p-4"
+              className="flex flex-col gap-4 p-4 sm:p-5"
               style={{ borderTop: '1px solid var(--border-color)' }}
             >
-              {/* Nombre */}
+              {/* Campo: Nombre */}
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="sub-name"
@@ -187,16 +212,19 @@ export const SubcategoryForm = ({
                     textTransform: 'uppercase',
                   }}
                 >
-                  Nombre *
+                  Nombre <span style={{ color: 'var(--color-error)' }}>*</span>
                 </label>
                 <input
                   ref={inputRef}
                   id="sub-name"
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (validationError) setValidationError(null);
+                  }}
                   placeholder="Ej: Compromiso"
-                  className="w-full rounded-lg px-3 py-2.5 transition-all outline-none"
+                  className="w-full rounded-lg px-3 py-2.5 outline-none transition-all duration-200"
                   style={{
                     fontFamily: 'var(--font-ui)',
                     fontSize: 'var(--text-sm)',
@@ -204,18 +232,18 @@ export const SubcategoryForm = ({
                     backgroundColor: 'var(--bg-tertiary)',
                     border: '1px solid var(--border-color)',
                   }}
-                  onFocus={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor =
-                      'var(--accent)';
-                  }}
-                  onBlur={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor =
-                      'var(--border-color)';
-                  }}
+                  onFocus={(e) =>
+                    setFocusStyle(
+                      e,
+                      'var(--accent)',
+                      '0 0 0 3px var(--accent-subtle)',
+                    )
+                  }
+                  onBlur={resetFocusStyle}
                 />
               </div>
 
-              {/* Descripción opcional */}
+              {/* Campo: Descripción */}
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="sub-description"
@@ -228,7 +256,15 @@ export const SubcategoryForm = ({
                     textTransform: 'uppercase',
                   }}
                 >
-                  Descripción (opcional)
+                  Descripción{' '}
+                  <span
+                    style={{
+                      color: 'var(--text-muted)',
+                      fontWeight: 'var(--font-normal)',
+                    }}
+                  >
+                    (opcional)
+                  </span>
                 </label>
                 <textarea
                   id="sub-description"
@@ -236,28 +272,31 @@ export const SubcategoryForm = ({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Descripción breve..."
                   rows={2}
-                  className="w-full resize-none rounded-lg px-3 py-2.5 transition-all outline-none"
+                  className="w-full resize-none rounded-lg px-3 py-2.5 outline-none transition-all duration-200"
                   style={{
                     fontFamily: 'var(--font-body)',
                     fontSize: 'var(--text-sm)',
                     color: 'var(--text-primary)',
                     backgroundColor: 'var(--bg-tertiary)',
                     border: '1px solid var(--border-color)',
+                    lineHeight: 'var(--leading-relaxed)',
                   }}
-                  onFocus={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor =
-                      'var(--accent)';
-                  }}
-                  onBlur={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor =
-                      'var(--border-color)';
-                  }}
+                  onFocus={(e) =>
+                    setFocusStyle(
+                      e,
+                      'var(--accent)',
+                      '0 0 0 3px var(--accent-subtle)',
+                    )
+                  }
+                  onBlur={resetFocusStyle}
                 />
               </div>
 
-              {/* Error de validación */}
+              {/* Error de validación local */}
               {validationError && (
-                <p
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
                   style={{
                     fontFamily: 'var(--font-ui)',
                     fontSize: 'var(--text-xs)',
@@ -265,12 +304,14 @@ export const SubcategoryForm = ({
                   }}
                 >
                   {validationError}
-                </p>
+                </motion.p>
               )}
 
               {/* Error del backend */}
               {mutationError && (
-                <div
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
                   className="rounded-lg px-3 py-2"
                   style={{
                     backgroundColor: 'rgba(239, 68, 68, 0.08)',
@@ -286,15 +327,17 @@ export const SubcategoryForm = ({
                   >
                     {mutationError}
                   </p>
-                </div>
+                </motion.div>
               )}
 
               {/* Acciones */}
-              <div className="flex gap-2">
-                <button
+              <div className="flex gap-2 pt-1">
+                <motion.button
                   onClick={handleCancel}
                   disabled={isSaving}
-                  className="flex-1 rounded-lg py-2 transition-colors"
+                  whileHover={{ scale: isSaving ? 1 : 1.02 }}
+                  whileTap={{ scale: isSaving ? 1 : 0.98 }}
+                  className="flex-1 cursor-pointer rounded-lg py-2 transition-colors disabled:opacity-40"
                   style={{
                     fontFamily: 'var(--font-ui)',
                     fontSize: 'var(--text-sm)',
@@ -303,29 +346,51 @@ export const SubcategoryForm = ({
                     border: '1px solid var(--border-color)',
                     backgroundColor: 'transparent',
                   }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor =
-                      'var(--bg-hover)';
+                  onHoverStart={(e) => {
+                    if (!isSaving)
+                      setHoverStyle(
+                        e as unknown as React.MouseEvent<HTMLElement>,
+                        'var(--bg-hover)',
+                      );
                   }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor =
-                      'transparent';
+                  onHoverEnd={(e) => {
+                    setHoverStyle(
+                      e as unknown as React.MouseEvent<HTMLElement>,
+                      'transparent',
+                    );
                   }}
                 >
                   Cancelar
-                </button>
-                <button
+                </motion.button>
+
+                <motion.button
+                  type="button"
                   onClick={() => void handleSubmit()}
                   disabled={isSaving}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 transition-opacity"
+                  whileHover={{ scale: isSaving ? 1 : 1.02 }}
+                  whileTap={{ scale: isSaving ? 1 : 0.98 }}
+                  className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg py-2 transition-colors disabled:opacity-40"
                   style={{
                     fontFamily: 'var(--font-ui)',
                     fontSize: 'var(--text-sm)',
                     fontWeight: 'var(--font-semibold)',
                     backgroundColor: 'var(--accent)',
                     color: 'var(--accent-text)',
-                    opacity: isSaving ? 'var(--opacity-disabled)' : '1',
-                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                  }}
+                  onHoverStart={(e) => {
+                    if (!isSaving) {
+                      const el = e as unknown as React.MouseEvent<HTMLElement>;
+                      setHoverStyle(el, 'var(--accent-hover)');
+                      if (el.currentTarget)
+                        el.currentTarget.style.boxShadow =
+                          'var(--shadow-accent)';
+                    }
+                  }}
+                  onHoverEnd={(e) => {
+                    const el = e as unknown as React.MouseEvent<HTMLElement>;
+                    setHoverStyle(el, 'var(--accent)');
+                    if (el.currentTarget)
+                      el.currentTarget.style.boxShadow = 'none';
                   }}
                 >
                   {isSaving ? (
@@ -334,7 +399,7 @@ export const SubcategoryForm = ({
                     <Plus size={13} />
                   )}
                   {isSaving ? 'Guardando...' : 'Guardar'}
-                </button>
+                </motion.button>
               </div>
             </div>
           </motion.div>

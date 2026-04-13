@@ -2,15 +2,15 @@
  * @file category-form.tsx
  * @description Formulario reutilizable para crear y editar categorías.
  *
- * ## Modos
- * - **create**: Campos vacíos. El slug se genera internamente desde el nombre.
- * - **edit**: Campos precargados. El slug se recalcula si el nombre cambia.
+ * Modos
+ * - `create`: Campos vacíos. El slug se genera internamente desde el nombre.
+ * - `edit`: Campos precargados. El slug se recalcula si el nombre cambia.
  *
- * ## Slug
+ * Slug
  * Es un detalle técnico interno (URLs, SEO). No se expone al usuario.
  * Se genera y actualiza automáticamente desde el nombre en todo momento.
  *
- * ## Uso
+ * Uso:
  * ```tsx
  * <CategoryForm
  *   mode="create"
@@ -22,7 +22,7 @@
  * ```
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import type {
@@ -36,8 +36,8 @@ import type {
  * Convierte un texto libre en un slug URL-friendly.
  * Elimina tildes, convierte a minúsculas y reemplaza espacios con guiones.
  *
- * @param text - Texto de entrada (ej: "Anillos de Compromiso")
- * @returns Slug generado (ej: "anillos-de-compromiso")
+ * @param text - Texto de entrada (ej: "Anillos de Compromiso").
+ * @returns Slug generado (ej: "anillos-de-compromiso").
  */
 const toSlug = (text: string): string =>
   text
@@ -70,6 +70,7 @@ interface CategoryFormProps {
 /**
  * Formulario de creación y edición de categorías.
  * El slug se genera automáticamente desde el nombre — nunca se pide al usuario.
+ * Incluye validación local, feedback de carga y estados de error.
  */
 export const CategoryForm = ({
   mode,
@@ -85,25 +86,16 @@ export const CategoryForm = ({
   );
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  /**
-   * Slug derivado siempre desde el nombre actual.
-   * En modo edit se recalcula si el usuario cambia el nombre,
-   * garantizando consistencia sin exponérselo explícitamente.
-   */
+  /** Slug derivado siempre desde el nombre actual. */
   const slug = toSlug(name);
 
-  // Limpia el error de validación cuando el usuario empieza a corregir
-  useEffect(() => {
-    if (validationError) setValidationError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name]);
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault(); //  Previene recarga nativa
     setValidationError(null);
 
     if (!name.trim()) {
       setValidationError('El nombre es obligatorio.');
-      return;
+      return; // Sale sin llamar al store
     }
 
     const payload: CategoryCreateInput = {
@@ -130,10 +122,9 @@ export const CategoryForm = ({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="category-name"
+          className="text-sm font-medium"
           style={{
             fontFamily: 'var(--font-ui)',
-            fontSize: 'var(--text-sm)',
-            fontWeight: 'var(--font-medium)',
             color: 'var(--text-primary)',
           }}
         >
@@ -143,10 +134,13 @@ export const CategoryForm = ({
           id="category-name"
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (validationError) setValidationError(null); // Limpia solo cuando escribe
+          }}
           placeholder="Ej: Anillos de Compromiso"
           autoFocus
-          className="w-full rounded-xl px-4 py-3 transition-all outline-none"
+          className="w-full rounded-xl px-4 py-3 outline-none transition-all duration-200"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
@@ -155,26 +149,23 @@ export const CategoryForm = ({
             border: '1px solid var(--border-color)',
           }}
           onFocus={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor =
-              'var(--accent)';
-            (e.currentTarget as HTMLElement).style.boxShadow =
-              '0 0 0 3px var(--accent-subtle)';
+            e.currentTarget.style.borderColor = 'var(--accent)';
+            e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-subtle)';
           }}
           onBlur={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor =
-              'var(--border-color)';
-            (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+            e.currentTarget.style.borderColor = 'var(--border-color)';
+            e.currentTarget.style.boxShadow = 'none';
           }}
         />
 
-        {/* Vista previa del slug generado — informativa, no editable */}
+        {/* Vista previa del slug generado */}
         {name.trim() && (
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            className="text-xs"
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-xs)',
               color: 'var(--text-muted)',
             }}
           >
@@ -187,10 +178,9 @@ export const CategoryForm = ({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="category-description"
+          className="text-sm font-medium"
           style={{
             fontFamily: 'var(--font-ui)',
-            fontSize: 'var(--text-sm)',
-            fontWeight: 'var(--font-medium)',
             color: 'var(--text-primary)',
           }}
         >
@@ -210,7 +200,7 @@ export const CategoryForm = ({
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Describe brevemente esta categoría..."
           rows={3}
-          className="w-full resize-none rounded-xl px-4 py-3 transition-all outline-none"
+          className="w-full resize-none rounded-xl px-4 py-3 outline-none transition-all duration-200"
           style={{
             fontFamily: 'var(--font-body)',
             fontSize: 'var(--text-sm)',
@@ -220,15 +210,12 @@ export const CategoryForm = ({
             lineHeight: 'var(--leading-relaxed)',
           }}
           onFocus={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor =
-              'var(--accent)';
-            (e.currentTarget as HTMLElement).style.boxShadow =
-              '0 0 0 3px var(--accent-subtle)';
+            e.currentTarget.style.borderColor = 'var(--accent)';
+            e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-subtle)';
           }}
           onBlur={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor =
-              'var(--border-color)';
-            (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+            e.currentTarget.style.borderColor = 'var(--border-color)';
+            e.currentTarget.style.boxShadow = 'none';
           }}
         />
       </div>
@@ -238,9 +225,9 @@ export const CategoryForm = ({
         <motion.p
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
+          className="text-sm"
           style={{
             fontFamily: 'var(--font-ui)',
-            fontSize: 'var(--text-sm)',
             color: 'var(--color-error)',
           }}
         >
@@ -260,9 +247,9 @@ export const CategoryForm = ({
           }}
         >
           <p
+            className="text-sm"
             style={{
               fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-sm)',
               color: 'var(--color-error)',
             }}
           >
@@ -273,10 +260,12 @@ export const CategoryForm = ({
 
       {/* Acciones */}
       <div className="flex gap-3 pt-2">
-        <button
+        <motion.button
           onClick={onCancel}
           disabled={isSaving}
-          className="flex-1 rounded-xl py-3 transition-colors"
+          whileHover={{ scale: isSaving ? 1 : 1.02 }}
+          whileTap={{ scale: isSaving ? 1 : 0.98 }}
+          className="flex-1 cursor-pointer rounded-xl py-3 transition-colors duration-200 disabled:opacity-40"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
@@ -284,33 +273,42 @@ export const CategoryForm = ({
             color: 'var(--text-secondary)',
             border: '1px solid var(--border-color)',
             backgroundColor: 'transparent',
-            opacity: isSaving ? 'var(--opacity-disabled)' : '1',
           }}
           onMouseEnter={(e) => {
-            if (!isSaving)
-              (e.currentTarget as HTMLElement).style.backgroundColor =
-                'var(--bg-hover)';
+            if (!isSaving) {
+              e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+            }
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor =
-              'transparent';
+            e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
           Cancelar
-        </button>
+        </motion.button>
 
-        <button
+        <motion.button
+          type="button"
           onClick={() => void handleSubmit()}
           disabled={isSaving}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3 transition-opacity"
+          whileHover={{ scale: isSaving ? 1 : 1.02 }}
+          whileTap={{ scale: isSaving ? 1 : 0.98 }}
+          className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-3 transition-all duration-200 disabled:opacity-40"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
             fontWeight: 'var(--font-semibold)',
             backgroundColor: 'var(--accent)',
             color: 'var(--accent-text)',
-            opacity: isSaving ? 'var(--opacity-disabled)' : '1',
-            cursor: isSaving ? 'not-allowed' : 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            if (!isSaving) {
+              e.currentTarget.style.backgroundColor = 'var(--accent-hover)';
+              e.currentTarget.style.boxShadow = 'var(--shadow-accent)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--accent)';
+            e.currentTarget.style.boxShadow = 'none';
           }}
         >
           {isSaving && <Loader2 size={15} className="animate-spin" />}
@@ -319,7 +317,7 @@ export const CategoryForm = ({
             : isEdit
               ? 'Guardar cambios'
               : 'Crear categoría'}
-        </button>
+        </motion.button>
       </div>
     </motion.div>
   );

@@ -2,30 +2,28 @@
  * @file category.store.ts
  * @description Store Zustand para la gestión de categorías del panel admin.
  *
- * ## Responsabilidades
+ * Responsabilidades
  * - Mantener la lista de categorías cargadas desde el backend.
  * - Controlar el estado del Drawer (modo y categoría seleccionada).
- * - Ejecutar las operaciones CRUD actualizando el estado local
- *   optimistamente o tras confirmación del backend.
+ * - Ejecutar operaciones CRUD actualizando el estado local tras confirmación.
+ * - Disparar notificaciones toast para dar feedback visual al usuario.
  *
- * ## Flujo del Drawer
- * ```
+ * Flujo del Drawer
  * openCreate()  → drawerMode = 'create', selectedCategory = null
  * openView(cat) → drawerMode = 'view',   selectedCategory = cat
  * openEdit()    → drawerMode = 'edit'    (selectedCategory ya está seteada)
  * closeDrawer() → drawerMode = 'closed', selectedCategory = null
- * ```
  *
- * ## Uso en componentes
- * ```tsx
+ * Uso en componentes
+ * ```ts
  * import { useCategoryStore } from '@/store/category.store';
- *
  * const { categories, drawerMode, selectedCategory, openView } = useCategoryStore();
  * ```
  */
 
 import { create } from 'zustand';
 import { CategoryService } from '@/features/categories/services/category.service';
+import { useToastStore } from '@/store/toast.store';
 import type {
     Category,
     CategoryCreateInput,
@@ -35,7 +33,6 @@ import type {
 } from '@/features/categories/types/category.types';
 
 // ─── Forma del estado ─────────────────────────────────────────────────────────
-
 interface CategoryState {
     // ── Datos ──────────────────────────────────────────────────────────────────
     /** Lista de todas las categorías (raíz + anidadas en `children`). */
@@ -104,31 +101,28 @@ interface CategoryState {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
 /**
- * Traduce los códigos de error del backend a mensajes legibles en español.
+ * Traduce los códigos de error del backend a mensajes cortos y amigables 
+ * para notificaciones tipo toast.
  */
 const ERROR_MESSAGES: Record<CategoryErrorCode, string> = {
-    CATEGORY_NOT_FOUND: 'La categoría no existe en el catálogo.',
-    CATEGORY_HAS_CHILDREN:
-        'No se puede eliminar porque tiene subcategorías asociadas. Elimínalas primero.',
-    CATEGORY_HAS_PRODUCTS:
-        'No se puede eliminar porque tiene productos asociados.',
-    SLUG_ALREADY_EXISTS:
-        'El slug ingresado ya está en uso. Por favor elige otro.',
-    MISSING_FIELDS: 'El nombre y el slug son obligatorios.',
-    INVALID_PARENT_ID: 'La categoría padre seleccionada no es válida.',
+    CATEGORY_NOT_FOUND: 'Esta categoría ya no existe o fue eliminada.',
+    CATEGORY_HAS_CHILDREN: 'Contiene subcategorías. Múevelas o elimínalas primero.',
+    CATEGORY_HAS_PRODUCTS: 'No se puede eliminar porque aún contiene joyas asignadas.',
+    SLUG_ALREADY_EXISTS: 'El enlace web para este nombre ya existe. Usa uno distinto.',
+    MISSING_FIELDS: 'El nombre es obligatorio.',
+    INVALID_PARENT_ID: 'La categoría superior seleccionada no es válida.',
+    NAME_ALREADY_EXISTS: 'Ya existe una categoría con este nombre en este grupo.',
+    CYCLIC_REFERENCE: 'No puedes guardar una categoría dentro de sus propias subcategorías.',
+    INVALID_ID: 'Error al procesar la categoría. Recarga la página.',
+    INTERNAL_ERROR: 'Ocurrió un error en el sistema. Intenta de nuevo más tarde.',
 };
 
 /**
  * Extrae el mensaje de error de una excepción de Axios o genérica.
  */
 const resolveErrorMessage = (error: unknown): string => {
-    if (
-        error &&
-        typeof error === 'object' &&
-        'response' in error
-    ) {
+    if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as {
             response?: { data?: { error?: CategoryErrorCode } };
         };
@@ -141,7 +135,6 @@ const resolveErrorMessage = (error: unknown): string => {
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
-
 export const useCategoryStore = create<CategoryState>()((set, get) => ({
     // Estado inicial
     categories: [],
@@ -166,6 +159,7 @@ export const useCategoryStore = create<CategoryState>()((set, get) => ({
                 error: 'No se pudieron cargar las categorías. Intenta de nuevo.',
                 isLoading: false,
             });
+            useToastStore.getState().showToast('error', 'Error al cargar el listado de categorías.');
         }
     },
 
@@ -174,11 +168,13 @@ export const useCategoryStore = create<CategoryState>()((set, get) => ({
         set({ isSaving: true, mutationError: null });
         try {
             await CategoryService.create(data);
-            // Recarga completa para reflejar la nueva categoría con su árbol actualizado
             await get().loadCategories(true);
             set({ isSaving: false, drawerMode: 'closed', selectedCategory: null });
+            useToastStore.getState().showToast('success', 'Categoría creada exitosamente.');
         } catch (error) {
-            set({ isSaving: false, mutationError: resolveErrorMessage(error) });
+            const msg = resolveErrorMessage(error);
+            set({ isSaving: false, mutationError: msg });
+            useToastStore.getState().showToast('error', msg);
             throw error;
         }
     },
@@ -189,10 +185,12 @@ export const useCategoryStore = create<CategoryState>()((set, get) => ({
         try {
             const updated = await CategoryService.update(id, data);
             await get().loadCategories(true);
-            // Actualiza la categoría seleccionada en el drawer con los nuevos datos
             set({ isSaving: false, drawerMode: 'view', selectedCategory: updated });
+            useToastStore.getState().showToast('success', 'Categoría actualizada correctamente.');
         } catch (error) {
-            set({ isSaving: false, mutationError: resolveErrorMessage(error) });
+            const msg = resolveErrorMessage(error);
+            set({ isSaving: false, mutationError: msg });
+            useToastStore.getState().showToast('error', msg);
             throw error;
         }
     },
@@ -204,8 +202,11 @@ export const useCategoryStore = create<CategoryState>()((set, get) => ({
             await CategoryService.delete(id);
             await get().loadCategories(true);
             set({ isDeleting: false, drawerMode: 'closed', selectedCategory: null });
+            useToastStore.getState().showToast('success', 'Categoría eliminada correctamente.');
         } catch (error) {
-            set({ isDeleting: false, mutationError: resolveErrorMessage(error) });
+            const msg = resolveErrorMessage(error);
+            set({ isDeleting: false, mutationError: msg });
+            useToastStore.getState().showToast('error', msg);
             throw error;
         }
     },
