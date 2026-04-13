@@ -85,6 +85,10 @@ export type CategoryErrorCode =
     | 'CATEGORY_HAS_PRODUCTS'
     | 'SLUG_ALREADY_EXISTS'
     | 'MISSING_FIELDS'
+    | 'NAME_ALREADY_EXISTS'
+    | 'CYCLIC_REFERENCE'
+    | 'INVALID_ID'
+    | 'INTERNAL_ERROR'
     | 'INVALID_PARENT_ID';
 
 // ─── UI ───────────────────────────────────────────────────────────────────────

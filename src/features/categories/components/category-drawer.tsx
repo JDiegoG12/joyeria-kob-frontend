@@ -1,29 +1,25 @@
 /**
  * @file category-drawer.tsx
- * @description Panel lateral Master-Detail de categorías.
+ * @description Panel lateral Master-Detail para gestión de categorías.
  *
- * ## Comportamiento por breakpoint
- * - **Desktop (lg+)**: Drawer lateral deslizante desde la derecha.
- * - **Mobile**: Bottom Sheet arrastrable con swipe to dismiss.
+ * Comportamiento por breakpoint
+ * - Desktop (lg+): Drawer deslizante desde la derecha.
+ * - Mobile: Bottom Sheet arrastrable con swipe-to-dismiss.
  *
- * ## Modos del drawer
- * - `view`   → Detalle: descripción, lista de subcategorías con acciones
- *              (editar/eliminar siempre visibles), botones Editar/Eliminar footer.
- * - `edit`   → Formulario precargado para editar la categoría padre.
- * - `create` → Formulario vacío para nueva categoría raíz.
+ * Modos del Drawer
+ * - `view`: Detalle, descripción, lista de subcategorías y botones de acción.
+ * - `edit`: Formulario precargado para modificar la categoría padre.
+ * - `create`: Formulario vacío para nueva categoría raíz.
  *
- * ## Botones de subcategoría
- * Editar y eliminar son siempre visibles (no dependen de hover) para
- * garantizar accesibilidad en dispositivos touch.
+ * Interacción
+ * - Hover: Escala 1.02, sombra dinámica y cambio de fondo vía tokens.
+ * - Touch: Swipe vertical >120px o velocidad >500 cierra el panel.
+ * - Accesibilidad: Botones siempre visibles en móvil, roles ARIA correctos.
  *
- * ## Edición inline de subcategorías
- * Al pulsar editar, el `<li>` se transforma en un mini formulario
- * controlado por `editingSubId`. Soporta Enter para guardar y Escape
- * para cancelar.
- *
- * ## Swipe to dismiss (mobile)
- * Al soltar con velocidad o distancia suficiente hacia abajo, cierra
- * el Bottom Sheet.
+ * Uso:
+ * ```tsx
+ * <CategoryDrawer />
+ * ```
  */
 
 import { useState } from 'react';
@@ -49,6 +45,12 @@ import type {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Formatea una fecha ISO al formato legible en español.
+ *
+ * @param iso - Fecha en formato ISO 8601.
+ * @returns Fecha formateada (ej: "15 de marzo de 2024").
+ */
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString('es-CO', {
     year: 'numeric',
@@ -56,6 +58,12 @@ const formatDate = (iso: string): string =>
     day: 'numeric',
   });
 
+/**
+ * Convierte texto libre en slug URL-friendly.
+ *
+ * @param text - Texto de entrada.
+ * @returns Slug normalizado.
+ */
 const toSlug = (text: string): string =>
   text
     .toLowerCase()
@@ -65,14 +73,20 @@ const toSlug = (text: string): string =>
     .trim()
     .replace(/\s+/g, '-');
 
-// ─── Tipo interno para el modal de eliminación ────────────────────────────────
+// ─── Tipos internos ───────────────────────────────────────────────────────────
 
+/** Estructura de la eliminación pendiente (categoría o subcategoría). */
 type PendingDelete =
   | { type: 'category' }
   | { type: 'subcategory'; id: number; name: string };
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
+/**
+ * Drawer de gestión de categorías.
+ * Renderiza condicionalmente un panel desktop o un bottom sheet móvil.
+ * Gestiona overlay, swipe-to-dismiss y modales de confirmación.
+ */
 export const CategoryDrawer = () => {
   const {
     drawerMode,
@@ -92,7 +106,6 @@ export const CategoryDrawer = () => {
     null,
   );
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
   const isOpen = drawerMode !== 'closed';
 
   const handleCreate = async (data: CategoryCreateInput) => {
@@ -107,6 +120,7 @@ export const CategoryDrawer = () => {
   const handleDeleteConfirm = async () => {
     if (!pendingDelete) return;
     setDeleteError(null);
+
     try {
       if (pendingDelete.type === 'category') {
         if (!selectedCategory) return;
@@ -124,7 +138,7 @@ export const CategoryDrawer = () => {
       setPendingDelete(null);
     } catch {
       const err = useCategoryStore.getState().mutationError;
-      setDeleteError(err);
+      setDeleteError(err ?? 'Error al eliminar.');
     }
   };
 
@@ -234,7 +248,7 @@ export const CategoryDrawer = () => {
                 boxShadow: 'var(--shadow-xl)',
               }}
             >
-              <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+              <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
                 <div
                   className="h-1 w-10 rounded-full"
                   style={{ backgroundColor: 'var(--border-strong)' }}
@@ -278,7 +292,7 @@ export const CategoryDrawer = () => {
   );
 };
 
-// ─── Subcomponente: contenido del drawer ─────────────────────────────────────
+// ─── Subcomponente: contenido del drawer ──────────────────────────────────────
 
 interface DrawerContentProps {
   drawerMode: string;
@@ -295,6 +309,7 @@ interface DrawerContentProps {
   onSubcategorySuccess: () => void;
 }
 
+/** Renderiza el contenido dinámico del drawer según el modo activo. */
 const DrawerContent = ({
   drawerMode,
   drawerTitle,
@@ -312,15 +327,15 @@ const DrawerContent = ({
   const [editingSubId, setEditingSubId] = useState<number | null>(null);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <>
       {/* Cabecera */}
       <div
-        className="flex flex-shrink-0 items-center justify-between px-6 py-5"
+        className="flex flex-shrink-0 items-center justify-between px-5 py-4 sm:px-6 sm:py-5"
         style={{ borderBottom: '1px solid var(--border-color)' }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg"
             style={{ backgroundColor: 'var(--accent-subtle)' }}
           >
             <Tag size={15} style={{ color: 'var(--accent)' }} />
@@ -333,33 +348,37 @@ const DrawerContent = ({
               fontWeight: 'var(--font-semibold)',
               color: 'var(--text-primary)',
               letterSpacing: 'var(--tracking-tight)',
-              maxWidth: '280px',
             }}
           >
             {drawerTitle}
           </h2>
         </div>
 
-        <button
+        <motion.button
           onClick={onClose}
-          className="rounded-lg p-2 transition-colors"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="rounded-lg p-2 cursor-pointer transition-colors"
           style={{ color: 'var(--text-muted)' }}
           aria-label="Cerrar panel"
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLElement).style.backgroundColor =
               'var(--bg-hover)';
+            (e.currentTarget as HTMLElement).style.color =
+              'var(--text-primary)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.backgroundColor =
               'transparent';
+            (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)';
           }}
         >
           <X size={18} />
-        </button>
+        </motion.button>
       </div>
 
       {/* Cuerpo scrolleable */}
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5">
         <AnimatePresence mode="wait">
           {/* Formulario create / edit de la categoría padre */}
           {(drawerMode === 'create' || drawerMode === 'edit') && (
@@ -496,7 +515,7 @@ const DrawerContent = ({
                   </p>
                 ) : (
                   <ul className="flex flex-col gap-2">
-                    {selectedCategory.children.map((child: Category) =>
+                    {selectedCategory.children.map((child) =>
                       editingSubId === child.id ? (
                         <SubcategoryEditRow
                           key={child.id}
@@ -516,7 +535,6 @@ const DrawerContent = ({
                             border: '1px solid var(--border-color)',
                           }}
                         >
-                          {/* Nombre */}
                           <span
                             className="min-w-0 truncate"
                             style={{
@@ -529,17 +547,13 @@ const DrawerContent = ({
                             {child.name}
                           </span>
 
-                          {/*
-                           * Botones SIEMPRE visibles — sin opacity-0/group-hover.
-                           * Los dispositivos touch no tienen hover, por lo que
-                           * ocultar las acciones solo en hover las hace inaccesibles
-                           * en mobile. Se muestran siempre con tamaño compacto.
-                           */}
-                          <div className="ml-3 flex flex-shrink-0 items-center gap-0.5">
-                            {/* Editar */}
-                            <button
+                          {/* Acciones siempre visibles para touch */}
+                          <div className="ml-3 flex flex-shrink-0 items-center gap-1">
+                            <motion.button
                               onClick={() => setEditingSubId(child.id)}
-                              className="rounded-lg p-2 transition-colors"
+                              whileHover={{ scale: 1.08 }}
+                              whileTap={{ scale: 0.92 }}
+                              className="rounded-lg p-2 cursor-pointer transition-colors"
                               style={{ color: 'var(--text-muted)' }}
                               aria-label={`Editar ${child.name}`}
                               title={`Editar ${child.name}`}
@@ -559,12 +573,13 @@ const DrawerContent = ({
                               }}
                             >
                               <Edit2 size={14} />
-                            </button>
+                            </motion.button>
 
-                            {/* Eliminar */}
-                            <button
+                            <motion.button
                               onClick={() => onDeleteSubcategory(child)}
-                              className="rounded-lg p-2 transition-colors"
+                              whileHover={{ scale: 1.08 }}
+                              whileTap={{ scale: 0.92 }}
+                              className="rounded-lg p-2 cursor-pointer transition-colors"
                               style={{ color: 'var(--text-muted)' }}
                               aria-label={`Eliminar ${child.name}`}
                               title={`Eliminar ${child.name}`}
@@ -585,7 +600,7 @@ const DrawerContent = ({
                               }}
                             >
                               <Trash2 size={14} />
-                            </button>
+                            </motion.button>
                           </div>
                         </li>
                       ),
@@ -609,12 +624,14 @@ const DrawerContent = ({
       {/* Footer — solo en modo view */}
       {drawerMode === 'view' && selectedCategory && (
         <div
-          className="flex flex-shrink-0 gap-2 px-6 py-4"
+          className="flex flex-shrink-0 gap-3 px-5 py-4 sm:px-6 sm:py-4"
           style={{ borderTop: '1px solid var(--border-color)' }}
         >
-          <button
+          <motion.button
             onClick={onEdit}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-3 transition-colors"
             style={{
               fontFamily: 'var(--font-ui)',
               fontSize: 'var(--text-sm)',
@@ -641,11 +658,13 @@ const DrawerContent = ({
           >
             <Edit2 size={15} />
             Editar
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
             onClick={onDeleteCategory}
-            className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center justify-center gap-2 rounded-xl px-5 py-3 cursor-pointer transition-colors"
             style={{
               fontFamily: 'var(--font-ui)',
               fontSize: 'var(--text-sm)',
@@ -665,10 +684,10 @@ const DrawerContent = ({
           >
             <Trash2 size={15} />
             Eliminar
-          </button>
+          </motion.button>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
@@ -681,7 +700,7 @@ interface SubcategoryEditRowProps {
 }
 
 /**
- * Reemplaza el `<li>` de una subcategoría con un formulario inline.
+ * Reemplaza el `<li>` de una subcategoría con un formulario inline controlado.
  * @internal Solo se usa dentro de `DrawerContent`.
  */
 const SubcategoryEditRow = ({
@@ -715,10 +734,10 @@ const SubcategoryEditRow = ({
 
   return (
     <motion.li
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ duration: 0.15 }}
+      initial={{ opacity: 0, scale: 0.98, y: -4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98, y: -4 }}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
       className="flex flex-col gap-2 rounded-xl p-3"
       style={{
         backgroundColor: 'var(--bg-tertiary)',
@@ -745,7 +764,6 @@ const SubcategoryEditRow = ({
           if (e.key === 'Escape') onCancel();
         }}
       />
-
       <input
         type="text"
         value={description}
@@ -766,7 +784,9 @@ const SubcategoryEditRow = ({
       />
 
       {error && (
-        <p
+        <motion.p
+          initial={{ opacity: 0, y: -2 }}
+          animate={{ opacity: 1, y: 0 }}
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-xs)',
@@ -774,14 +794,16 @@ const SubcategoryEditRow = ({
           }}
         >
           {error}
-        </p>
+        </motion.p>
       )}
 
       <div className="flex items-center justify-end gap-2">
-        <button
+        <motion.button
           onClick={onCancel}
           disabled={isSaving}
-          className="rounded-lg px-3 py-1.5 transition-colors"
+          whileHover={{ scale: isSaving ? 1 : 1.02 }}
+          whileTap={{ scale: isSaving ? 1 : 0.98 }}
+          className="rounded-lg px-3 py-1.5 cursor-pointer transition-colors disabled:opacity-40"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-xs)',
@@ -791,8 +813,9 @@ const SubcategoryEditRow = ({
             backgroundColor: 'transparent',
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor =
-              'var(--bg-hover)';
+            if (!isSaving)
+              (e.currentTarget as HTMLElement).style.backgroundColor =
+                'var(--bg-hover)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.backgroundColor =
@@ -800,20 +823,33 @@ const SubcategoryEditRow = ({
           }}
         >
           Cancelar
-        </button>
+        </motion.button>
 
-        <button
+        <motion.button
           onClick={() => void handleSave()}
           disabled={isSaving}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition-opacity"
+          whileHover={{ scale: isSaving ? 1 : 1.02 }}
+          whileTap={{ scale: isSaving ? 1 : 0.98 }}
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 cursor-pointer transition-opacity disabled:opacity-40"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-xs)',
             fontWeight: 'var(--font-semibold)',
             backgroundColor: 'var(--accent)',
             color: 'var(--accent-text)',
-            opacity: isSaving ? 'var(--opacity-disabled)' : '1',
-            cursor: isSaving ? 'not-allowed' : 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            if (!isSaving) {
+              (e.currentTarget as HTMLElement).style.backgroundColor =
+                'var(--accent-hover)';
+              (e.currentTarget as HTMLElement).style.boxShadow =
+                'var(--shadow-accent)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor =
+              'var(--accent)';
+            (e.currentTarget as HTMLElement).style.boxShadow = 'none';
           }}
         >
           {isSaving ? (
@@ -822,7 +858,7 @@ const SubcategoryEditRow = ({
             <Check size={12} />
           )}
           {isSaving ? 'Guardando...' : 'Guardar'}
-        </button>
+        </motion.button>
       </div>
     </motion.li>
   );
