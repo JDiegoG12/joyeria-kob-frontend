@@ -1,6 +1,6 @@
 /**
- * @file login-page.tsx
- * @description Página de inicio de sesión para clientes.
+ * @file admin-login-page.tsx
+ * @description Página de inicio de sesión para administradores.
  * UI moderna, premium y compatible con modo claro / oscuro.
  */
 
@@ -12,7 +12,7 @@ interface FormState {
   password: string;
 }
 
-export const LoginPage = () => {
+export const AdminLoginPage = () => {
   const [form, setForm] = useState<FormState>({
     email: '',
     password: '',
@@ -58,7 +58,7 @@ export const LoginPage = () => {
     try {
       setLoading(true);
       await new Promise((r) => setTimeout(r, 800));
-      alert('Login listo (esperando backend)');
+      alert('Login admin listo (esperando backend)');
     } finally {
       setLoading(false);
     }
@@ -66,67 +66,71 @@ export const LoginPage = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.14),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(212,175,55,0.08),_transparent_22%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.04),transparent,rgba(212,175,55,0.04))] dark:bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.02),transparent,rgba(212,175,55,0.03))]" />
+      {/* Fondo */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.1),_transparent_30%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.03),transparent,rgba(0,0,0,0.05))]" />
 
       <div className="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-2">
+        {/* Panel izquierdo */}
         <section className="hidden lg:flex lg:flex-col lg:justify-between px-16 py-14 animate-fade-in">
           <div>
             <span className="inline-flex items-center rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)]/70 px-4 py-2 text-xs uppercase tracking-[0.25em] text-[var(--text-secondary)] backdrop-blur-md">
-              Joyería KOB
+              Panel administrativo
             </span>
           </div>
 
           <div className="max-w-xl">
             <p className="mb-5 text-sm uppercase tracking-[0.35em] text-[var(--accent)]">
-              Elegancia atemporal
+              Gestión interna
             </p>
-            <h1 className="font-serif text-6xl leading-[1.05] text-[var(--text-primary)]">
-              Joyas que cuentan
-              <span className="block text-[var(--accent)]">tu historia</span>
+            <h1 className="font-serif text-5xl leading-[1.1] text-[var(--text-primary)]">
+              Control total del
+              <span className="block text-[var(--accent)]">
+                ecosistema KOB
+              </span>
             </h1>
             <p className="mt-6 max-w-lg text-lg leading-8 text-[var(--text-secondary)]">
-              Ingresa para explorar piezas exclusivas, guardar tus intereses y
-              continuar una experiencia diseñada con detalle, lujo y
-              personalización.
+              Accede al panel para administrar joyas, categorías, clientes,
+              promociones y mantener la operación de la plataforma.
             </p>
           </div>
 
           <div className="text-sm text-[var(--text-secondary)]">
-            Diseño premium • experiencia cuidada • acceso seguro
+            Acceso restringido • control seguro • gestión centralizada
           </div>
         </section>
 
+        {/* Formulario */}
         <section className="flex items-center justify-center px-6 py-10 sm:px-10">
           <div className="w-full max-w-md animate-fade-in rounded-[32px] border border-[var(--border-color)] bg-[var(--bg-secondary)]/85 p-8 shadow-[0_20px_80px_rgba(0,0,0,0.18)] backdrop-blur-2xl transition-all duration-300 hover:shadow-[0_25px_90px_rgba(0,0,0,0.25)] sm:p-10 dark:shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
+            
             <div className="mb-8">
               <p className="text-sm uppercase tracking-[0.3em] text-[var(--accent)]">
-                Bienvenida
+                Acceso admin
               </p>
-              <h2 className="mt-3 font-serif text-4xl text-[var(--text-primary)]">
+              <h2 className="mt-3 font-serif text-3xl text-[var(--text-primary)]">
                 Iniciar sesión
               </h2>
-              <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-                Accede a tu cuenta para continuar con tu experiencia dentro de
-                Joyería KOB.
+              <p className="mt-3 text-sm text-[var(--text-secondary)]">
+                Ingresa con tus credenciales administrativas.
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                  Correo electrónico
+                  Correo
                 </label>
                 <input
                   type="email"
                   value={form.email}
                   onChange={(e) => updateField('email', e.target.value)}
-                  placeholder="correo@ejemplo.com"
+                  placeholder="admin@kob.com"
                   className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-primary)]/70 px-4 py-3.5 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
                 />
-                {errors.email ? (
+                {errors.email && (
                   <p className="mt-2 text-sm text-red-500">{errors.email}</p>
-                ) : null}
+                )}
               </div>
 
               <div>
@@ -140,11 +144,11 @@ export const LoginPage = () => {
                   placeholder="••••••••"
                   className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-primary)]/70 px-4 py-3.5 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
                 />
-                {errors.password ? (
+                {errors.password && (
                   <p className="mt-2 text-sm text-red-500">
                     {errors.password}
                   </p>
-                ) : null}
+                )}
               </div>
 
               <button
@@ -152,31 +156,22 @@ export const LoginPage = () => {
                 disabled={loading}
                 className="mt-2 w-full rounded-2xl bg-[var(--accent)] px-5 py-3.5 font-medium text-white transition-all hover:scale-[1.02] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? 'Ingresando...' : 'Entrar'}
+                {loading ? 'Ingresando...' : 'Entrar al panel'}
               </button>
             </form>
 
-            <div className="mt-8 space-y-3 text-center">
+            <div className="mt-8 text-center">
               <p className="text-sm text-[var(--text-secondary)]">
-                ¿No tienes cuenta?{' '}
+                ¿No eres administrador?{' '}
                 <Link
-                  to="/registro"
+                  to="/login"
                   className="font-medium text-[var(--accent)] transition hover:opacity-80"
                 >
-                  Regístrate
-                </Link>
-              </p>
-
-              <p className="text-sm text-[var(--text-secondary)]">
-                ¿Eres administrador?{' '}
-                <Link
-                  to="/admin/login"
-                  className="font-medium text-[var(--text-primary)] transition hover:opacity-80"
-                >
-                  Acceso al panel
+                  Ir al acceso cliente
                 </Link>
               </p>
             </div>
+
           </div>
         </section>
       </div>
