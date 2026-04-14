@@ -6,7 +6,9 @@
  * ```
  * /                          → Redirige automáticamente a /catalogo
  * /catalogo                  → Catálogo público de joyas (MainLayout)
- * /login                     → Inicio de sesión (MainLayout)
+ * /login                     → Inicio de sesión cliente (sin MainLayout)
+ * /registro                  → Registro de cliente (sin MainLayout)
+ * /admin/login               → Inicio de sesión administrador (sin MainLayout)
  * /admin                     → Redirige a /admin/joyas
  * /admin/metricas            → Métricas (AdminLayout + ProtectedRoute ADMIN)
  * /admin/joyas               → CRUD de joyas (AdminLayout + ProtectedRoute ADMIN)
@@ -19,39 +21,29 @@
  *
  * ## Regla fundamental de este archivo
  * Cada ruta debe vivir en el bloque del layout que le corresponde:
- * - Rutas públicas → dentro del bloque `element: <MainLayout />`
- * - Rutas admin    → dentro del bloque `element: <ProtectedRoute><AdminLayout /></ProtectedRoute>`
+ * - Rutas públicas con navegación general → dentro del bloque `element: <MainLayout />`
+ * - Rutas de autenticación → fuera de `MainLayout` para evitar navbar/footer
+ * - Rutas admin protegidas → dentro del bloque `element: <ProtectedRoute><AdminLayout /></ProtectedRoute>`
  *
  * Poner una ruta admin dentro de MainLayout hace que el sidebar admin
  * nunca aparezca y que la protección por rol no funcione.
- *
- * ## Cómo agregar una nueva ruta pública
- * ```tsx
- * { path: '/nueva-ruta', element: <NuevaPage /> }
- * ```
- * Agrégala dentro del objeto que tiene `element: <MainLayout />`.
- *
- * ## Cómo agregar una nueva ruta protegida de admin
- * ```tsx
- * { path: '/admin/nueva-seccion', element: <NuevaAdminPage /> }
- * ```
- * Agrégala dentro del objeto que tiene `element: <AdminLayout />`.
- * La protección por rol ya está aplicada en ese nivel.
  */
 
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-
+import { AuthLayout } from '@/layouts/auth-layout';
 import { MainLayout } from '@/layouts/main-layout';
 import { AdminLayout } from '@/layouts/admin-layout';
 import { ProtectedRoute } from '@/components/ui/protected-route';
 
 import { HomePage } from '@/features/catalog/pages/home-page';
 import { LoginPage } from '@/features/auth/pages/login-page';
+import { RegisterPage } from '@/features/auth/pages/register-page';
+import { AdminLoginPage } from '@/features/auth/pages/admin-login-page';
 import { AdminJewelryPage } from '@/features/catalog/pages/admin-jewelry-page';
 import { NotFoundPage } from '@/features/shared/pages/not-found-page';
 import { PlaceholderPage } from '@/features/shared/pages/placeholder-page';
-
 import { AdminCategoriesPage } from '@/features/categories/pages/admin-categories-page';
+
 /**
  * Instancia del enrutador principal de la aplicación.
  * Usa `createBrowserRouter` para soporte de rutas anidadas y layouts compartidos.
@@ -59,24 +51,41 @@ import { AdminCategoriesPage } from '@/features/categories/pages/admin-categorie
  * @see {@link https://reactrouter.com/en/main/routers/create-browser-router}
  */
 export const router = createBrowserRouter([
-  // ─── Rutas públicas — usan MainLayout (Navbar + Footer) ──────────────────
+  // ─── Ruta raíz ────────────────────────────────────────────────────────────
+  {
+    path: '/',
+    element: <Navigate to="/catalogo" replace />,
+  },
+
+  // ─── Rutas públicas con MainLayout (Navbar + Footer) ─────────────────────
   {
     element: <MainLayout />,
     children: [
       {
-        path: '/',
-        element: <Navigate to="/catalogo" replace />,
-      },
-      {
         path: '/catalogo',
         element: <HomePage />,
       },
-      {
-        path: '/login',
-        element: <LoginPage />,
-      },
     ],
   },
+
+  // ─── Rutas de autenticación SIN MainLayout ───────────────────────────────
+  {
+  element: <AuthLayout />,
+  children: [
+    {
+      path: '/login',
+      element: <LoginPage />,
+    },
+    {
+      path: '/registro',
+      element: <RegisterPage />,
+    },
+    {
+      path: '/admin/login',
+      element: <AdminLoginPage />,
+    },
+  ],
+},
 
   // ─── Rutas protegidas de administración — usan AdminLayout ───────────────
   //
