@@ -1,10 +1,10 @@
 import { apiClient } from '@/api/api-client';
 import type { Product, UpdateProductPayload } from '../types/product.types';
 
-interface ProductsResponse {
+/*interface ProductsResponse {
   success: boolean;
   data: Product[];
-}
+} */
 
 interface ProductResponse {
   success: boolean;
@@ -65,8 +65,8 @@ function buildProductFormData(payload: UpdateProductPayload): FormData {
 
 export const productService = {
   async getAll(): Promise<Product[]> {
-    const response = await apiClient.get<ProductsResponse>('/products');
-    return response.data.data ?? [];
+  const response = await apiClient.get('/products?admin=true');
+  return response.data.data ?? [];
   },
 
   async getById(id: string): Promise<Product> {
