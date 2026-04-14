@@ -21,8 +21,7 @@ export const AdminJewelryPage = () => {
       setError('');
       const data = await productService.getAll();
       setProducts(data);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError('No se pudieron cargar los productos.');
     } finally {
       setLoading(false);
@@ -68,8 +67,7 @@ export const AdminJewelryPage = () => {
       }
 
       await loadProducts();
-    } catch (err) {
-      console.error(err);
+    } catch {
       window.alert('No se pudo actualizar el estado del producto.');
     } finally {
       setActionLoadingId(null);
@@ -99,8 +97,8 @@ export const AdminJewelryPage = () => {
   const serverUrl = import.meta.env.VITE_API_URL.replace('/api', '');
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] p-10">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-[var(--bg-primary)] p-6 lg:p-8">
+      <div className="w-full">
         <div className="mb-10">
           <h1 className="font-serif text-4xl tracking-tight">
             Gestión de Joyas
@@ -125,7 +123,7 @@ export const AdminJewelryPage = () => {
         ) : filteredProducts.length === 0 ? (
           <p>No hay productos para mostrar.</p>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {filteredProducts.map((product) => {
               const isProcessing = actionLoadingId === product.id;
 

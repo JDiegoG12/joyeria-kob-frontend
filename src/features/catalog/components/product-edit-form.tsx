@@ -14,7 +14,6 @@ interface ProductFormState {
   description: string;
   baseWeight: string;
   additionalValue: string;
-  laborCost: string;
   stock: string;
 }
 
@@ -23,14 +22,13 @@ interface NewImagePreview {
   previewUrl: string;
 }
 
-const MAX_IMAGES = 4;
+const MAX_IMAGES = 5;
 
 const emptyForm: ProductFormState = {
   name: '',
   description: '',
   baseWeight: '',
   additionalValue: '',
-  laborCost: '',
   stock: '',
 };
 
@@ -42,6 +40,8 @@ export const ProductEditForm = ({
 }: ProductEditFormProps) => {
   const [form, setForm] = useState<ProductFormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [newImages, setNewImages] = useState<NewImagePreview[]>([]);
 
   const serverUrl = import.meta.env.VITE_API_URL.replace('/api', '');
@@ -49,6 +49,8 @@ export const ProductEditForm = ({
   useEffect(() => {
     if (!product || !isOpen) {
       setForm(emptyForm);
+      setExistingImages([]);
+      setImagesToDelete([]);
       setNewImages([]);
       return;
     }
@@ -58,10 +60,11 @@ export const ProductEditForm = ({
       description: product.description ?? '',
       baseWeight: String(product.baseWeight ?? ''),
       additionalValue: String(product.additionalValue ?? ''),
-      laborCost: String(product.laborCost ?? ''),
       stock: String(product.stock ?? ''),
     });
 
+    setExistingImages(product.images ?? []);
+    setImagesToDelete([]);
     setNewImages([]);
   }, [product, isOpen]);
 
@@ -77,10 +80,11 @@ export const ProductEditForm = ({
     return {
       baseWeight: Number(form.baseWeight),
       additionalValue: Number(form.additionalValue),
-      laborCost: Number(form.laborCost),
       stock: Number(form.stock),
     };
   }, [form]);
+
+  const totalImages = existingImages.length + newImages.length;
 
   const hasChanges = useMemo(() => {
     if (!product) return false;
@@ -90,37 +94,31 @@ export const ProductEditForm = ({
       form.description.trim() !== product.description ||
       parsedValues.baseWeight !== product.baseWeight ||
       parsedValues.additionalValue !== product.additionalValue ||
-      parsedValues.laborCost !== product.laborCost ||
       parsedValues.stock !== product.stock ||
+      imagesToDelete.length > 0 ||
       newImages.length > 0
     );
-  }, [form, parsedValues, product, newImages]);
+  }, [form, parsedValues, product, imagesToDelete.length, newImages.length]);
 
   const suggestedPrice = useMemo(() => {
     if (!product) return 0;
 
-    const { baseWeight, additionalValue, laborCost } = parsedValues;
+    const { baseWeight, additionalValue } = parsedValues;
 
-    if (
-      Number.isNaN(baseWeight) ||
-      Number.isNaN(additionalValue) ||
-      Number.isNaN(laborCost)
-    ) {
-      return product.calculatedPrice;
+    if (Number.isNaN(baseWeight) || Number.isNaN(additionalValue)) {
+      return Number(product.calculatedPrice);
     }
 
     const currentBase =
-      Number(product.baseWeight) +
-      Number(product.additionalValue) +
-      Number(product.laborCost);
+      Number(product.baseWeight) + Number(product.additionalValue);
 
     if (currentBase <= 0) {
-      return baseWeight + additionalValue + laborCost;
+      return baseWeight + additionalValue;
     }
 
     const ratio = Number(product.calculatedPrice) / currentBase;
 
-    return (baseWeight + additionalValue + laborCost) * ratio;
+    return (baseWeight + additionalValue) * ratio;
   }, [parsedValues, product]);
 
   if (!isOpen || !product) return null;
@@ -166,16 +164,6 @@ export const ProductEditForm = ({
       return false;
     }
 
-    if (form.laborCost === '' || Number.isNaN(parsedValues.laborCost)) {
-      window.alert('La mano de obra debe ser un número válido.');
-      return false;
-    }
-
-    if (parsedValues.laborCost < 0) {
-      window.alert('La mano de obra no puede ser negativa.');
-      return false;
-    }
-
     if (form.stock === '' || Number.isNaN(parsedValues.stock)) {
       window.alert('El stock debe ser un número válido.');
       return false;
@@ -186,8 +174,13 @@ export const ProductEditForm = ({
       return false;
     }
 
-    if (newImages.length > MAX_IMAGES) {
-      window.alert(`No puedes subir más de ${MAX_IMAGES} imágenes.`);
+    if (totalImages === 0) {
+      window.alert('Debes dejar al menos una imagen.');
+      return false;
+    }
+
+    if (totalImages > MAX_IMAGES) {
+      window.alert(`No puedes tener más de ${MAX_IMAGES} imágenes en total.`);
       return false;
     }
 
@@ -217,10 +210,12 @@ export const ProductEditForm = ({
 
     if (files.length === 0) return;
 
-    const availableSlots = MAX_IMAGES - newImages.length;
+    const availableSlots = MAX_IMAGES - totalImages;
 
     if (availableSlots <= 0) {
-      window.alert(`Ya tienes el máximo de ${MAX_IMAGES} imágenes nuevas.`);
+      window.alert(
+        `Ya tienes el máximo de ${MAX_IMAGES} imágenes permitidas.`,
+      );
       event.target.value = '';
       return;
     }
@@ -242,7 +237,9 @@ export const ProductEditForm = ({
 
   const handleRemoveNewImage = (previewUrl: string) => {
     setNewImages((prev) => {
-      const imageToRemove = prev.find((image) => image.previewUrl === previewUrl);
+      const imageToRemove = prev.find(
+        (image) => image.previewUrl === previewUrl,
+      );
 
       if (imageToRemove) {
         URL.revokeObjectURL(imageToRemove.previewUrl);
@@ -251,6 +248,32 @@ export const ProductEditForm = ({
       return prev.filter((image) => image.previewUrl !== previewUrl);
     });
   };
+
+  const handleRemoveExistingImage = (imageName: string) => {
+    setExistingImages((prev) => prev.filter((image) => image !== imageName));
+
+    setImagesToDelete((prev) => {
+      if (prev.includes(imageName)) return prev;
+      return [...prev, imageName];
+    });
+  };
+
+  const handleRestoreExistingImage = (imageName: string) => {
+    setImagesToDelete((prev) => prev.filter((image) => image !== imageName));
+
+    setExistingImages((prev) => {
+      if (prev.includes(imageName)) return prev;
+      return [...prev, imageName];
+    });
+  };
+
+  const orderedVisibleExistingImages = (product.images ?? []).filter((image) =>
+    existingImages.includes(image),
+  );
+
+  const orderedDeletedExistingImages = (product.images ?? []).filter((image) =>
+    imagesToDelete.includes(image),
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -266,9 +289,9 @@ export const ProductEditForm = ({
         description: form.description.trim(),
         baseWeight: parsedValues.baseWeight,
         additionalValue: parsedValues.additionalValue,
-        laborCost: parsedValues.laborCost,
         stock: parsedValues.stock,
         imageFiles: newImages.map((image) => image.file),
+        imagesToDelete,
       });
 
       window.alert('Producto actualizado correctamente.');
@@ -278,11 +301,18 @@ export const ProductEditForm = ({
       });
 
       onSuccess();
-    } catch (error: any) {
-      console.error('ERROR UPDATE PRODUCT:', error?.response?.data || error);
-      window.alert(
-        error?.response?.data?.message || 'No se pudo actualizar el producto.',
-      );
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as { response?: { data?: { message?: string } } }).response
+          ?.data?.message === 'string'
+          ? (error as { response?: { data?: { message?: string } } }).response!
+              .data!.message!
+          : 'No se pudo actualizar el producto.';
+
+      window.alert(message);
     } finally {
       setSaving(false);
     }
@@ -360,21 +390,7 @@ export const ProductEditForm = ({
               />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Mano de obra
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.laborCost}
-                onChange={(e) => updateField('laborCost', e.target.value)}
-                className="w-full rounded-xl border border-[var(--border-color)] bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-              />
-            </div>
-
-            <div>
+            <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-medium">Stock</label>
               <input
                 type="number"
@@ -392,7 +408,7 @@ export const ProductEditForm = ({
               Precio actual:
             </p>
             <p className="text-lg font-semibold text-[var(--accent)]">
-              ${product.calculatedPrice.toLocaleString('es-CO')}
+              ${Number(product.calculatedPrice).toLocaleString('es-CO')}
             </p>
 
             <p className="mt-3 text-sm text-[var(--text-secondary)]">
@@ -407,7 +423,8 @@ export const ProductEditForm = ({
             <div>
               <h3 className="text-lg font-semibold">Imágenes actuales</h3>
               <p className="text-sm text-[var(--text-secondary)]">
-                Si subes nuevas imágenes, el backend reemplazará todas las imágenes actuales.
+                Puedes quitar imágenes existentes y agregar nuevas. Máximo{' '}
+                {MAX_IMAGES} imágenes en total.
               </p>
             </div>
 
@@ -416,20 +433,75 @@ export const ProductEditForm = ({
                 Este producto no tiene imágenes actuales.
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                {product.images.map((imageName) => (
-                  <div
-                    key={imageName}
-                    className="overflow-hidden rounded-2xl border border-[var(--border-color)]"
-                  >
-                    <img
-                      src={`${serverUrl}/uploads/products/${imageName}`}
-                      alt={product.name}
-                      className="h-36 w-full object-cover"
-                    />
+              <>
+                {orderedVisibleExistingImages.length > 0 && (
+                  <div>
+                    <p className="mb-3 text-sm font-medium text-[var(--text-secondary)]">
+                      Imágenes que se conservarán
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                      {orderedVisibleExistingImages.map((imageName) => (
+                        <div
+                          key={imageName}
+                          className="overflow-hidden rounded-2xl border border-[var(--border-color)]"
+                        >
+                          <img
+                            src={`${serverUrl}/uploads/products/${imageName}`}
+                            alt={product.name}
+                            className="h-36 w-full object-cover"
+                          />
+
+                          <div className="p-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRemoveExistingImage(imageName)
+                              }
+                              className="w-full rounded-xl bg-red-500 px-3 py-2 text-sm text-white transition hover:bg-red-600"
+                            >
+                              Quitar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
+                )}
+
+                {orderedDeletedExistingImages.length > 0 && (
+                  <div>
+                    <p className="mb-3 text-sm font-medium text-[var(--text-secondary)]">
+                      Imágenes marcadas para eliminar
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                      {orderedDeletedExistingImages.map((imageName) => (
+                        <div
+                          key={imageName}
+                          className="overflow-hidden rounded-2xl border border-red-500/50 opacity-60"
+                        >
+                          <img
+                            src={`${serverUrl}/uploads/products/${imageName}`}
+                            alt={product.name}
+                            className="h-36 w-full object-cover"
+                          />
+
+                          <div className="p-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRestoreExistingImage(imageName)
+                              }
+                              className="w-full rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm transition hover:bg-[var(--bg-tertiary)]"
+                            >
+                              Restaurar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -437,17 +509,33 @@ export const ProductEditForm = ({
             <div>
               <h3 className="text-lg font-semibold">Nuevas imágenes</h3>
               <p className="text-sm text-[var(--text-secondary)]">
-                Puedes subir hasta {MAX_IMAGES} imágenes. Si agregas nuevas, reemplazarán todas las actuales al guardar.
+                Puedes agregar nuevas imágenes sin superar el máximo total de{' '}
+                {MAX_IMAGES}.
               </p>
             </div>
 
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleNewImagesChange}
-              className="block w-full text-sm"
-            />
+            <label className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border-color)] bg-[var(--bg-secondary)]/50 px-6 py-10 text-center transition hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)]">
+  
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleNewImagesChange}
+                className="hidden"
+              />
+
+              <div className="mb-3 text-3xl opacity-70 group-hover:scale-110 transition">
+                📤
+              </div>
+
+              <p className="text-sm font-medium text-[var(--text-primary)]">
+                Haz clic o arrastra imágenes aquí
+              </p>
+
+              <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                PNG, JPG • Máximo {MAX_IMAGES} imágenes
+              </p>
+            </label>
 
             {newImages.length > 0 && (
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -477,7 +565,15 @@ export const ProductEditForm = ({
             )}
 
             <p className="text-sm text-[var(--text-secondary)]">
-              Nuevas imágenes seleccionadas: {newImages.length}/{MAX_IMAGES}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[var(--text-secondary)]">
+                  Imágenes seleccionadas
+                </span>
+
+                <span className="rounded-full bg-[var(--accent)]/10 px-3 py-1 text-[var(--accent)] font-medium">
+                  {totalImages}/{MAX_IMAGES}
+                </span>
+              </div>
             </p>
           </div>
 

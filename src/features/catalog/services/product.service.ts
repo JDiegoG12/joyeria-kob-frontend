@@ -1,11 +1,6 @@
 import { apiClient } from '@/api/api-client';
 import type { Product, UpdateProductPayload } from '../types/product.types';
 
-/*interface ProductsResponse {
-  success: boolean;
-  data: Product[];
-} */
-
 interface ProductResponse {
   success: boolean;
   data: Product;
@@ -14,8 +9,8 @@ interface ProductResponse {
 function buildProductFormData(payload: UpdateProductPayload): FormData {
   const formData = new FormData();
 
-  if (payload.name) {
-  formData.append('name', payload.name);
+  if (payload.name !== undefined) {
+    formData.append('name', payload.name);
   }
 
   if (payload.description !== undefined) {
@@ -34,10 +29,6 @@ function buildProductFormData(payload: UpdateProductPayload): FormData {
     formData.append('additionalValue', String(payload.additionalValue));
   }
 
-  if (payload.laborCost !== undefined) {
-    formData.append('laborCost', String(payload.laborCost));
-  }
-
   if (payload.stock !== undefined) {
     formData.append('stock', String(payload.stock));
   }
@@ -47,17 +38,23 @@ function buildProductFormData(payload: UpdateProductPayload): FormData {
   }
 
   if (payload.specifications !== undefined) {
-    formData.append('specifications', JSON.stringify(payload.specifications));
+    formData.append(
+      'specifications',
+      JSON.stringify(payload.specifications),
+    );
   }
 
-  if (payload.imageFiles && payload.imageFiles.length > 0) {
+  if (payload.imageFiles?.length) {
     payload.imageFiles.forEach((file) => {
       formData.append('imageFiles', file);
     });
   }
 
-  if (payload.imagesToDelete && payload.imagesToDelete.length > 0) {
-    formData.append('imagesToDelete', JSON.stringify(payload.imagesToDelete));
+  if (payload.imagesToDelete?.length) {
+    formData.append(
+      'imagesToDelete',
+      JSON.stringify(payload.imagesToDelete),
+    );
   }
 
   return formData;
@@ -65,8 +62,8 @@ function buildProductFormData(payload: UpdateProductPayload): FormData {
 
 export const productService = {
   async getAll(): Promise<Product[]> {
-  const response = await apiClient.get('/products?admin=true');
-  return response.data.data ?? [];
+    const response = await apiClient.get('/products?admin=true');
+    return response.data.data ?? [];
   },
 
   async getById(id: string): Promise<Product> {
@@ -76,7 +73,10 @@ export const productService = {
 
   async update(id: string, payload: UpdateProductPayload): Promise<Product> {
     const formData = buildProductFormData(payload);
-    const response = await apiClient.put<ProductResponse>(`/products/${id}`, formData);
+    const response = await apiClient.put<ProductResponse>(
+      `/products/${id}`,
+      formData,
+    );
     return response.data.data;
   },
 
@@ -84,7 +84,10 @@ export const productService = {
     const formData = new FormData();
     formData.append('status', 'HIDDEN');
 
-    const response = await apiClient.put<ProductResponse>(`/products/${id}`, formData);
+    const response = await apiClient.put<ProductResponse>(
+      `/products/${id}`,
+      formData,
+    );
     return response.data.data;
   },
 
@@ -92,7 +95,10 @@ export const productService = {
     const formData = new FormData();
     formData.append('status', 'AVAILABLE');
 
-    const response = await apiClient.put<ProductResponse>(`/products/${id}`, formData);
+    const response = await apiClient.put<ProductResponse>(
+      `/products/${id}`,
+      formData,
+    );
     return response.data.data;
   },
 };
