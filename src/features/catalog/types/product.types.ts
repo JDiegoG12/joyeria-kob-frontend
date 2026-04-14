@@ -7,6 +7,9 @@ export interface Category {
 }
 
 export interface ProductSpecifications {
+  requiresSize?: boolean;
+  sizes?: string[];
+  stones?: string[];
   [key: string]: unknown;
 }
 
@@ -18,7 +21,6 @@ export interface Product {
   category?: Category;
   baseWeight: number;
   additionalValue: number;
-  laborCost: number;
   calculatedPrice: number;
   stock: number;
   status: ProductStatus;
@@ -34,7 +36,6 @@ export interface UpdateProductPayload {
   categoryId?: number;
   baseWeight?: number;
   additionalValue?: number;
-  laborCost?: number;
   stock?: number;
   status?: ProductStatus;
   specifications?: ProductSpecifications;
