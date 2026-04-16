@@ -65,15 +65,30 @@ export const AdminLayout = () => {
 
   return (
     <div
-      className="flex min-h-screen flex-col"
+      className="flex min-h-screen min-w-0 flex-col"
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
+      <a
+        href="#admin-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] focus:rounded-md focus:px-4 focus:py-2"
+        style={{
+          backgroundColor: 'var(--accent)',
+          color: 'var(--accent-text)',
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-sm)',
+          fontWeight: 'var(--font-semibold)',
+        }}
+      >
+        Saltar al contenido
+      </a>
+
       {/* ── Topbar admin ──────────────────────────────────────────── */}
       <AdminTopbar
         onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         isSidebarOpen={sidebarOpen}
         onToggleCollapse={() => setCollapsed((prev) => !prev)}
         isCollapsed={collapsed}
+        sidebarOffset={contentMarginLeft}
       />
 
       {/* ── Área central: sidebar + contenido ────────────────────── */}
@@ -89,9 +104,9 @@ export const AdminLayout = () => {
 
         {/* Contenido del panel actual */}
         <main
-          className="flex-1 overflow-auto transition-all duration-300"
+          id="admin-content"
+          className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 transition-all duration-300 ease-in-out sm:p-6 lg:p-8"
           style={{
-            padding: '2rem',
             marginLeft: contentMarginLeft,
           }}
         >

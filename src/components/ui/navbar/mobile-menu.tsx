@@ -48,42 +48,46 @@ export const MobileMenu = ({
 
   return (
     <>
-      {/* ── Overlay oscuro ────────────────────────────────────────── */}
+      {/* ── Overlay translúcido ───────────────────────────────────── */}
       <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 z-50 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
           isOpen
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0'
         }`}
-        style={{ backgroundColor: 'var(--bg-overlay)' }}
+        style={{
+          backgroundColor:
+            'color-mix(in srgb, var(--bg-overlay) 62%, transparent)',
+        }}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* ── Cajón lateral ─────────────────────────────────────────── */}
+      {/* ── Panel  ─────────────────────────────────────────── */}
       <div
-        className={`fixed top-0 left-0 z-50 flex h-full flex-col transition-transform duration-300 ease-in-out lg:hidden ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-4 bottom-4 left-4 z-50 flex w-[calc(100vw-2rem)] origin-top-left flex-col overflow-x-hidden overflow-y-auto rounded-md border border-black/5 backdrop-blur-2xl transition-[opacity,transform] duration-300 ease-out dark:border-white/5 sm:w-[min(86vw,var(--sidebar-width))] lg:hidden ${
+          isOpen
+            ? 'pointer-events-auto translate-x-0 scale-100 opacity-100'
+            : 'pointer-events-none -translate-x-4 scale-95 opacity-0'
         }`}
         style={{
-          width: 'var(--sidebar-width)',
-          backgroundColor: 'var(--bg-sidebar)',
-          boxShadow: 'var(--shadow-xl)',
+          backgroundColor:
+            'color-mix(in srgb, var(--bg-sidebar) 62%, transparent)',
+          boxShadow: '0 34px 120px rgba(0, 0, 0, 0.22)',
+          backdropFilter: 'blur(32px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(32px) saturate(180%)',
         }}
         role="dialog"
         aria-modal="true"
         aria-label="Menú de navegación"
       >
         {/* Cabecera del cajón */}
-        <div
-          className="flex items-center justify-between px-5 py-4"
-          style={{ borderBottom: '1px solid var(--border-color)' }}
-        >
-          <KobLogo />
+        <div className="flex items-center justify-between border-b border-black/5 px-5 py-5 dark:border-white/5">
+          <KobLogo size={88} className="block" />
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 transition-colors"
-            style={{ color: 'var(--text-muted)' }}
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            style={{ color: 'var(--text-secondary)' }}
             aria-label="Cerrar menú"
           >
             <X size={20} />
@@ -91,7 +95,19 @@ export const MobileMenu = ({
         </div>
 
         {/* Ítems de navegación */}
-        <nav className="flex flex-col gap-1 p-4">
+        <nav className="flex flex-col gap-2 p-5">
+          <p
+            className="px-4 pb-2"
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 'var(--text-2xl)',
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--text-primary)',
+              lineHeight: 'var(--leading-tight)',
+            }}
+          >
+            Joyería KOB
+          </p>
           {navItems.map(({ label, path }) => {
             const isActive = currentPath.startsWith(path);
             return (
@@ -99,22 +115,26 @@ export const MobileMenu = ({
                 key={path}
                 to={path}
                 onClick={onClose}
-                className="flex items-center rounded-md px-4 py-3 transition-colors"
+                className="relative flex items-center rounded-md px-4 py-3 transition-opacity duration-300 hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                 style={{
                   fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--text-base)',
+                  fontSize: 'var(--text-sm)',
                   fontWeight: isActive
                     ? 'var(--font-semibold)'
-                    : 'var(--font-normal)',
-                  color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                  backgroundColor: isActive
-                    ? 'var(--accent-subtle)'
-                    : 'transparent',
-                  borderLeft: isActive
-                    ? '3px solid var(--accent)'
-                    : '3px solid transparent',
+                    : 'var(--font-medium)',
+                  letterSpacing: 'var(--tracking-widest)',
+                  textTransform: 'uppercase',
+                  color: isActive
+                    ? 'var(--text-primary)'
+                    : 'var(--text-secondary)',
                 }}
               >
+                <span
+                  className={`absolute top-3 bottom-3 left-0 w-px transition-opacity ${
+                    isActive ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  style={{ backgroundColor: 'var(--accent)' }}
+                />
                 {label}
               </Link>
             );
@@ -122,20 +142,18 @@ export const MobileMenu = ({
         </nav>
 
         {/* Separador */}
-        <div
-          className="mx-4 h-px"
-          style={{ backgroundColor: 'var(--border-color)' }}
-        />
+        <div className="mx-5 h-px bg-black/5 dark:bg-white/5" />
 
         {/* Sección de usuario */}
-        <div className="p-4">
+        <div className="p-5">
           {isAuthenticated ? (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <p
-                className="px-4 py-2"
+                className="px-4 py-2 uppercase"
                 style={{
                   fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--text-sm)',
+                  fontSize: 'var(--text-xs)',
+                  letterSpacing: 'var(--tracking-widest)',
                   color: 'var(--text-muted)',
                 }}
               >
@@ -144,10 +162,11 @@ export const MobileMenu = ({
               <Link
                 to="/perfil"
                 onClick={onClose}
-                className="flex items-center gap-3 rounded-md px-4 py-3 transition-colors"
+                className="flex items-center gap-3 rounded-md px-4 py-3 transition-opacity duration-300 hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                 style={{
                   fontFamily: 'var(--font-ui)',
                   fontSize: 'var(--text-sm)',
+                  letterSpacing: 'var(--tracking-wide)',
                   color: 'var(--text-secondary)',
                 }}
               >
@@ -158,10 +177,11 @@ export const MobileMenu = ({
                 <Link
                   to="/admin/joyas"
                   onClick={onClose}
-                  className="flex items-center gap-3 rounded-md px-4 py-3 transition-colors"
+                  className="flex items-center gap-3 rounded-md px-4 py-3 transition-opacity duration-300 hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                   style={{
                     fontFamily: 'var(--font-ui)',
                     fontSize: 'var(--text-sm)',
+                    letterSpacing: 'var(--tracking-wide)',
                     color: 'var(--text-secondary)',
                   }}
                 >
@@ -173,11 +193,12 @@ export const MobileMenu = ({
             <Link
               to="/login"
               onClick={onClose}
-              className="flex items-center gap-3 rounded-md px-4 py-3 transition-colors"
+              className="flex items-center gap-3 rounded-md px-4 py-3 transition-opacity duration-300 hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
               style={{
                 fontFamily: 'var(--font-ui)',
-                fontSize: 'var(--text-base)',
+                fontSize: 'var(--text-sm)',
                 fontWeight: 'var(--font-medium)',
+                letterSpacing: 'var(--tracking-wide)',
                 color: 'var(--accent)',
               }}
             >
