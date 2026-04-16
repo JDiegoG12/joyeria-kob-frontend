@@ -34,16 +34,24 @@
  * 3. Nunca usar `fill="#000"`, `fill="#fff"` ni `fill` implícito (negro por defecto).
  */
 
+interface KobLogoProps {
+  /** Tamaño renderizado del SVG en píxeles. */
+  size?: number;
+  /** Clases utilitarias para ajustar el contenedor SVG según el contexto. */
+  className?: string;
+}
+
 /**
  * Logo oficial de la marca Joyería KOB.
  * Cambia automáticamente entre su versión clara y oscura
- * según el tema activo, sin props ni lógica condicional.
+ * según el tema activo, sin lógica condicional.
  */
-export const KobLogo = () => (
+export const KobLogo = ({ size = 80, className }: KobLogoProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    width="80"
-    height="80"
+    width={size}
+    height={size}
+    className={className}
     viewBox="0 0 375 375"
     aria-label="Joyería KOB"
     role="img"

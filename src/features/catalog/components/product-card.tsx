@@ -38,9 +38,7 @@ export const ProductCard = ({
   }, [hasMultipleImages, images.length]);
 
   const handlePreviousImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === 0 ? images.length - 1 : prev - 1,
-    );
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
 
   const handleNextImage = () => {
@@ -80,14 +78,14 @@ export const ProductCard = ({
   };
 
   return (
-    <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 shadow-md transition duration-300 hover:shadow-lg">
+    <div className="group rounded-3xl border border-black/10 bg-[var(--bg-secondary)] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.08)] transition-all duration-[600ms] ease-out hover:-translate-y-1 hover:shadow-[0_30px_100px_rgba(0,0,0,0.14)] dark:border-white/5">
       <div className="relative mb-4 flex h-44 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-900">
         {currentImage ? (
           <>
             <img
               src={`${serverUrl}/uploads/products/${currentImage}`}
               alt={`${product.name} - imagen ${currentImageIndex + 1}`}
-              className="h-full w-full object-cover transition-all duration-500"
+              className="h-full w-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-105"
             />
 
             {hasMultipleImages && (
@@ -117,9 +115,7 @@ export const ProductCard = ({
                       type="button"
                       onClick={() => setCurrentImageIndex(index)}
                       className={`h-2.5 w-2.5 rounded-full transition ${
-                        index === currentImageIndex
-                          ? 'bg-white'
-                          : 'bg-white/40'
+                        index === currentImageIndex ? 'bg-white' : 'bg-white/40'
                       }`}
                       aria-label={`Ver imagen ${index + 1}`}
                     />
@@ -129,9 +125,7 @@ export const ProductCard = ({
             )}
           </>
         ) : (
-          <span className="text-sm text-[var(--text-muted)]">
-            Sin imagen
-          </span>
+          <span className="text-sm text-[var(--text-muted)]">Sin imagen</span>
         )}
       </div>
 

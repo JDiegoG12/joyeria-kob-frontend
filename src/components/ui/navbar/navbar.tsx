@@ -6,24 +6,23 @@
  * - Logo SVG de la marca (izquierda)
  * - Navegación principal: Catálogo, Configurador (centro en desktop)
  * - Acciones: toggle de tema, botón de perfil/login (derecha)
- * - Botón hamburguesa para abrir sidebar de filtros en móvil
+ * - Botón hamburguesa para abrir la navegación móvil
  *
  * ## Responsive
  * - Desktop (lg+): navegación horizontal completa
  * - Móvil/Tablet: navegación colapsada en menú hamburguesa (`MobileMenu`)
  *
  * ## Uso
- * Se monta desde `MainLayout`. Recibe `onOpenSidebar` para controlar
- * el cajón de filtros en móvil.
+ * Se monta desde `MainLayout` como navegación pública flotante.
  *
  * ```tsx
- * <Navbar onOpenSidebar={() => setSidebarOpen(true)} />
+ * <Navbar />
  * ```
  */
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Sun, Moon, User, SlidersHorizontal } from 'lucide-react';
+import { Menu, Sun, Moon, User } from 'lucide-react';
 import { useThemeStore } from '@/store/theme.store';
 import { useAuthStore } from '@/store/auth.store';
 import { MobileMenu } from '@/components/ui/navbar/mobile-menu';
@@ -31,23 +30,15 @@ import { KobLogo } from '@/components/ui/navbar/kob-logo';
 
 /** Ítems de navegación principal del sitio público. */
 const NAV_ITEMS = [
-  { label: 'Catálogo',      path: '/catalogo' },
-  { label: 'Configurador',  path: '/configurador' },
+  { label: 'Catálogo', path: '/catalogo' },
+  { label: 'Configurador', path: '/configurador' },
 ] as const;
-
-interface NavbarProps {
-  /**
-   * Callback que abre el cajón de filtros en móvil.
-   * Se dispara al pulsar el ícono de filtros en pantallas pequeñas.
-   */
-  onOpenSidebar: () => void;
-}
 
 /**
  * Barra de navegación principal del contexto público.
  * Fija en la parte superior, con z-index sobre el contenido.
  */
-export const Navbar = ({ onOpenSidebar }: NavbarProps) => {
+export const Navbar = () => {
   const { pathname } = useLocation();
   const { theme, toggleTheme } = useThemeStore();
   const { isAuthenticated, user } = useAuthStore();
@@ -56,35 +47,48 @@ export const Navbar = ({ onOpenSidebar }: NavbarProps) => {
   return (
     <>
       <header
-        className="fixed top-0 right-0 left-0 z-40"
+        className="fixed top-4 right-4 left-4 z-40 rounded-md border border-white/10 backdrop-blur-2xl"
         style={{
           height: 'var(--navbar-height)',
-          backgroundColor: 'var(--bg-topbar)',
-          borderBottom: '1px solid var(--border-color)',
-          boxShadow: 'var(--shadow-sm)',
+          backgroundColor:
+            'color-mix(in srgb, var(--bg-topbar) 48%, transparent)',
+          boxShadow: '0 24px 90px rgba(0, 0, 0, 0.14)',
+          backdropFilter: 'blur(32px) saturate(190%)',
+          WebkitBackdropFilter: 'blur(32px) saturate(190%)',
         }}
       >
         <div
-          className="mx-auto flex h-full items-center justify-between px-4 lg:px-8"
+          className="mx-auto flex h-full min-w-0 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8"
           style={{ maxWidth: 'var(--content-max-width)' }}
         >
-
           {/* ── Izquierda: hamburguesa móvil + logo ─────────────────── */}
-          <div className="flex items-center gap-3">
-
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             {/* Botón menú hamburguesa — solo móvil */}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="rounded-md p-2 transition-colors lg:hidden"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] lg:hidden"
               style={{ color: 'var(--text-secondary)' }}
               aria-label="Abrir menú"
             >
-              <Menu size={22} />
+              <Menu size={20} />
             </button>
 
             {/* Logo */}
-            <Link to="/catalogo" aria-label="Inicio Joyería KOB">
-              <KobLogo />
+            <Link
+              to="/catalogo"
+              className="group flex h-14 flex-shrink-0 items-center justify-center rounded-md px-2 transition-transform duration-200 ease-out hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] motion-reduce:transition-none motion-reduce:hover:scale-100 sm:h-16 sm:px-3"
+              style={{
+                filter:
+                  theme === 'dark'
+                    ? 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.24))'
+                    : 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08))',
+              }}
+              aria-label="Inicio Joyería KOB"
+            >
+              <KobLogo
+                size={88}
+                className="block transition-[filter] duration-200 group-hover:brightness-110 sm:h-[92px] sm:w-[92px]"
+              />
             </Link>
           </div>
 
@@ -96,26 +100,24 @@ export const Navbar = ({ onOpenSidebar }: NavbarProps) => {
                 <Link
                   key={path}
                   to={path}
-                  className="relative rounded-md px-4 py-2 transition-colors"
+                  className="relative rounded-md px-4 py-2 transition-opacity duration-300 hover:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                   style={{
                     fontFamily: 'var(--font-ui)',
-                    fontSize: 'var(--text-sm)',
+                    fontSize: 'var(--text-xs)',
                     fontWeight: isActive
                       ? 'var(--font-semibold)'
-                      : 'var(--font-normal)',
+                      : 'var(--font-medium)',
+                    letterSpacing: 'var(--tracking-widest)',
+                    textTransform: 'uppercase',
                     color: isActive
-                      ? 'var(--accent)'
+                      ? 'var(--text-primary)'
                       : 'var(--text-secondary)',
-                    backgroundColor: isActive
-                      ? 'var(--accent-subtle)'
-                      : 'transparent',
                   }}
                 >
                   {label}
-                  {/* Línea inferior activa */}
                   {isActive && (
                     <span
-                      className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full"
+                      className="absolute left-1/2 -bottom-0.5 h-1 w-1 -translate-x-1/2 rounded-full"
                       style={{ backgroundColor: 'var(--accent)' }}
                     />
                   )}
@@ -125,24 +127,11 @@ export const Navbar = ({ onOpenSidebar }: NavbarProps) => {
           </nav>
 
           {/* ── Derecha: filtros móvil + toggle tema + perfil ────────── */}
-          <div className="flex items-center gap-1">
-
-            {/* Botón abrir filtros — solo móvil y solo en /catalogo */}
-            {pathname.startsWith('/catalogo') && (
-              <button
-                onClick={onOpenSidebar}
-                className="rounded-md p-2 transition-colors lg:hidden"
-                style={{ color: 'var(--text-secondary)' }}
-                aria-label="Abrir filtros"
-              >
-                <SlidersHorizontal size={20} />
-              </button>
-            )}
-
+          <div className="flex flex-shrink-0 items-center gap-2">
             {/* Toggle de tema claro/oscuro */}
             <button
               onClick={toggleTheme}
-              className="rounded-md p-2 transition-colors"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
               style={{ color: 'var(--text-secondary)' }}
               aria-label={
                 theme === 'light' ? 'Activar modo oscuro' : 'Activar modo claro'
@@ -157,7 +146,7 @@ export const Navbar = ({ onOpenSidebar }: NavbarProps) => {
             ) : (
               <Link
                 to="/login"
-                className="flex items-center gap-2 rounded-md px-3 py-2 transition-colors"
+                className="flex h-10 items-center gap-2 rounded-md px-2 transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:px-3"
                 style={{
                   fontFamily: 'var(--font-ui)',
                   fontSize: 'var(--text-sm)',
@@ -207,7 +196,7 @@ const UserMenu = ({ name, role }: UserMenuProps) => {
     <div className="relative">
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 rounded-md px-3 py-2 transition-colors"
+        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:px-3"
         style={{
           fontFamily: 'var(--font-ui)',
           fontSize: 'var(--text-sm)',
@@ -228,37 +217,38 @@ const UserMenu = ({ name, role }: UserMenuProps) => {
         >
           {firstName.charAt(0).toUpperCase()}
         </span>
-        <span className="hidden sm:inline">Hola, {firstName}</span>
+        <span className="hidden max-w-28 truncate sm:inline">
+          Hola, {firstName}
+        </span>
       </button>
 
       {/* Dropdown */}
-      {open && (
-        <>
-          {/* Cierra al hacer clic fuera */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setOpen(false)}
-          />
-          <div
-            className="absolute right-0 z-50 mt-2 w-48 rounded-lg py-1"
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              boxShadow: 'var(--shadow-md)',
-            }}
-          >
-            <DropdownItem to="/perfil" label="Mi perfil" />
-            {role === 'ADMIN' && (
-              <DropdownItem to="/admin/joyas" label="Panel admin" />
-            )}
-            <div
-              className="my-1 h-px"
-              style={{ backgroundColor: 'var(--border-color)' }}
-            />
-            <DropdownItem to="/logout" label="Cerrar sesión" danger />
-          </div>
-        </>
-      )}
+      <div
+        className={`fixed inset-0 z-40 ${open ? 'block' : 'hidden'}`}
+        onClick={() => setOpen(false)}
+        aria-hidden="true"
+      />
+      <div
+        className={`absolute right-0 z-50 mt-3 w-56 max-w-[calc(100vw-1rem)] origin-top-right rounded-md border border-black/5 py-2 backdrop-blur-xl transition-[opacity,transform] duration-200 ease-out dark:border-white/5 ${
+          open
+            ? 'pointer-events-auto scale-100 opacity-100'
+            : 'pointer-events-none scale-95 opacity-0'
+        }`}
+        style={{
+          backgroundColor:
+            'color-mix(in srgb, var(--bg-secondary) 68%, transparent)',
+          boxShadow: '0 28px 90px rgba(0, 0, 0, 0.16)',
+          backdropFilter: 'blur(24px) saturate(170%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(170%)',
+        }}
+      >
+        <DropdownItem to="/perfil" label="Mi perfil" />
+        {role === 'ADMIN' && (
+          <DropdownItem to="/admin/joyas" label="Panel admin" />
+        )}
+        <div className="my-2 h-px bg-black/5 dark:bg-white/5" />
+        <DropdownItem to="/logout" label="Cerrar sesión" danger />
+      </div>
     </div>
   );
 };
@@ -278,18 +268,16 @@ interface DropdownItemProps {
 const DropdownItem = ({ to, label, danger = false }: DropdownItemProps) => (
   <Link
     to={to}
-    className="block px-4 py-2 transition-colors"
+    className="block px-4 py-2.5 transition-[background-color,color,opacity] duration-300 hover:bg-[var(--bg-hover)] hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
     style={{
       fontFamily: 'var(--font-ui)',
-      fontSize: 'var(--text-sm)',
-      color: danger ? 'var(--color-error)' : 'var(--text-secondary)',
-    }}
-    onMouseEnter={(e) => {
-      (e.currentTarget as HTMLElement).style.backgroundColor =
-        'var(--bg-hover)';
-    }}
-    onMouseLeave={(e) => {
-      (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+      fontSize: 'var(--text-xs)',
+      fontWeight: danger ? 'var(--font-medium)' : 'var(--font-semibold)',
+      letterSpacing: 'var(--tracking-wide)',
+      textTransform: 'uppercase',
+      color: danger
+        ? 'color-mix(in srgb, var(--color-error) 64%, var(--text-secondary))'
+        : 'var(--text-secondary)',
     }}
   >
     {label}

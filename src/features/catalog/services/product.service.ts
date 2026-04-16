@@ -38,10 +38,7 @@ function buildProductFormData(payload: UpdateProductPayload): FormData {
   }
 
   if (payload.specifications !== undefined) {
-    formData.append(
-      'specifications',
-      JSON.stringify(payload.specifications),
-    );
+    formData.append('specifications', JSON.stringify(payload.specifications));
   }
 
   if (payload.imageFiles?.length) {
@@ -51,16 +48,29 @@ function buildProductFormData(payload: UpdateProductPayload): FormData {
   }
 
   if (payload.imagesToDelete?.length) {
-    formData.append(
-      'imagesToDelete',
-      JSON.stringify(payload.imagesToDelete),
-    );
+    formData.append('imagesToDelete', JSON.stringify(payload.imagesToDelete));
   }
 
   return formData;
 }
 
 export const productService = {
+  async getPublic(filters?: {
+    categoryId?: number | null;
+  }): Promise<Product[]> {
+    const params = new URLSearchParams();
+
+    if (filters?.categoryId) {
+      params.set('categoryId', String(filters.categoryId));
+    }
+
+    const query = params.toString();
+    const response = await apiClient.get(
+      `/products${query ? `?${query}` : ''}`,
+    );
+    return response.data.data ?? [];
+  },
+
   async getAll(): Promise<Product[]> {
     const response = await apiClient.get('/products?admin=true');
     return response.data.data ?? [];
