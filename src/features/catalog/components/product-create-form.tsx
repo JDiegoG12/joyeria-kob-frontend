@@ -1,31 +1,28 @@
 /**
- * @file product-edit-form.tsx
- * @description Modal de edición de una joya existente para el panel de
- * administración de Joyería KOB.
+ * @file product-create-form.tsx
+ * @description Modal de creación de una nueva joya para el panel de administración
+ * de Joyería KOB.
  *
- * ## Funcionalidades (paridad con product-create-form)
- * - Carga los valores actuales del producto al abrir.
- * - Selector de categoría en dos pasos pre-inicializado con la categoría actual.
- * - Editor de especificaciones dinámico pre-cargado con las specs actuales.
- * - Precio recalculado en tiempo real usando el precio real del oro del store.
- * - Campo "valor adicional" con formato visual de miles.
- * - Gestión de imágenes: conservar, quitar (marcar para eliminar) y restaurar
- *   las existentes; agregar nuevas con preview y deselección individual.
+ * ## Funcionalidades
+ * - Selector de categoría en dos pasos: principal → subcategoría opcional.
+ * - Editor de especificaciones dinámico con pares clave-valor.
+ * - Preview del precio estimado en tiempo real con el precio real del oro.
+ * - Campo "valor adicional" con formato visual de miles (10000 → 10.000).
+ * - Uploader de imágenes con preview y deselección individual (1–5 archivos).
  * - Validaciones inline por campo (sin `window.alert`).
- * - `ConfirmModal` para descartar cambios sin guardar.
+ * - `ConfirmModal` para cancelación con datos ingresados.
  * - Toast de éxito o error al completar la operación.
  * - Hover y `active:scale-95` en todos los botones interactivos.
  *
- * ## Resolución de categoría al cargar
- * Se usa `product.category.parentId` para determinar si el `categoryId` del
- * producto corresponde a una subcategoría o a una categoría raíz, e inicializar
- * el selector de dos pasos correctamente sin peticiones adicionales al backend.
+ * ## Regla de categoryId
+ * Si el usuario selecciona subcategoría → se envía el ID de la subcategoría.
+ * Si no → se envía el ID de la categoría principal.
  *
- * ## Lógica de imágenes existentes
- * - `existingImages` → nombres de las imágenes que se conservarán.
- * - `imagesToDelete` → nombres marcados para eliminar en el PUT.
- * - `newImages`      → archivos nuevos que se agregarán.
- * - El total (`existingImages.length + newImages.length`) no puede superar 5.
+ * ## Formato del campo "valor adicional"
+ * El campo usa un input de tipo `text` controlado. Se almacena el valor numérico
+ * en el estado y se muestra formateado con `toLocaleString('es-CO')`. Al hacer
+ * foco se muestra el número limpio para edición; al perder el foco se vuelve
+ * a formatear.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -34,7 +31,7 @@ import { useCategorySelector } from '../hooks/use-category-selector';
 import { useGoldPriceStore } from '@/store/gold-price.store';
 import { useToastStore } from '@/store/toast.store';
 import { productService } from '../services/product.service';
-import type { Product, ProductSpecifications } from '../types/product.types';
+import type { ProductSpecifications } from '../types/product.types';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -47,22 +44,25 @@ const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 
 // ─── Clases reutilizables ─────────────────────────────────────────────────────
 
+/** Clases base para inputs de texto y selects del formulario. */
 const INPUT_BASE =
   'w-full rounded-xl border border-[var(--border-color)] bg-transparent px-4 py-3 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]';
 
+/** Clases para el botón primario de acción. */
 const BTN_PRIMARY =
   'rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-[var(--accent-text)] shadow-[var(--shadow-accent)] transition hover:opacity-90 active:scale-95 active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50';
 
+/** Clases para botones secundarios con borde. */
 const BTN_SECONDARY =
   'rounded-xl border border-[var(--border-color)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
-interface EditFormState {
+interface ProductFormState {
   name: string;
   description: string;
   baseWeight: string;
-  /** Solo dígitos. El formato visual se aplica en render. */
+  /** Almacena solo dígitos como string. El formato visual se aplica en render. */
   additionalValue: string;
   stock: string;
 }
@@ -73,7 +73,7 @@ interface SpecEntry {
   value: string;
 }
 
-interface NewImagePreview {
+interface ImagePreview {
   file: File;
   previewUrl: string;
 }
@@ -94,7 +94,7 @@ type FormErrors = Partial<
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const EMPTY_FORM: EditFormState = {
+const EMPTY_FORM: ProductFormState = {
   name: '',
   description: '',
   baseWeight: '',
@@ -104,46 +104,33 @@ const EMPTY_FORM: EditFormState = {
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
-/** Formatea dígitos con separadores de miles (locale colombiano). */
+/**
+ * Formatea un string numérico con separadores de miles en locale colombiano.
+ * Devuelve string vacío si el valor no es un número válido.
+ *
+ * @param raw - String de dígitos sin formato (ej: "1200000").
+ * @returns String formateado (ej: "1.200.000") o vacío si no es válido.
+ */
 const formatThousands = (raw: string): string => {
   const num = parseFloat(raw.replace(/[^0-9]/g, ''));
   if (Number.isNaN(num)) return '';
   return num.toLocaleString('es-CO');
 };
 
-/** Extrae solo los dígitos de un string formateado. */
+/**
+ * Extrae solo los dígitos de un string formateado para almacenarlo en el estado.
+ *
+ * @param formatted - String con separadores (ej: "1.200.000").
+ * @returns String de solo dígitos (ej: "1200000").
+ */
 const stripFormatting = (formatted: string): string =>
   formatted.replace(/[^0-9]/g, '');
 
-/**
- * Convierte el objeto `ProductSpecifications` en filas del editor dinámico.
- * Los booleanos se convierten a "true"/"false".
- * Los arrays se convierten a string separado por coma.
- *
- * @param specs - Especificaciones del producto.
- * @returns Array de filas para el editor de especificaciones.
- */
-const specsToEntries = (specs: ProductSpecifications): SpecEntry[] =>
-  Object.entries(specs).map(([key, value]) => ({
-    id: generateId(),
-    key,
-    value: Array.isArray(value)
-      ? value.join(', ')
-      : typeof value === 'boolean'
-        ? String(value)
-        : String(value ?? ''),
-  }));
-
 // ─── Props ────────────────────────────────────────────────────────────────────
 
-interface ProductEditFormProps {
-  /** Producto a editar. `null` cuando el modal está cerrado. */
-  product: Product | null;
-  /** Controla la visibilidad del modal. */
+interface ProductCreateFormProps {
   isOpen: boolean;
-  /** Callback al cerrar o cancelar. */
   onClose: () => void;
-  /** Callback tras una edición exitosa. */
   onSuccess: () => void;
 }
 
@@ -157,6 +144,9 @@ interface FieldProps {
   children: React.ReactNode;
 }
 
+/**
+ * Envuelve un campo con etiqueta, hint opcional y mensaje de error inline.
+ */
 const Field = ({
   label,
   error,
@@ -188,30 +178,24 @@ const Field = ({
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 /**
- * Modal de edición de joya.
- * Se resetea completamente cada vez que se abre con un producto diferente.
+ * Modal completo para crear una nueva joya.
+ * Se desmonta limpiamente al cerrarse, revocando todas las URLs de objeto.
  */
-export const ProductEditForm = ({
-  product,
+export const ProductCreateForm = ({
   isOpen,
   onClose,
   onSuccess,
-}: ProductEditFormProps) => {
+}: ProductCreateFormProps) => {
   // ── Estado del formulario ──────────────────────────────────────────────────
-  const [form, setForm] = useState<EditFormState>(EMPTY_FORM);
+  const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [isAdditionalValueFocused, setIsAdditionalValueFocused] =
     useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  // ── Estado de imágenes ─────────────────────────────────────────────────────
-  /** Nombres de imágenes existentes que se conservarán. */
-  const [existingImages, setExistingImages] = useState<string[]>([]);
-  /** Nombres de imágenes marcadas para eliminar en el backend. */
-  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
-  /** Archivos nuevos a agregar. */
-  const [newImages, setNewImages] = useState<NewImagePreview[]>([]);
+  // ── Imágenes ───────────────────────────────────────────────────────────────
+  const [images, setImages] = useState<ImagePreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Especificaciones ───────────────────────────────────────────────────────
@@ -224,7 +208,6 @@ export const ProductEditForm = ({
     loadGoldPrice,
   } = useGoldPriceStore();
   const { showToast } = useToastStore();
-  const serverUrl = import.meta.env.VITE_API_URL.replace('/api', '');
 
   // ── Selector de categoría ──────────────────────────────────────────────────
   const {
@@ -237,65 +220,20 @@ export const ProductEditForm = ({
     resolvedCategoryId,
     selectParent,
     selectSub,
-    initializeWith,
+    reset: resetCategories,
   } = useCategorySelector();
-
-  // ── Inicialización al abrir ────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!isOpen || !product) {
-      setForm(EMPTY_FORM);
-      setErrors({});
-      setExistingImages([]);
-      setImagesToDelete([]);
-      setNewImages([]);
-      setSpecEntries([]);
-      return;
-    }
-
-    // Poblar campos del formulario
-    setForm({
-      name: product.name ?? '',
-      description: product.description ?? '',
-      baseWeight: String(product.baseWeight ?? ''),
-      additionalValue: String(product.additionalValue ?? ''),
-      stock: String(product.stock ?? ''),
-    });
-
-    setExistingImages(product.images ?? []);
-    setImagesToDelete([]);
-    setNewImages([]);
-
-    // Poblar especificaciones
-    setSpecEntries(
-      product.specifications && Object.keys(product.specifications).length > 0
-        ? specsToEntries(product.specifications)
-        : [],
-    );
-
-    // Inicializar selector de categoría usando los datos del backend
-    if (product.category) {
-      if (product.category.parentId === null) {
-        // La categoría del producto es raíz
-        initializeWith(product.category.id, null);
-      } else {
-        // La categoría del producto es subcategoría → parentId es el padre
-        initializeWith(product.category.parentId, product.category.id);
-      }
-    }
-  }, [isOpen, product]); // initializeWith es estable, no necesita estar en deps
 
   // Cargar precio del oro al abrir
   useEffect(() => {
     if (isOpen) void loadGoldPrice();
   }, [isOpen, loadGoldPrice]);
 
-  // Revocar URLs de objeto al cerrar o cambiar lista
+  // Revocar URLs al desmontar
   useEffect(() => {
     return () => {
-      newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+      images.forEach((img) => URL.revokeObjectURL(img.previewUrl));
     };
-  }, [newImages]);
+  }, [images]);
 
   // ── Valores parseados ──────────────────────────────────────────────────────
   const parsedValues = useMemo(
@@ -307,9 +245,6 @@ export const ProductEditForm = ({
     [form],
   );
 
-  /** Total de imágenes que quedará tras los cambios actuales. */
-  const totalImages = existingImages.length + newImages.length;
-
   // ── Precio estimado en tiempo real ─────────────────────────────────────────
   const estimatedPrice = useMemo(() => {
     if (goldPricePerGram === null) return null;
@@ -320,99 +255,94 @@ export const ProductEditForm = ({
 
   // ── Detección de cambios ───────────────────────────────────────────────────
   const hasChanges = useMemo(() => {
-    if (!product) return false;
     return (
-      form.name.trim() !== product.name ||
-      form.description.trim() !== product.description ||
-      parsedValues.baseWeight !== Number(product.baseWeight) ||
-      parsedValues.additionalValue !== Number(product.additionalValue) ||
-      parsedValues.stock !== product.stock ||
-      resolvedCategoryId !== product.categoryId ||
-      imagesToDelete.length > 0 ||
-      newImages.length > 0 ||
-      // Comparar specs serializado para detectar cambios
-      JSON.stringify(buildSpecifications()) !==
-        JSON.stringify(product.specifications)
+      form.name.trim() !== '' ||
+      form.description.trim() !== '' ||
+      form.baseWeight !== '' ||
+      form.additionalValue !== '' ||
+      form.stock !== '' ||
+      resolvedCategoryId !== null ||
+      images.length > 0 ||
+      specEntries.some((e) => e.key.trim() !== '' || e.value.trim() !== '')
     );
-  }, [
-    form,
-    parsedValues,
-    product,
-    resolvedCategoryId,
-    imagesToDelete,
-    newImages,
-    specEntries,
-  ]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form, resolvedCategoryId, images, specEntries]);
+
+  // ── Reset del formulario ───────────────────────────────────────────────────
+
+  /** Limpia completamente el formulario y revoca URLs de imágenes. */
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setErrors({});
+    images.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+    setImages([]);
+    setSpecEntries([]);
+    resetCategories();
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   // ── Manejo del cierre ──────────────────────────────────────────────────────
 
+  /**
+   * Intenta cerrar el modal. Si hay cambios, muestra el ConfirmModal de descarte.
+   * Si no hay cambios, cierra directamente.
+   */
   const handleRequestClose = () => {
     if (hasChanges) {
       setShowCancelConfirm(true);
     } else {
-      newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+      resetForm();
       onClose();
     }
   };
 
+  /** Ejecutado al confirmar el descarte en el ConfirmModal. */
   const handleConfirmDiscard = () => {
     setShowCancelConfirm(false);
-    newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+    resetForm();
     onClose();
   };
 
   // ── Actualización de campos ────────────────────────────────────────────────
 
-  const updateField = (field: keyof EditFormState, value: string) => {
+  const updateField = (field: keyof ProductFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field as keyof FormErrors])
+    if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
-  // ── Valor adicional con formato ────────────────────────────────────────────
+  // ── Gestión del campo valor adicional con formato ──────────────────────────
 
+  /**
+   * Maneja el cambio del input de valor adicional.
+   * Almacena solo los dígitos en el estado para mantener el valor numérico limpio.
+   */
   const handleAdditionalValueChange = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    updateField('additionalValue', stripFormatting(e.target.value));
+    const digits = stripFormatting(e.target.value);
+    updateField('additionalValue', digits);
   };
 
+  /**
+   * Valor a mostrar en el input de valor adicional según si tiene foco o no.
+   * - Con foco: muestra los dígitos crudos para edición libre.
+   * - Sin foco: muestra el valor formateado con separadores de miles.
+   */
   const additionalValueDisplay = isAdditionalValueFocused
     ? form.additionalValue
     : formatThousands(form.additionalValue);
 
-  // ── Gestión de imágenes existentes ────────────────────────────────────────
+  // ── Gestión de imágenes ────────────────────────────────────────────────────
 
   /**
-   * Marca una imagen existente para eliminar (la quita de `existingImages`
-   * y la agrega a `imagesToDelete`).
+   * Procesa los archivos del input, valida tipo/tamaño/límite y genera previews.
    */
-  const handleRemoveExistingImage = (imageName: string) => {
-    setExistingImages((prev) => prev.filter((img) => img !== imageName));
-    setImagesToDelete((prev) =>
-      prev.includes(imageName) ? prev : [...prev, imageName],
-    );
-    setErrors((prev) => ({ ...prev, images: undefined }));
-  };
-
-  /**
-   * Restaura una imagen marcada para eliminar (la devuelve a `existingImages`
-   * y la quita de `imagesToDelete`).
-   */
-  const handleRestoreExistingImage = (imageName: string) => {
-    setImagesToDelete((prev) => prev.filter((img) => img !== imageName));
-    setExistingImages((prev) =>
-      prev.includes(imageName) ? prev : [...prev, imageName],
-    );
-  };
-
-  // ── Gestión de imágenes nuevas ─────────────────────────────────────────────
-
-  const handleNewImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
 
-    const availableSlots = MAX_IMAGES - totalImages;
+    const availableSlots = MAX_IMAGES - images.length;
 
     if (availableSlots <= 0) {
       setErrors((prev) => ({
@@ -429,7 +359,7 @@ export const ProductEditForm = ({
     if (invalidType) {
       setErrors((prev) => ({
         ...prev,
-        images: 'Solo se permiten imágenes JPG, PNG o WEBP.',
+        images: 'Solo se permiten imágenes en formato JPG, PNG o WEBP.',
       }));
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -446,18 +376,18 @@ export const ProductEditForm = ({
     }
 
     const filesToAdd = files.slice(0, availableSlots);
-    const previews: NewImagePreview[] = filesToAdd.map((file) => ({
+    const newPreviews: ImagePreview[] = filesToAdd.map((file) => ({
       file,
       previewUrl: URL.createObjectURL(file),
     }));
 
-    setNewImages((prev) => [...prev, ...previews]);
+    setImages((prev) => [...prev, ...newPreviews]);
     setErrors((prev) => ({ ...prev, images: undefined }));
 
     if (files.length > availableSlots) {
       showToast(
         'info',
-        `Solo se agregaron ${availableSlots} imagen(es). Límite alcanzado.`,
+        `Solo se agregaron ${availableSlots} imagen(es). Límite de ${MAX_IMAGES} alcanzado.`,
       );
     }
 
@@ -465,14 +395,17 @@ export const ProductEditForm = ({
   };
 
   /**
-   * Elimina una imagen nueva de la lista y revoca su URL de objeto.
+   * Elimina una imagen de la lista y revoca su URL de objeto.
+   *
+   * @param previewUrl - URL de objeto de la imagen a eliminar.
    */
-  const handleRemoveNewImage = (previewUrl: string) => {
-    setNewImages((prev) => {
+  const handleRemoveImage = (previewUrl: string) => {
+    setImages((prev) => {
       const toRemove = prev.find((img) => img.previewUrl === previewUrl);
       if (toRemove) URL.revokeObjectURL(toRemove.previewUrl);
       return prev.filter((img) => img.previewUrl !== previewUrl);
     });
+    setErrors((prev) => ({ ...prev, images: undefined }));
   };
 
   // ── Gestión de especificaciones ────────────────────────────────────────────
@@ -499,8 +432,14 @@ export const ProductEditForm = ({
     setSpecEntries((prev) => prev.filter((e) => e.id !== id));
   };
 
-  /** Construye el objeto de specs a partir de las filas del editor. */
-  function buildSpecifications(): ProductSpecifications {
+  /**
+   * Convierte las filas del editor en el objeto de especificaciones del backend.
+   * - "true"/"false" → boolean
+   * - Valores con coma → string[]
+   * - Resto → string
+   * Las filas con key o value vacío se descartan.
+   */
+  const buildSpecifications = (): ProductSpecifications => {
     const specs: ProductSpecifications = {};
     specEntries.forEach(({ key, value }) => {
       const k = key.trim();
@@ -516,10 +455,15 @@ export const ProductEditForm = ({
       else specs[k] = v;
     });
     return specs;
-  }
+  };
 
   // ── Validación ─────────────────────────────────────────────────────────────
 
+  /**
+   * Valida todos los campos y acumula errores en `FormErrors`.
+   *
+   * @returns `true` si el formulario es válido.
+   */
   const validateForm = (): boolean => {
     const next: FormErrors = {};
 
@@ -566,10 +510,10 @@ export const ProductEditForm = ({
       next.stock = 'Debe ser un entero ≥ 0.';
     }
 
-    if (totalImages === 0) {
-      next.images = 'Debes conservar o agregar al menos una imagen.';
-    } else if (totalImages > MAX_IMAGES) {
-      next.images = `No puedes superar ${MAX_IMAGES} imágenes en total.`;
+    if (images.length === 0) {
+      next.images = 'Debes agregar al menos una imagen.';
+    } else if (images.length > MAX_IMAGES) {
+      next.images = `No puedes superar ${MAX_IMAGES} imágenes.`;
     }
 
     const keys = specEntries
@@ -592,27 +536,22 @@ export const ProductEditForm = ({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!product || !validateForm()) return;
-    if (!hasChanges) {
-      showToast('info', 'No hay cambios para guardar.');
-      return;
-    }
+    if (!validateForm() || resolvedCategoryId === null) return;
 
     try {
       setSaving(true);
-      await productService.update(product.id, {
+      await productService.create({
         name: form.name.trim(),
         description: form.description.trim(),
-        categoryId: resolvedCategoryId ?? undefined,
+        categoryId: resolvedCategoryId,
         baseWeight: parsedValues.baseWeight,
         additionalValue: parsedValues.additionalValue,
         stock: parsedValues.stock,
         specifications: buildSpecifications(),
-        imageFiles: newImages.map((img) => img.file),
-        imagesToDelete,
+        imageFiles: images.map((img) => img.file),
       });
-      showToast('success', 'Joya actualizada correctamente.');
-      newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+      showToast('success', 'Joya creada correctamente.');
+      resetForm();
       onSuccess();
     } catch (error: unknown) {
       const message =
@@ -623,7 +562,7 @@ export const ProductEditForm = ({
           .response?.data?.message === 'string'
           ? (error as { response: { data: { message: string } } }).response.data
               .message
-          : 'No se pudo actualizar el producto. Intenta de nuevo.';
+          : 'No se pudo crear el producto. Intenta de nuevo.';
       showToast('error', message);
     } finally {
       setSaving(false);
@@ -632,15 +571,9 @@ export const ProductEditForm = ({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  if (!isOpen || !product) return null;
+  if (!isOpen) return null;
 
-  // Imágenes existentes ordenadas según el array original del producto
-  const orderedVisible = (product.images ?? []).filter((img) =>
-    existingImages.includes(img),
-  );
-  const orderedDeleted = (product.images ?? []).filter((img) =>
-    imagesToDelete.includes(img),
-  );
+  const totalImages = images.length;
 
   return (
     <>
@@ -649,24 +582,20 @@ export const ProductEditForm = ({
         className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[var(--bg-overlay)] p-4 py-8"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="edit-form-title"
+        aria-labelledby="create-form-title"
       >
         <div className="w-full max-w-4xl rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 shadow-[var(--shadow-xl)]">
           {/* Encabezado */}
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h2
-                id="edit-form-title"
+                id="create-form-title"
                 className="text-2xl font-semibold text-[var(--text-primary)]"
               >
-                Editar joya
+                Nueva joya
               </h2>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Modifica los datos de{' '}
-                <span className="font-medium text-[var(--text-primary)]">
-                  {product.name}
-                </span>
-                .
+                Completa los datos para agregar una nueva pieza al catálogo.
               </p>
             </div>
             <button
@@ -687,9 +616,9 @@ export const ProductEditForm = ({
             noValidate
           >
             {/* ── Sección 1: Información básica ────────────────────── */}
-            <section aria-labelledby="edit-section-basic">
+            <section aria-labelledby="section-basic">
               <h3
-                id="edit-section-basic"
+                id="section-basic"
                 className="mb-4 text-base font-semibold text-[var(--text-primary)]"
               >
                 Información básica
@@ -727,7 +656,7 @@ export const ProductEditForm = ({
                       onChange={(e) =>
                         updateField('description', e.target.value)
                       }
-                      placeholder="Ej: Anillo en oro blanco de 18k con zafiro central."
+                      placeholder="Ej: Anillo en oro blanco de 18k con zafiro central certificado."
                       className={`${INPUT_BASE} resize-none`}
                     />
                     <p className="mt-1 text-right text-xs text-[var(--text-muted)]">
@@ -776,7 +705,7 @@ export const ProductEditForm = ({
                 {/* Stock */}
                 <div className="md:col-span-2">
                   <Field
-                    label="Stock"
+                    label="Stock inicial"
                     required
                     error={errors.stock}
                     hint="Número entero de unidades disponibles."
@@ -797,66 +726,53 @@ export const ProductEditForm = ({
 
             {/* ── Sección 2: Precio estimado ───────────────────────── */}
             <section
-              aria-labelledby="edit-section-price"
+              aria-labelledby="section-price"
               className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-primary)] p-4"
             >
               <h3
-                id="edit-section-price"
+                id="section-price"
                 className="mb-3 text-base font-semibold text-[var(--text-primary)]"
               >
-                Precio
+                Precio estimado
               </h3>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-8">
-                {/* Precio actual guardado */}
-                <div>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    Precio guardado actualmente
-                  </p>
-                  <p className="text-lg font-semibold text-[var(--text-secondary)]">
-                    ${Number(product.calculatedPrice).toLocaleString('es-CO')}{' '}
-                    COP
-                  </p>
+              {isLoadingGold ? (
+                <p className="text-sm text-[var(--text-muted)]">
+                  Cargando precio del oro...
+                </p>
+              ) : goldPricePerGram === null ? (
+                <p className="text-sm text-red-500">
+                  No se pudo obtener el precio del oro. El cálculo no está
+                  disponible.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-8">
+                  <div>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Precio del oro por gramo
+                    </p>
+                    <p className="text-sm font-medium text-[var(--text-secondary)]">
+                      ${goldPricePerGram.toLocaleString('es-CO')} COP/g
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Estimado (peso × oro + adicional)
+                    </p>
+                    <p className="text-2xl font-bold text-[var(--accent)]">
+                      {estimatedPrice !== null
+                        ? `$${Math.round(estimatedPrice).toLocaleString('es-CO')} COP`
+                        : '—'}
+                    </p>
+                  </div>
                 </div>
-
-                {/* Precio del oro */}
-                {isLoadingGold ? (
-                  <p className="text-sm text-[var(--text-muted)]">
-                    Cargando precio del oro...
-                  </p>
-                ) : goldPricePerGram === null ? (
-                  <p className="text-sm text-red-500">
-                    No se pudo obtener el precio del oro.
-                  </p>
-                ) : (
-                  <>
-                    <div>
-                      <p className="text-xs text-[var(--text-muted)]">
-                        Oro/gramo actual
-                      </p>
-                      <p className="text-sm font-medium text-[var(--text-secondary)]">
-                        ${goldPricePerGram.toLocaleString('es-CO')} COP/g
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-[var(--text-muted)]">
-                        Nuevo precio estimado
-                      </p>
-                      <p className="text-2xl font-bold text-[var(--accent)]">
-                        {estimatedPrice !== null
-                          ? `$${Math.round(estimatedPrice).toLocaleString('es-CO')} COP`
-                          : '—'}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
+              )}
             </section>
 
             {/* ── Sección 3: Categoría ─────────────────────────────── */}
-            <section aria-labelledby="edit-section-category">
+            <section aria-labelledby="section-category">
               <h3
-                id="edit-section-category"
+                id="section-category"
                 className="mb-4 text-base font-semibold text-[var(--text-primary)]"
               >
                 Categoría
@@ -972,11 +888,11 @@ export const ProductEditForm = ({
             </section>
 
             {/* ── Sección 4: Especificaciones ──────────────────────── */}
-            <section aria-labelledby="edit-section-specs">
+            <section aria-labelledby="section-specs">
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
                   <h3
-                    id="edit-section-specs"
+                    id="section-specs"
                     className="text-base font-semibold text-[var(--text-primary)]"
                   >
                     Especificaciones técnicas{' '}
@@ -985,8 +901,8 @@ export const ProductEditForm = ({
                     </span>
                   </h3>
                   <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                    Pares clave-valor. "true"/"false" para booleanos. Separados
-                    por coma para listas.
+                    Pares clave-valor. Usa "true"/"false" para booleanos.
+                    Valores separados por coma se guardan como lista.
                   </p>
                 </div>
                 <button
@@ -1050,10 +966,10 @@ export const ProductEditForm = ({
             </section>
 
             {/* ── Sección 5: Imágenes ──────────────────────────────── */}
-            <section aria-labelledby="edit-section-images">
+            <section aria-labelledby="section-images">
               <div className="mb-4">
                 <h3
-                  id="edit-section-images"
+                  id="section-images"
                   className="text-base font-semibold text-[var(--text-primary)]"
                 >
                   Imágenes
@@ -1062,15 +978,38 @@ export const ProductEditForm = ({
                   </span>
                 </h3>
                 <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                  Entre 1 y {MAX_IMAGES} imágenes en total. JPG, PNG o WEBP.
-                  Máx. {MAX_IMAGE_SIZE_MB} MB por imagen.
+                  Entre 1 y {MAX_IMAGES} imágenes. JPG, PNG o WEBP. Máx.{' '}
+                  {MAX_IMAGE_SIZE_MB} MB por imagen.
                 </p>
               </div>
 
-              {/* Contador global */}
-              <div className="mb-4 flex items-center justify-between text-sm">
+              {/* Zona de carga */}
+              {totalImages < MAX_IMAGES && (
+                <label className="group mb-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border-color)] bg-[var(--bg-primary)] px-6 py-10 text-center transition hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)]">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <div className="mb-3 text-3xl opacity-60 transition group-hover:scale-110 group-hover:opacity-80">
+                    📤
+                  </div>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">
+                    Haz clic o arrastra imágenes aquí
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--text-muted)]">
+                    Puedes agregar {MAX_IMAGES - totalImages} imagen(es) más
+                  </p>
+                </label>
+              )}
+
+              {/* Contador */}
+              <div className="mb-3 flex items-center justify-between text-sm">
                 <span className="text-[var(--text-secondary)]">
-                  Total de imágenes
+                  Imágenes seleccionadas
                 </span>
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -1085,131 +1024,37 @@ export const ProductEditForm = ({
                 </span>
               </div>
 
-              {/* Imágenes existentes — conservar */}
-              {orderedVisible.length > 0 && (
-                <div className="mb-4">
-                  <p className="mb-3 text-sm font-medium text-[var(--text-secondary)]">
-                    Imágenes actuales (se conservarán)
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    {orderedVisible.map((imageName) => (
-                      <div
-                        key={imageName}
-                        className="overflow-hidden rounded-2xl border border-[var(--border-color)] transition hover:border-[var(--border-strong)]"
-                      >
-                        <img
-                          src={`${serverUrl}/uploads/products/${imageName}`}
-                          alt={product.name}
-                          className="h-32 w-full object-cover"
-                        />
-                        <div className="p-2">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveExistingImage(imageName)}
-                            className="w-full rounded-lg bg-red-500 px-2 py-1.5 text-xs font-medium text-white transition hover:bg-red-600 active:scale-95"
-                          >
-                            Quitar
-                          </button>
-                        </div>
+              {/* Grid de previews */}
+              {totalImages > 0 && (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
+                  {images.map((img) => (
+                    <div
+                      key={img.previewUrl}
+                      className="overflow-hidden rounded-2xl border border-[var(--border-color)] transition hover:border-[var(--border-strong)]"
+                    >
+                      <img
+                        src={img.previewUrl}
+                        alt={`Preview de ${img.file.name}`}
+                        className="h-32 w-full object-cover"
+                      />
+                      <div className="p-2">
+                        <p
+                          className="truncate text-xs text-[var(--text-muted)]"
+                          title={img.file.name}
+                        >
+                          {img.file.name}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(img.previewUrl)}
+                          className="mt-1 w-full rounded-lg bg-red-500 px-2 py-1.5 text-xs font-medium text-white transition hover:bg-red-600 active:scale-95"
+                        >
+                          Quitar
+                        </button>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-              {/* Imágenes marcadas para eliminar */}
-              {orderedDeleted.length > 0 && (
-                <div className="mb-4">
-                  <p className="mb-3 text-sm font-medium text-amber-600 dark:text-amber-400">
-                    Marcadas para eliminar
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    {orderedDeleted.map((imageName) => (
-                      <div
-                        key={imageName}
-                        className="overflow-hidden rounded-2xl border border-red-500/40 opacity-60 transition hover:opacity-80"
-                      >
-                        <img
-                          src={`${serverUrl}/uploads/products/${imageName}`}
-                          alt={product.name}
-                          className="h-32 w-full object-cover"
-                        />
-                        <div className="p-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleRestoreExistingImage(imageName)
-                            }
-                            className="w-full rounded-lg border border-[var(--border-color)] px-2 py-1.5 text-xs font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] active:scale-95"
-                          >
-                            Restaurar
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Nuevas imágenes */}
-              {newImages.length > 0 && (
-                <div className="mb-4">
-                  <p className="mb-3 text-sm font-medium text-[var(--text-secondary)]">
-                    Nuevas imágenes
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    {newImages.map((img) => (
-                      <div
-                        key={img.previewUrl}
-                        className="overflow-hidden rounded-2xl border border-[var(--accent)]/30 transition hover:border-[var(--accent)]/60"
-                      >
-                        <img
-                          src={img.previewUrl}
-                          alt={`Preview ${img.file.name}`}
-                          className="h-32 w-full object-cover"
-                        />
-                        <div className="p-2">
-                          <p
-                            className="truncate text-xs text-[var(--text-muted)]"
-                            title={img.file.name}
-                          >
-                            {img.file.name}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveNewImage(img.previewUrl)}
-                            className="mt-1 w-full rounded-lg bg-red-500 px-2 py-1.5 text-xs font-medium text-white transition hover:bg-red-600 active:scale-95"
-                          >
-                            Quitar
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Zona de carga */}
-              {totalImages < MAX_IMAGES && (
-                <label className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border-color)] bg-[var(--bg-primary)] px-6 py-8 text-center transition hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)]">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    onChange={handleNewImagesChange}
-                    className="hidden"
-                  />
-                  <div className="mb-2 text-2xl opacity-60 transition group-hover:scale-110 group-hover:opacity-80">
-                    📤
-                  </div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">
-                    Agregar imágenes
-                  </p>
-                  <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                    Puedes agregar {MAX_IMAGES - totalImages} imagen(es) más
-                  </p>
-                </label>
               )}
 
               {errors.images && (
@@ -1228,12 +1073,8 @@ export const ProductEditForm = ({
               >
                 Cancelar
               </button>
-              <button
-                type="submit"
-                disabled={saving || !hasChanges}
-                className={BTN_PRIMARY}
-              >
-                {saving ? 'Guardando...' : 'Guardar cambios'}
+              <button type="submit" disabled={saving} className={BTN_PRIMARY}>
+                {saving ? 'Creando joya...' : 'Crear joya'}
               </button>
             </div>
           </form>
@@ -1245,7 +1086,7 @@ export const ProductEditForm = ({
         isOpen={showCancelConfirm}
         variant="danger"
         title="¿Descartar cambios?"
-        message="Los cambios realizados se perderán y la joya quedará sin modificaciones."
+        message="Los datos ingresados se perderán y no podrás recuperarlos."
         confirmLabel="Sí, descartar"
         cancelLabel="Seguir editando"
         onConfirm={handleConfirmDiscard}
