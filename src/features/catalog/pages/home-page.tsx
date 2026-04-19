@@ -191,7 +191,7 @@ export const HomePage = () => {
                   color: 'var(--accent)',
                 }}
               >
-                Joyería de autor · Selección privada
+                Oro 18K · Hecho a medida
               </p>
 
               <h1
@@ -238,7 +238,7 @@ export const HomePage = () => {
                   color: 'var(--text-primary)',
                 }}
               >
-                Piezas para una presencia sin ruido.
+                Piezas que imponen presencia.
               </p>
               <p
                 className="mt-4"
