@@ -5,7 +5,9 @@
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { AuthService } from '@/features/auth/services/auth.service'; // ✅
 
 interface FormState {
   email: string;
@@ -13,6 +15,8 @@ interface FormState {
 }
 
 export const LoginPage = () => {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState<FormState>({
     email: '',
     password: '',
@@ -57,8 +61,19 @@ export const LoginPage = () => {
 
     try {
       setLoading(true);
-      await new Promise((r) => setTimeout(r, 800));
-      alert('Login listo (esperando backend)');
+
+      // ✅ Llamada real al servicio de autenticación
+      await AuthService.login({
+        email: form.email,
+        password: form.password,
+      });
+
+      toast.success('¡Bienvenida de vuelta! 💎');
+      navigate('/catalogo');
+
+    } catch (error: any) {
+      const message = error?.message || 'Error al iniciar sesión';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -164,16 +179,6 @@ export const LoginPage = () => {
                   className="font-medium text-[var(--accent)] transition hover:opacity-80"
                 >
                   Regístrate
-                </Link>
-              </p>
-
-              <p className="text-sm text-[var(--text-secondary)]">
-                ¿Eres administrador?{' '}
-                <Link
-                  to="/admin/login"
-                  className="font-medium text-[var(--text-primary)] transition hover:opacity-80"
-                >
-                  Acceso al panel
                 </Link>
               </p>
             </div>

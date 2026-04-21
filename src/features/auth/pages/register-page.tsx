@@ -5,7 +5,9 @@
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { AuthService } from '@/features/auth/services/auth.service'; // ✅
 
 interface FormState {
   firstName: string;
@@ -16,6 +18,8 @@ interface FormState {
 }
 
 export const RegisterPage = () => {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState<FormState>({
     firstName: '',
     lastName: '',
@@ -79,8 +83,21 @@ export const RegisterPage = () => {
 
     try {
       setLoading(true);
-      await new Promise((r) => setTimeout(r, 800));
-      alert('Registro listo (esperando backend)');
+
+      // ✅ Se envían name, lastName, email y password — todos requeridos por el backend
+      await AuthService.register({
+        name: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
+      });
+
+      toast.success('¡Cuenta creada exitosamente! 💎');
+      navigate('/login');
+
+    } catch (error: any) {
+      const message = error?.message || 'Error al crear la cuenta';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
