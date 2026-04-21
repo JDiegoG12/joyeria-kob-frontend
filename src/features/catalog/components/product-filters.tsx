@@ -25,11 +25,11 @@ export const ProductFilters = ({
         className="flex-1 rounded-xl border border-[var(--border-color)] bg-transparent px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
       />
 
-      {/* 🔽 Select corregido */}
+      {/* 🔽 Select */}
       <select
         value={statusFilter}
         onChange={(e) => onStatusFilterChange(e.target.value)}
-        className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+        className="cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[var(--text-primary)] transition hover:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
       >
         <option value="" className="bg-white text-black">
           Todos los estados
@@ -49,7 +49,7 @@ export const ProductFilters = ({
       <button
         type="button"
         onClick={onClear}
-        className="rounded-xl border border-[var(--border-color)] px-5 py-3 transition hover:bg-[var(--bg-tertiary)]"
+        className="cursor-pointer rounded-xl border border-[var(--border-color)] px-5 py-3 transition-all duration-200 hover:bg-[var(--bg-tertiary)] active:scale-95"
       >
         Limpiar
       </button>

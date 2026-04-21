@@ -78,46 +78,50 @@ export const ProductCard = ({
   };
 
   return (
-    <div className="group rounded-3xl border border-black/10 bg-[var(--bg-secondary)] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.08)] transition-all duration-[600ms] ease-out hover:-translate-y-1 hover:shadow-[0_30px_100px_rgba(0,0,0,0.14)] dark:border-white/5">
+    <div className="group rounded-3xl border border-black/10 bg-[var(--bg-secondary)] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.08)] transition-all duration-[500ms] ease-out hover:-translate-y-1 hover:shadow-[0_30px_100px_rgba(0,0,0,0.14)] dark:border-white/5">
+      
+      {/* IMAGE */}
       <div className="relative mb-4 flex h-44 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-900">
         {currentImage ? (
           <>
             <img
               src={`${serverUrl}/uploads/products/${currentImage}`}
               alt={`${product.name} - imagen ${currentImageIndex + 1}`}
-              className="h-full w-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-105"
+              className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             />
 
             {hasMultipleImages && (
               <>
+                {/* LEFT */}
                 <button
                   type="button"
                   onClick={handlePreviousImage}
-                  className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
-                  aria-label="Imagen anterior"
+                  className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70 cursor-pointer active:scale-90"
                 >
                   ‹
                 </button>
 
+                {/* RIGHT */}
                 <button
                   type="button"
                   onClick={handleNextImage}
-                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
-                  aria-label="Imagen siguiente"
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70 cursor-pointer active:scale-90"
                 >
                   ›
                 </button>
 
+                {/* DOTS */}
                 <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1">
                   {images.map((_, index) => (
                     <button
                       key={`${product.id}-dot-${index}`}
                       type="button"
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`h-2.5 w-2.5 rounded-full transition ${
-                        index === currentImageIndex ? 'bg-white' : 'bg-white/40'
+                      className={`h-2.5 w-2.5 rounded-full transition cursor-pointer ${
+                        index === currentImageIndex
+                          ? 'bg-white scale-110'
+                          : 'bg-white/40'
                       }`}
-                      aria-label={`Ver imagen ${index + 1}`}
                     />
                   ))}
                 </div>
@@ -125,10 +129,13 @@ export const ProductCard = ({
             )}
           </>
         ) : (
-          <span className="text-sm text-[var(--text-muted)]">Sin imagen</span>
+          <span className="text-sm text-[var(--text-muted)]">
+            Sin imagen
+          </span>
         )}
       </div>
 
+      {/* INFO */}
       <h3 className="text-lg font-semibold">{product.name}</h3>
 
       <p className="mt-1 line-clamp-2 text-sm text-[var(--text-secondary)]">
@@ -153,11 +160,12 @@ export const ProductCard = ({
         {getStatusLabel(product.status)}
       </span>
 
+      {/* ACTIONS */}
       <div className="mt-4 flex gap-2">
         <button
           type="button"
           onClick={() => onEdit(product)}
-          className="flex-1 rounded-xl bg-[var(--accent)] py-2 text-white transition hover:opacity-90"
+          className="flex-1 cursor-pointer rounded-xl bg-[var(--accent)] py-2 text-white font-medium transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-95 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
         >
           Editar
         </button>
@@ -166,7 +174,7 @@ export const ProductCard = ({
           type="button"
           onClick={() => onToggleVisibility(product)}
           disabled={isProcessing}
-          className="flex-1 rounded-xl border border-[var(--border-color)] py-2 transition hover:bg-[var(--bg-tertiary)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex-1 cursor-pointer rounded-xl border border-[var(--border-color)] py-2 font-medium transition-all duration-200 hover:bg-[var(--bg-tertiary)] hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isProcessing
             ? 'Procesando...'

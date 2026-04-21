@@ -205,7 +205,7 @@ export const AdminJewelryPage = () => {
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="shrink-0 rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-medium text-[var(--accent-text)] shadow-[var(--shadow-accent)] transition hover:opacity-90 active:scale-95"
+            className="cursor-pointer shrink-0 rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-medium text-[var(--accent-text)] shadow-[var(--shadow-accent)] transition hover:opacity-90 active:scale-95"
           >
             + Agregar joya
           </button>
