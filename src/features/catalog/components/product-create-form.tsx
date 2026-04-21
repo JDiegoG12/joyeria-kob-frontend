@@ -50,11 +50,11 @@ const INPUT_BASE =
 
 /** Clases para el botón primario de acción. */
 const BTN_PRIMARY =
-  'rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-[var(--accent-text)] shadow-[var(--shadow-accent)] transition hover:opacity-90 active:scale-95 active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50';
+  'rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-[var(--accent-text)] shadow-[var(--shadow-accent)] transition hover:opacity-90 active:scale-95 active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
 
 /** Clases para botones secundarios con borde. */
 const BTN_SECONDARY =
-  'rounded-xl border border-[var(--border-color)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
+  'rounded-xl border border-[var(--border-color)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -678,6 +678,7 @@ export const ProductCreateForm = ({
                     min="0.01"
                     value={form.baseWeight}
                     onChange={(e) => updateField('baseWeight', e.target.value)}
+                    onWheel={(e) => e.currentTarget.blur()}
                     placeholder="4.5"
                     className={INPUT_BASE}
                   />
@@ -716,6 +717,7 @@ export const ProductCreateForm = ({
                       min="0"
                       value={form.stock}
                       onChange={(e) => updateField('stock', e.target.value)}
+                      onWheel={(e) => e.currentTarget.blur()}
                       placeholder="5"
                       className={INPUT_BASE}
                     />
@@ -806,7 +808,7 @@ export const ProductCreateForm = ({
                             categoryId: undefined,
                           }));
                       }}
-                      className={`${INPUT_BASE} bg-[var(--bg-secondary)]`}
+                      className={`${INPUT_BASE} bg-[var(--bg-secondary)] cursor-pointer`}
                     >
                       <option
                         value=""
@@ -857,7 +859,7 @@ export const ProductCreateForm = ({
                               : Number(e.target.value),
                           )
                         }
-                        className={`${INPUT_BASE} bg-[var(--bg-secondary)]`}
+                        className={`${INPUT_BASE} bg-[var(--bg-secondary)] cursor-pointer`}
                       >
                         <option
                           value=""
@@ -908,7 +910,7 @@ export const ProductCreateForm = ({
                 <button
                   type="button"
                   onClick={addSpecEntry}
-                  className="shrink-0 rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm font-medium transition hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] active:scale-95"
+                  className="shrink-0 rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm font-medium transition hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] active:scale-95 cursor-pointer"
                 >
                   + Agregar
                 </button>
@@ -1047,7 +1049,7 @@ export const ProductCreateForm = ({
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(img.previewUrl)}
-                          className="mt-1 w-full rounded-lg bg-red-500 px-2 py-1.5 text-xs font-medium text-white transition hover:bg-red-600 active:scale-95"
+                          className="mt-1 w-full rounded-lg bg-red-500 px-2 py-1.5 text-xs font-medium text-white transition hover:bg-red-600 active:scale-95 cursor-pointer"
                         >
                           Quitar
                         </button>

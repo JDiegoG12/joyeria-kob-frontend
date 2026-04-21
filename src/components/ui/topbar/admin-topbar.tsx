@@ -149,7 +149,7 @@ export const AdminTopbar = ({
 
         {/* Nombre de la sección activa */}
         <h1
-          className="min-w-0 truncate"
+          className="min-w-0 truncate text-[var(--text-base)] sm:text-[var(--text-xl)]"
           style={{
             fontFamily: 'var(--font-heading)',
             fontSize: 'var(--text-xl)',

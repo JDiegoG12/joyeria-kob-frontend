@@ -69,10 +69,10 @@ export interface ConfirmModalProps {
 /** Mapa de clases CSS para el botón de acción según variante. */
 const CONFIRM_BUTTON_CLASSES: Record<ConfirmModalVariant, string> = {
   danger:
-    'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 active:scale-95',
+    'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 active:scale-95 cursor-pointer',
   warning:
-    'bg-amber-500 text-white hover:bg-amber-600 active:bg-amber-700 active:scale-95',
-  info: 'bg-[var(--accent)] text-[var(--accent-text)] hover:opacity-90 active:opacity-80 active:scale-95',
+    'bg-amber-500 text-white hover:bg-amber-600 active:bg-amber-700 active:scale-95 cursor-pointer',
+  info: 'bg-[var(--accent)] text-[var(--accent-text)] hover:opacity-90 active:opacity-80 active:scale-95 cursor-pointer',
 };
 
 /** Mapa de iconos SVG inline por variante. */
@@ -226,7 +226,7 @@ export const ConfirmModal = ({
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="rounded-xl border border-[var(--border-color)] px-5 py-2.5 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-[var(--border-color)] px-5 py-2.5 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
             {cancelLabel}
           </button>

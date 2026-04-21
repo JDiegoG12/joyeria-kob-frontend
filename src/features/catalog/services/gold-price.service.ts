@@ -4,7 +4,7 @@
  * desde el backend de Joyería KOB.
  *
  * ## Endpoint que consume
- * - `GET /api/admin/gold-price` → Retorna el precio por gramo y la fecha
+ * - `GET /system/gold-price` → Retorna el precio por gramo y la fecha
  *   de última actualización. Este endpoint es de solo lectura y no requiere
  *   autenticación.
  *
@@ -53,7 +53,7 @@ export const GoldPriceService = {
      */
     getCurrent: async (): Promise<GoldPriceData> => {
         const response =
-            await apiClient.get<GoldPriceApiResponse>('/admin/gold-price');
+            await apiClient.get<GoldPriceApiResponse>('/system/gold-price');
         return response.data.data;
     },
 };
