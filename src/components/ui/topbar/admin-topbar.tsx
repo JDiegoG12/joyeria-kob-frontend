@@ -56,6 +56,7 @@ import { AuthService } from '@/features/auth/services/auth.service';
  * Agregar aquí cada nueva ruta de administración que se cree.
  */
 const SECTION_LABELS: Record<string, string> = {
+  '/admin/general': 'Configuración General',
   '/admin/metricas': 'Métricas',
   '/admin/joyas': 'Gestión de Joyas',
   '/admin/categorias': 'Gestión de Categorías',

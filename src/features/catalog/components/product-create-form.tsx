@@ -247,7 +247,7 @@ export const ProductCreateForm = ({
 
   // ── Precio estimado en tiempo real ─────────────────────────────────────────
   const estimatedPrice = useMemo(() => {
-    if (goldPricePerGram === null) return null;
+    if (goldPricePerGram == null) return null;
     const { baseWeight, additionalValue } = parsedValues;
     if (Number.isNaN(baseWeight) || Number.isNaN(additionalValue)) return null;
     return baseWeight * goldPricePerGram + additionalValue;
@@ -742,7 +742,7 @@ export const ProductCreateForm = ({
                 <p className="text-sm text-[var(--text-muted)]">
                   Cargando precio del oro...
                 </p>
-              ) : goldPricePerGram === null ? (
+              ) : goldPricePerGram == null ? (
                 <p className="text-sm text-red-500">
                   No se pudo obtener el precio del oro. El cálculo no está
                   disponible.

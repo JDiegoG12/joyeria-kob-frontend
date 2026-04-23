@@ -10,6 +10,7 @@
  * /registro                  → Registro de cliente (sin MainLayout)
  * /admin/login               → Inicio de sesión administrador (sin MainLayout)
  * /admin                     → Redirige a /admin/joyas
+ * /admin/general             → Configuración general (AdminLayout + ProtectedRoute ADMIN)
  * /admin/metricas            → Métricas (AdminLayout + ProtectedRoute ADMIN)
  * /admin/joyas               → CRUD de joyas (AdminLayout + ProtectedRoute ADMIN)
  * /admin/categorias          → Gestión de categorías (AdminLayout + ProtectedRoute ADMIN)
@@ -40,6 +41,7 @@ import { LoginPage } from '@/features/auth/pages/login-page';
 import { RegisterPage } from '@/features/auth/pages/register-page';
 import { AdminLoginPage } from '@/features/auth/pages/admin-login-page';
 import { AdminJewelryPage } from '@/features/catalog/pages/admin-jewelry-page';
+import { AdminGeneralPage } from '@/features/general/pages/admin-general-page';
 import { NotFoundPage } from '@/features/shared/pages/not-found-page';
 import { PlaceholderPage } from '@/features/shared/pages/placeholder-page';
 import { AdminCategoriesPage } from '@/features/categories/pages/admin-categories-page';
@@ -70,22 +72,22 @@ export const router = createBrowserRouter([
 
   // ─── Rutas de autenticación SIN MainLayout ───────────────────────────────
   {
-  element: <AuthLayout />,
-  children: [
-    {
-      path: '/login',
-      element: <LoginPage />,
-    },
-    {
-      path: '/registro',
-      element: <RegisterPage />,
-    },
-    {
-      path: '/admin/login',
-      element: <AdminLoginPage />,
-    },
-  ],
-},
+    element: <AuthLayout />,
+    children: [
+      {
+        path: '/login',
+        element: <LoginPage />,
+      },
+      {
+        path: '/registro',
+        element: <RegisterPage />,
+      },
+      {
+        path: '/admin/login',
+        element: <AdminLoginPage />,
+      },
+    ],
+  },
 
   // ─── Rutas protegidas de administración — usan AdminLayout ───────────────
   //
@@ -103,6 +105,10 @@ export const router = createBrowserRouter([
       {
         path: '/admin',
         element: <Navigate to="/admin/joyas" replace />,
+      },
+      {
+        path: '/admin/general',
+        element: <AdminGeneralPage />,
       },
       {
         path: '/admin/metricas',
