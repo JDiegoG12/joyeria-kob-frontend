@@ -16,6 +16,7 @@
  *
  * ## Secciones de navegación
  * ```
+ * ├── General           /admin/general      ← Configuración global del sistema
  * ├── Métricas          /admin/metricas
  * ├── Joyas             /admin/joyas        ← navegable + expandible
  * │   └── Categorías    /admin/categorias   ← subítem
@@ -69,6 +70,7 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  Settings2,
 } from 'lucide-react';
 import { KobLogo } from '@/components/ui/navbar/kob-logo';
 
@@ -91,6 +93,11 @@ interface NavItem {
 // ─── Estructura de navegación ─────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
+  {
+    label: 'General',
+    path: '/admin/general',
+    icon: Settings2,
+  },
   {
     label: 'Métricas',
     path: '/admin/metricas',

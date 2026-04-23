@@ -31,51 +31,56 @@
  * const estimatedPrice = baseWeight * goldPricePerGram + additionalValue;
  * ```
  */
-
 import { create } from 'zustand';
-import { GoldPriceService } from '@/features/catalog/services/gold-price.service';
+import { GeneralService } from '@/features/general/services/general.service';
 
 // ─── Forma del estado ─────────────────────────────────────────────────────────
-
 interface GoldPriceState {
     // ── Datos ──────────────────────────────────────────────────────────────────
 
     /**
-     * Precio del oro por gramo en COP.
-     * Es `null` mientras no se ha cargado por primera vez.
-     */
+   * Precio del oro por gramo en COP.
+   * Es `null` mientras no se ha cargado por primera vez.
+   */
     goldPricePerGram: number | null;
 
     /**
-     * Fecha de la última actualización del precio en el sistema.
-     * Es `null` mientras no se ha cargado por primera vez.
-     */
+   * Fecha de la última actualización del precio en el sistema.
+   * Es `null` mientras no se ha cargado por primera vez.
+   */
     lastUpdate: string | null;
 
     // ── Estado de carga ────────────────────────────────────────────────────────
-
     /** `true` mientras se está obteniendo el precio del backend. */
     isLoading: boolean;
 
     /** Mensaje de error si la carga falló, o `null` si no hay error. */
     error: string | null;
 
-    // ── Acciones ───────────────────────────────────────────────────────────────
+    /**
+   * Carga el precio del oro desde el backend.
+   * Evita peticiones duplicadas si el precio ya fue cargado previamente.
+   *
+   * @param force - Si `true`, recarga aunque el precio ya esté en memoria.
+   *
+   * @example
+   * ```tsx
+   * useEffect(() => {
+   *   void loadGoldPrice();
+   * }, [loadGoldPrice]);
+   * ```
+   */
+    loadGoldPrice: (force?: boolean) => Promise<void>;
 
     /**
-     * Carga el precio del oro desde el backend.
-     * Evita peticiones duplicadas si el precio ya fue cargado previamente.
-     *
-     * @param force - Si `true`, recarga aunque el precio ya esté en memoria.
-     *
-     * @example
-     * ```tsx
-     * useEffect(() => {
-     *   void loadGoldPrice();
-     * }, [loadGoldPrice]);
-     * ```
-     */
-    loadGoldPrice: (force?: boolean) => Promise<void>;
+   * Actualiza el precio del oro en el store local sin llamar al backend.
+   * Se usa tras una actualización exitosa desde `GoldPriceCard` para
+   * mantener el store sincronizado con el servidor.
+   *
+   * @param goldPricePerGram - Nuevo precio del oro en COP.
+   * @param lastUpdate - Fecha ISO de la actualización.
+   */
+    setGoldPrice: (goldPricePerGram: number, lastUpdate: string) => void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -92,10 +97,12 @@ export const useGoldPriceStore = create<GoldPriceState>()((set, get) => ({
     isLoading: false,
     error: null,
 
-    // ── loadGoldPrice ───────────────────────────────────────────────────────────
+    // ── loadGoldPrice ─────────────────────────────────────────────────────────
     loadGoldPrice: async (force = false) => {
-        // Evita recargar si ya hay un precio en memoria y no se fuerza la recarga
-        if (!force && get().goldPricePerGram !== null) return;
+        const current = get().goldPricePerGram;
+        // Evita recargar si ya hay un precio en memoria y no se fuerza la recarga.
+        // Se compara con != null para atrapar tanto null como undefined.
+        if (!force && current != null) return;
 
         // Evita lanzar una segunda petición si ya hay una en curso
         if (get().isLoading) return;
@@ -103,7 +110,9 @@ export const useGoldPriceStore = create<GoldPriceState>()((set, get) => ({
         set({ isLoading: true, error: null });
 
         try {
-            const data = await GoldPriceService.getCurrent();
+            // GeneralService.getGoldPrice() ahora devuelve directamente { goldPricePerGram, lastUpdate }
+            const data = await GeneralService.getGoldPrice();
+
             set({
                 goldPricePerGram: data.goldPricePerGram,
                 lastUpdate: data.lastUpdate,
@@ -115,5 +124,10 @@ export const useGoldPriceStore = create<GoldPriceState>()((set, get) => ({
                 isLoading: false,
             });
         }
+    },
+
+    // ── setGoldPrice ──────────────────────────────────────────────────────────
+    setGoldPrice: (goldPricePerGram: number, lastUpdate: string) => {
+        set({ goldPricePerGram, lastUpdate });
     },
 }));
