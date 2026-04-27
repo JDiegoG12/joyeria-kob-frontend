@@ -11,14 +11,22 @@
  * 1. La tarjeta carga el precio actual desde el store al montarse.
  * 2. El administrador edita el campo — el valor se formatea en tiempo real
  *    con separadores de miles (ej. `365000` → `365.000`).
- * 3. Al pulsar "Actualizar", se abre un `ConfirmModal` mostrando el nuevo valor.
- * 4. Al confirmar, se llama al backend. El resultado dispara un toast de
+ * 3. El botón "Actualizar" se habilita solo cuando el valor ingresado
+ *    difiere del precio actualmente guardado en el store.
+ * 4. Al pulsar "Actualizar", se abre un `ConfirmModal` mostrando el valor nuevo.
+ * 5. Al confirmar, se llama al backend. El resultado dispara un toast de
  *    éxito o error y, en caso de éxito, se actualiza el store global.
  *
  * ## Formateo del campo
  * - Solo se aceptan dígitos. Cualquier carácter no numérico se descarta.
  * - El separador de miles es el punto (`.`), conforme a la convención colombiana.
  * - El valor enviado al backend es el número limpio sin formato.
+ *
+ * ## Estado del botón
+ * - **Deshabilitado** cuando el valor del campo es igual al precio guardado,
+ *   cuando el campo está vacío, o cuando hay una petición en curso.
+ * - **Habilitado** únicamente cuando el valor numérico del campo difiere
+ *   del `goldPricePerGram` actual en el store.
  *
  * ## Uso
  * ```tsx
@@ -51,7 +59,7 @@ const formatCOP = (value: number): string =>
  * Elimina puntos y cualquier carácter no numérico antes de parsear.
  *
  * @param formatted - Cadena formateada (ej. `"365.000"`).
- * @returns El número entero correspondiente, o `NaN` si no es válido.
+ * @returns El número entero correspondiente, o `NaN` si la cadena es inválida.
  */
 const parseFormattedCOP = (formatted: string): number =>
   parseInt(formatted.replace(/\./g, '').replace(/\D/g, ''), 10);
@@ -61,6 +69,8 @@ const parseFormattedCOP = (formatted: string): number =>
 /**
  * Tarjeta de configuración del precio del oro.
  * Lee el precio actual del store y permite actualizarlo con confirmación.
+ * El botón de acción solo se habilita cuando el valor del campo
+ * difiere del precio guardado actualmente en el store.
  */
 export const GoldPriceCard = () => {
   const {
@@ -72,7 +82,8 @@ export const GoldPriceCard = () => {
   } = useGoldPriceStore();
   const { showToast } = useToastStore();
 
-  // ── Estado local del campo ────────────────────────────────────────────────
+  // ── Estado local ──────────────────────────────────────────────────────────
+
   /** Valor del campo como cadena formateada para mostrar en el input. */
   const [inputValue, setInputValue] = useState('');
   /** Controla la visibilidad del modal de confirmación. */
@@ -82,12 +93,15 @@ export const GoldPriceCard = () => {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Carga el precio al montar el componente
+  // ── Efectos ───────────────────────────────────────────────────────────────
+
+  // Carga el precio del backend al montar el componente.
+  // El store evita peticiones duplicadas si el precio ya fue cargado.
   useEffect(() => {
     void loadGoldPrice();
   }, [loadGoldPrice]);
 
-  // Sincroniza el campo con el precio del store.
+  // Sincroniza el campo con el precio del store cuando este cambia.
   // Se usa `== null` (doble igual) para atrapar tanto `null` como `undefined`,
   // ya que Zustand puede rehidratar desde localStorage con `undefined` si
   // la clave existía previamente con un esquema distinto.
@@ -96,11 +110,38 @@ export const GoldPriceCard = () => {
     setInputValue(formatCOP(goldPricePerGram));
   }, [goldPricePerGram]);
 
+  // ── Derivados ─────────────────────────────────────────────────────────────
+
+  /**
+   * Valor numérico limpio del campo de texto.
+   * Es `NaN` si el campo está vacío o contiene solo caracteres no numéricos.
+   */
+  const parsedInputValue = parseFormattedCOP(inputValue);
+
+  /**
+   * Indica si el botón "Actualizar" debe estar habilitado.
+   * Se activa únicamente cuando:
+   * - El campo tiene un valor numérico válido y mayor a cero.
+   * - Ese valor difiere del precio actualmente guardado en el store.
+   * - No hay una petición de guardado en curso.
+   */
+  const isUpdateEnabled =
+    !isSaving &&
+    !isNaN(parsedInputValue) &&
+    parsedInputValue > 0 &&
+    parsedInputValue !== goldPricePerGram;
+
+  /** Valor pendiente formateado para mostrar en el modal de confirmación. */
+  const formattedPending = isNaN(parsedInputValue)
+    ? '—'
+    : formatCOP(parsedInputValue);
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   /**
    * Maneja los cambios en el campo de precio.
-   * Extrae solo los dígitos del valor ingresado y reformatea la cadena.
+   * Extrae solo los dígitos del valor ingresado y reformatea la cadena
+   * con separadores de miles en tiempo real.
    *
    * @param e - Evento de cambio del input.
    */
@@ -110,32 +151,29 @@ export const GoldPriceCard = () => {
       setInputValue('');
       return;
     }
-    const numeric = parseInt(raw, 10);
-    setInputValue(formatCOP(numeric));
+    setInputValue(formatCOP(parseInt(raw, 10)));
   };
 
-  /** Abre el modal de confirmación si el valor ingresado es válido. */
+  /**
+   * Abre el modal de confirmación.
+   * El botón ya está deshabilitado si el valor es inválido o no ha cambiado,
+   * pero se agrega una validación defensiva por si se llama directamente.
+   */
   const handleUpdateClick = () => {
-    const numeric = parseFormattedCOP(inputValue);
-    if (isNaN(numeric) || numeric <= 0) {
-      showToast('error', 'Ingresa un precio válido mayor a cero.');
-      inputRef.current?.focus();
-      return;
-    }
+    if (!isUpdateEnabled) return;
     setIsConfirmOpen(true);
   };
 
   /**
-   * Ejecuta la actualización del precio tras confirmación del administrador.
-   * En caso de éxito, actualiza el store y muestra toast de confirmación.
+   * Ejecuta la actualización del precio tras la confirmación del administrador.
+   * En caso de éxito, actualiza el store y muestra un toast de confirmación.
    * En caso de error, muestra el mensaje correspondiente.
    */
   const handleConfirmUpdate = async () => {
-    const numeric = parseFormattedCOP(inputValue);
     setIsSaving(true);
 
     try {
-      const result = await GeneralService.updateGoldPrice(numeric);
+      const result = await GeneralService.updateGoldPrice(parsedInputValue);
       setGoldPrice(result.data.goldPricePerGram, result.data.lastUpdate);
       showToast('success', 'Precio del oro actualizado correctamente.');
     } catch {
@@ -149,18 +187,14 @@ export const GoldPriceCard = () => {
     }
   };
 
-  // ── Valor para el modal de confirmación ───────────────────────────────────
-  const pendingValue = parseFormattedCOP(inputValue);
-  const formattedPending = isNaN(pendingValue) ? '—' : formatCOP(pendingValue);
-
-  // ── Formateo de la fecha de última actualización ──────────────────────────
+  // ── Helpers de render ─────────────────────────────────────────────────────
 
   /**
    * Formatea una fecha ISO a un string legible en español colombiano.
    * Ejemplo: `"2025-04-15T10:32:00.000Z"` → `"15 de abril de 2025, 10:32 a. m."`
    *
    * @param iso - Cadena de fecha en formato ISO 8601.
-   * @returns Fecha formateada o `'Sin registro'` si el valor es nulo.
+   * @returns Fecha formateada, o `'Sin registro'` si el valor es nulo o vacío.
    */
   const formatLastUpdate = (iso: string | null): string => {
     if (!iso) return 'Sin registro';
@@ -230,7 +264,7 @@ export const GoldPriceCard = () => {
           style={{ backgroundColor: 'var(--border-color)' }}
         />
 
-        {/* Campo de edición */}
+        {/* Campo de edición o skeleton de carga */}
         {isLoading && goldPricePerGram == null ? (
           <LoadingSkeleton />
         ) : (
@@ -255,7 +289,7 @@ export const GoldPriceCard = () => {
                 className="flex overflow-hidden rounded-lg border transition-colors focus-within:border-[var(--accent)]"
                 style={{ borderColor: 'var(--border-color)' }}
               >
-                {/* Prefijo visual COP */}
+                {/* Prefijo visual — no interactivo */}
                 <span
                   className="flex flex-shrink-0 items-center border-r px-3 py-2.5"
                   style={{
@@ -290,12 +324,20 @@ export const GoldPriceCard = () => {
               </div>
             </div>
 
-            {/* Botón de actualizar */}
+            {/* Botón de actualizar.
+                Deshabilitado cuando el valor no ha cambiado respecto al guardado,
+                cuando el campo está vacío, o cuando hay una petición en curso.
+                El `title` da contexto al cursor sobre la razón del estado disabled. */}
             <button
               type="button"
               onClick={handleUpdateClick}
-              disabled={isSaving}
-              className="flex flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg px-5 py-2.5 transition-opacity hover:opacity-85 active:opacity-75 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+              disabled={!isUpdateEnabled}
+              title={
+                !isUpdateEnabled && !isSaving
+                  ? 'Modifica el valor para poder actualizar'
+                  : undefined
+              }
+              className="flex flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg px-5 py-2.5 transition-opacity hover:opacity-85 active:opacity-75 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
               style={{
                 backgroundColor: 'var(--accent)',
                 color: 'var(--accent-text)',
@@ -332,7 +374,7 @@ export const GoldPriceCard = () => {
         </div>
       </div>
 
-      {/* Modal de confirmación */}
+      {/* Modal de confirmación — se abre solo cuando el valor es válido y distinto */}
       <ConfirmModal
         isOpen={isConfirmOpen}
         variant="info"
@@ -351,7 +393,7 @@ export const GoldPriceCard = () => {
 // ─── Subcomponente: skeleton de carga ─────────────────────────────────────────
 
 /**
- * Esqueleto de carga que reemplaza el campo mientras se obtiene el precio del backend.
+ * Esqueleto animado que reemplaza el campo mientras se obtiene el precio del backend.
  * Mantiene el layout estable para evitar saltos visuales (CLS).
  *
  * @internal Solo se usa dentro de `GoldPriceCard`.
