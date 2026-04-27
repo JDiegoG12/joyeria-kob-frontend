@@ -45,6 +45,7 @@ import { AdminGeneralPage } from '@/features/general/pages/admin-general-page';
 import { NotFoundPage } from '@/features/shared/pages/not-found-page';
 import { PlaceholderPage } from '@/features/shared/pages/placeholder-page';
 import { AdminCategoriesPage } from '@/features/categories/pages/admin-categories-page';
+import { AdminMetricsPage } from '@/features/metrics/pages/admin-metrics-page';
 
 /**
  * Instancia del enrutador principal de la aplicación.
@@ -112,7 +113,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/admin/metricas',
-        element: <PlaceholderPage title="Métricas" />,
+        element: <AdminMetricsPage />,
       },
       {
         path: '/admin/joyas',
