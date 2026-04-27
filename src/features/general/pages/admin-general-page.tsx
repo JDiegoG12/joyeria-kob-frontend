@@ -4,19 +4,22 @@
  * del panel de administración de Joyería KOB.
  *
  * ## Estructura visual
- * La página se organiza en secciones temáticas separadas por un encabezado
- * descriptivo. Cada sección agrupa una o más tarjetas de configuración
- * relacionadas. Esta estructura facilita agregar nuevas configuraciones
- * en el futuro sin modificar las secciones existentes.
+ * La página sigue el mismo patrón de encabezado que el resto de módulos
+ * del panel admin (categorías, joyas, clientes): título en `font-display`
+ * a `text-3xl` desde los bordes de la página, sin `max-w` ni ícono en el
+ * encabezado principal.
+ *
+ * El contenido de configuración sí usa `max-w-3xl` para que las tarjetas
+ * no se estiren indefinidamente en pantallas muy anchas.
  *
  * ## Secciones actuales
  * - **Inventario y precios** → `GoldPriceCard`
  *
  * ## Cómo agregar una nueva configuración
  * 1. Crea el componente de tarjeta en `features/general/components/`.
- * 2. Si pertenece a una sección existente, agrégala dentro de ese bloque.
+ * 2. Si pertenece a una sección existente, agrégala dentro de ese bloque `<section>`.
  * 3. Si es una categoría nueva, copia el bloque `<section>` y cambia
- *    el título, descripción e ícono del encabezado.
+ *    el título, descripción e ícono del `SectionHeader`.
  *
  * ## Ruta
  * `/admin/general` — protegida por `ProtectedRoute` con rol `ADMIN`.
@@ -28,8 +31,9 @@ import { GoldPriceCard } from '@/features/general/components/gold-price-card';
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
 /**
- * Datos de encabezado para una sección de configuración.
- * Se usa para mantener uniforme la apariencia de todas las secciones.
+ * Props del encabezado de cada sección de configuración.
+ * Se usa para mantener consistencia tipográfica y de espaciado
+ * entre todas las secciones de la página.
  */
 interface SectionHeaderProps {
   /** Ícono representativo de la sección (componente de lucide-react). */
@@ -43,8 +47,10 @@ interface SectionHeaderProps {
 // ─── Subcomponente: encabezado de sección ────────────────────────────────────
 
 /**
- * Encabezado visual reutilizable para cada sección de configuración.
- * Mantiene consistencia tipográfica y de espaciado entre secciones.
+ * Encabezado visual reutilizable para cada bloque de configuración.
+ * Muestra un ícono inline, un título y una descripción corta.
+ * No debe confundirse con el encabezado de página — este vive dentro
+ * del contenido y separa visualmente grupos de tarjetas relacionadas.
  *
  * @internal Solo se usa dentro de `AdminGeneralPage`.
  */
@@ -89,69 +95,74 @@ const SectionHeader = ({
 
 /**
  * Página de configuración general del panel de administración.
- * Organiza las configuraciones en secciones temáticas expandibles.
+ *
+ * El encabezado de página sigue el mismo patrón visual que el resto de
+ * módulos del panel (categorías, joyas): sin `max-w`, sin ícono contenedor,
+ * `font-display` + `text-3xl` para el título principal.
+ *
+ * El área de tarjetas usa `max-w-3xl` para que el contenido editable no
+ * se estire en pantallas muy anchas, mejorando la legibilidad del formulario.
  */
 export const AdminGeneralPage = () => (
-  <div className="mx-auto max-w-3xl">
-    {/* Encabezado de página */}
+  <div style={{ backgroundColor: 'var(--bg-primary)' }}>
+    {/* ── Encabezado de página — sin max-w, igual que categorías ────────── */}
     <div className="mb-8">
-      <div className="flex items-center gap-3">
-        <div>
-          <h1
-            style={{
-              fontFamily: 'var(--font-heading)',
-              fontSize: 'var(--text-2xl)',
-              fontWeight: 'var(--font-bold)',
-              color: 'var(--text-primary)',
-              lineHeight: 'var(--leading-tight)',
-            }}
-          >
-            Configuración general
-          </h1>
-          <p
-            style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-sm)',
-              color: 'var(--text-muted)',
-              marginTop: '2px',
-            }}
-          >
-            Parámetros globales que afectan el comportamiento de toda la
-            aplicación.
-          </p>
-        </div>
-      </div>
+      <h1
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 'var(--text-3xl)',
+          fontWeight: 'var(--font-bold)',
+          color: 'var(--text-primary)',
+          letterSpacing: 'var(--tracking-tight)',
+          lineHeight: 'var(--leading-tight)',
+        }}
+      >
+        Configuración general
+      </h1>
+      <p
+        className="mt-2"
+        style={{
+          fontFamily: 'var(--font-body)',
+          fontSize: 'var(--text-sm)',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        Parámetros globales que afectan el comportamiento de toda la aplicación.
+      </p>
     </div>
 
-    {/* ── Sección: Inventario y precios ──────────────────────────────────── */}
-    <section aria-labelledby="section-prices">
-      <SectionHeader
-        icon={DollarSign}
-        title="Inventario y precios"
-        description="Variables de referencia usadas en el cálculo de precios del catálogo."
-      />
+    {/* ── Contenido de configuración — max-w para legibilidad del formulario */}
+    <div className="max-w-3xl">
+      {/* ── Sección: Inventario y precios ──────────────────────────────── */}
+      <section aria-labelledby="section-prices">
+        <SectionHeader
+          icon={DollarSign}
+          title="Inventario y precios"
+          description="Variables de referencia usadas en el cálculo de precios del catálogo."
+        />
 
-      <GoldPriceCard />
+        <GoldPriceCard />
+
+        {/*
+         * Aquí irán futuras tarjetas de esta sección.
+         * Ejemplo: <TaxRateCard />, <ShippingBaseCard />
+         */}
+      </section>
 
       {/*
-       * Aquí irán futuras tarjetas de esta sección.
-       * Ejemplo: <TaxRateCard />, <ShippingBaseCard />
+       * ── Aquí irán nuevas secciones en el futuro ────────────────────────
+       *
+       * Ejemplo de nueva sección:
+       *
+       * <div className="mt-10">
+       *   <SectionHeader
+       *     icon={Store}
+       *     title="Información de la tienda"
+       *     description="Datos de contacto y ubicación de la joyería."
+       *   />
+       *   <StoreInfoCard />
+       * </div>
        */}
-    </section>
-
-    {/*
-     * ── Aquí irán nuevas secciones en el futuro ──────────────────────────
-     *
-     * Ejemplo de nueva sección:
-     *
-     * <div className="mt-10">
-     *   <SectionHeader
-     *     icon={Store}
-     *     title="Información de la tienda"
-     *     description="Datos de contacto y ubicación de la joyería."
-     *   />
-     *   <StoreInfoCard />
-     * </div>
-     */}
+    </div>
   </div>
 );

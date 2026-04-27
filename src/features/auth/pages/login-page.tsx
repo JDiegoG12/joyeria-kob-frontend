@@ -68,9 +68,8 @@ export const LoginPage = () => {
         password: form.password,
       });
 
-      toast.success('¡Bienvenida de vuelta! 💎');
+      toast.success('¡Hola de nuevo!');
       navigate('/catalogo');
-
     } catch (error: any) {
       const message = error?.message || 'Error al iniciar sesión';
       toast.error(message);
@@ -156,9 +155,7 @@ export const LoginPage = () => {
                   className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-primary)]/70 px-4 py-3.5 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
                 />
                 {errors.password ? (
-                  <p className="mt-2 text-sm text-red-500">
-                    {errors.password}
-                  </p>
+                  <p className="mt-2 text-sm text-red-500">{errors.password}</p>
                 ) : null}
               </div>
 
