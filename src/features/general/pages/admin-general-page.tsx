@@ -13,6 +13,7 @@
  * no se estiren indefinidamente en pantallas muy anchas.
  *
  * ## Secciones actuales
+ * - **Apariencia** → `HeroBannerCard`
  * - **Inventario y precios** → `GoldPriceCard`
  *
  * ## Cómo agregar una nueva configuración
@@ -25,8 +26,9 @@
  * `/admin/general` — protegida por `ProtectedRoute` con rol `ADMIN`.
  */
 
-import { DollarSign } from 'lucide-react';
+import { DollarSign, Layout } from 'lucide-react';
 import { GoldPriceCard } from '@/features/general/components/gold-price-card';
+import { HeroBannerCard } from '@/features/general/components/hero-banner-card';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -132,7 +134,23 @@ export const AdminGeneralPage = () => (
     </div>
 
     {/* ── Contenido de configuración — max-w para legibilidad del formulario */}
-    <div className="max-w-3xl">
+    <div className="max-w-3xl space-y-10">
+      {/* ── Sección: Apariencia ─────────────────────────────────────────── */}
+      <section aria-labelledby="section-appearance">
+        <SectionHeader
+          icon={Layout}
+          title="Apariencia"
+          description="Personalización visual de la página principal de la tienda."
+        />
+
+        <HeroBannerCard />
+
+        {/*
+         * Aquí irán futuras tarjetas de esta sección.
+         * Ejemplo: <AnnouncementBarCard />, <ThemeCard />
+         */}
+      </section>
+
       {/* ── Sección: Inventario y precios ──────────────────────────────── */}
       <section aria-labelledby="section-prices">
         <SectionHeader
@@ -154,7 +172,7 @@ export const AdminGeneralPage = () => (
        *
        * Ejemplo de nueva sección:
        *
-       * <div className="mt-10">
+       * <div>
        *   <SectionHeader
        *     icon={Store}
        *     title="Información de la tienda"

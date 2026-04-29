@@ -2,46 +2,28 @@
  * @file tokens.css
  * @description Sistema central de tokens de diseño de Joyería KOB.
  *
- * Este es el único archivo que debes modificar para cambiar colores,
- * tipografía, espaciados y cualquier valor visual global de la app.
- * Ningún componente debe tener valores hardcodeados — siempre deben
- * referenciar una variable definida aquí.
+ * ## Paleta base del cliente
+ * #131638  → azul marino (marca / acento principal)
+ * #E8E8E8  → gris claro (fondos terciarios, bordes suaves)
+ * #F3F3F3  → gris muy claro (fondo primario light)
+ * #4C4B49  → gris cálido oscuro (texto secundario light)
+ * #1A1A1A  → casi negro (fondo base dark mode)
  *
- * ## Cómo usar los tokens en componentes
- *
- * En CSS / clases de Tailwind con arbitrary values:
- * ```tsx
- * <div className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
- * ```
- *
- * En CSS puro dentro de un archivo .css:
- * ```css
- * .mi-clase {
- *   background-color: var(--bg-primary);
- *   color: var(--text-primary);
- * }
- * ```
- *
- * En estilos inline de React (casos excepcionales):
- * ```tsx
- * <div style={{ height: 'var(--navbar-height)' }}>
- * ```
- *
- * ## Modo oscuro
- * Los tokens semánticos (--bg-*, --text-*, --border-*) cambian
- * automáticamente cuando la clase `dark` está en el <html>.
- * Los tokens de marca (--color-brand-*) nunca cambian.
- *
- * ## Paleta del cliente
+ * ## Tokens semánticos
  * Light: bg #F3F3F3 · card #FFFFFF · text #000000 · text-secondary #4C4B49
- *        primary #1800AD · primary-hover #3A3DFF
- * Dark:  bg #121212 · card #1A1A1A · text #F3F3F3 · text-secondary #7A7771
- *        primary #3A3DFF · primary-hover #5A5DFF
+ *        primary #131638 · primary-hover #1e2050
+ * Dark:  bg #1A1A1A · card #222222 · text #F3F3F3 · text-secondary #A8A5A2
+ *        primary #131638 (como fondo) · border-accent #4A50C4 (trazo legible)
  *
- * ## Cómo agregar un nuevo token
- * 1. Agrégalo en :root con un nombre semántico (qué hace, no qué color es).
- * 2. Si necesita valor diferente en oscuro, agrégalo también en .dark {}.
- * 3. Documenta brevemente para qué se usa.
+ * ## Lógica del azul marino en dark mode
+ * #131638 es demasiado oscuro para usarse como texto/ícono sobre #1A1A1A (ratio 1.15:1).
+ * Solución: textos y trazos de acento van a la familia blanca de la paleta del cliente.
+ *   --accent        #131638  → fondo de botones, pills, estados activos (texto blanco encima, ratio 12.6:1)
+ *   --accent-hover  #1e2050  → hover del fondo
+ *   --accent-active #0b0d22  → pressed
+ *   --border-accent #F3F3F3  → bordes de foco e íconos activos (máximo contraste)
+ *   --text-accent   #F3F3F3  → links y textos de acento (ratio 17.1:1 sobre #1A1A1A)
+ *   --accent-subtle rgba(19,22,56,0.18) → fondos sutiles con más opacidad que en light
  */
 
 @layer base {
@@ -49,39 +31,25 @@
 
         /* ════════════════════════════════════════════════════════════
            COLORES DE MARCA
-           Valores fijos de la identidad visual de KOB.
-           Nunca cambian entre modo claro y oscuro.
-           Úsalos solo para definir tokens semánticos, no directamente
-           en componentes.
         ════════════════════════════════════════════════════════════ */
 
-        /* Paleta primaria (azul de marca) */
+        /* Paleta primaria — azul marino oscuro */
         --color-brand-50: #eeeeff;
-        /* Tinte muy suave para fondos sutiles   */
         --color-brand-100: #d5d6ff;
-        /* Hover de fondos con acento            */
-        --color-brand-500: #1800AD;
-        /* Azul primario — acción principal      */
-        --color-brand-600: #3A3DFF;
-        /* Azul claro — hover en light mode      */
-        --color-brand-700: #10007a;
-        /* Azul oscuro — active/pressed          */
+        --color-brand-500: #131638;
+        /* Azul marino principal              */
+        --color-brand-600: #1e2050;
+        /* Hover en light mode                */
+        --color-brand-700: #0b0d22;
+        /* Active / pressed                   */
 
-        /* Paleta primaria oscuro */
-        --color-brand-dark-400: #5A5DFF;
-        /* Hover en dark mode                */
-        --color-brand-dark-500: #3A3DFF;
-        /* Acento base en dark mode          */
-        --color-brand-dark-700: #2a2dcc;
-        /* Active en dark mode               */
+
 
         /* Neutros */
         --color-black: #000000;
-        /* Negro puro del cliente                */
         --color-white: #ffffff;
-        /* Blanco puro                           */
 
-        /* Estados de feedback — sin cambios */
+        /* Estados de feedback */
         --color-success: #22c55e;
         --color-warning: #f59e0b;
         --color-error: #ef4444;
@@ -90,68 +58,57 @@
 
         /* ════════════════════════════════════════════════════════════
            COLORES SEMÁNTICOS — MODO CLARO
-           Mapeados directamente desde la paleta del cliente.
         ════════════════════════════════════════════════════════════ */
 
-        /* Fondos */
+        /* Fondos
+           bg-primary   → #F3F3F3  (paleta cliente, cuerpo de página)
+           bg-secondary → #FFFFFF  (cards, panels, navbar, sidebar)
+           bg-tertiary  → #E8E8E8  (paleta cliente, skeletons, fondos de imagen)
+        */
         --bg-primary: #F3F3F3;
-        /* --bg del cliente           */
         --bg-secondary: #FFFFFF;
-        /* --card del cliente         */
         --bg-tertiary: #E8E8E8;
-        /* Intermedio bg/card         */
         --bg-sidebar: #FFFFFF;
-        /* Mismo que card             */
         --bg-topbar: #FFFFFF;
-        /* Mismo que card             */
-        --bg-hover: rgba(24, 0, 173, 0.06);
-        /* Tinte suave del primario   */
-        --bg-active: rgba(24, 0, 173, 0.04);
-        /* Tinte más suave aún        */
+        --bg-hover: rgba(19, 22, 56, 0.06);
+        --bg-active: rgba(19, 22, 56, 0.04);
         --bg-overlay: rgba(0, 0, 0, 0.4);
-        /* Overlay del cajón móvil    */
 
-        /* Texto */
+        /* Texto
+           text-primary   → #000000  (paleta cliente)
+           text-secondary → #4C4B49  (paleta cliente)
+        */
         --text-primary: #000000;
-        /* --text del cliente         */
         --text-secondary: #4C4B49;
-        /* --text-secondary cliente   */
         --text-muted: #6E6E6E;
-        /* Más suave que secondary    */
         --text-inverse: #FFFFFF;
-        /* Texto sobre fondos oscuros */
-        --text-accent: #1800AD;
-        /* Links — color primario     */
+        --text-accent: #131638;
 
-        /* Bordes */
+        /* Bordes — derivados de #E8E8E8 de la paleta */
         --border-color: #DCDCDC;
-        /* Borde general suave        */
         --border-strong: #C4C4C4;
-        /* Borde más visible          */
-        --border-accent: #1800AD;
-        /* Borde de énfasis primario  */
+        --border-accent: #131638;
 
-        /* Acento interactivo */
-        --accent: #1800AD;
-        /* --primary del cliente      */
-        --accent-hover: #3A3DFF;
-        /* --primary-hover cliente    */
-        --accent-active: #10007a;
-        /* Pressed — más oscuro       */
+        /* Acento interactivo — centrado en el azul marino del cliente */
+        --accent: #131638;
+        --accent-hover: #1e2050;
+        --accent-active: #0b0d22;
         --accent-text: #FFFFFF;
-        /* Texto sobre fondo acento   */
-        --accent-subtle: rgba(24, 0, 173, 0.08);
-        /* Fondo suave con acento     */
+        --accent-subtle: rgba(19, 22, 56, 0.08);
+
+        /* Announcement bar */
+        --announcement-bg: #131638;
+        --announcement-text: #FFFFFF;
 
 
         /* ════════════════════════════════════════════════════════════
-           TIPOGRAFÍA 
+           TIPOGRAFÍA
         ════════════════════════════════════════════════════════════ */
 
-        --font-display: 'Bodoni Moda', serif;
-        --font-heading: 'Bodoni Moda', serif;
-        --font-body: 'Inter', sans-serif;
-        --font-ui: 'Inter', sans-serif;
+        --font-display: 'FELIXTI', serif;
+        --font-heading: 'Montserrat', sans-serif;
+        --font-body: 'Montserrat', sans-serif;
+        --font-ui: 'Montserrat', sans-serif;
 
         /* Escala de tamaños */
         --text-xs: 0.75rem;
@@ -167,26 +124,27 @@
         /* Pesos */
         --font-normal: 400;
         --font-medium: 500;
-        --font-semibold: 500;
-        --font-bold: 600;
+        --font-semibold: 600;
+        --font-bold: 700;
 
         /* Interlineado */
         --leading-tight: 1.1;
-        --leading-normal: 1.5;
+        --leading-normal: 1.4;
         --leading-relaxed: 1.75;
 
         /* Espaciado entre letras */
         --tracking-tight: -0.035em;
-        --tracking-normal: -0.01em;
+        --tracking-normal: 0em;
         --tracking-wide: 0.05em;
         --tracking-widest: 0.15em;
         --tracking-display: -0.05em;
 
 
         /* ════════════════════════════════════════════════════════════
-           LAYOUT — sin cambios
+           LAYOUT
         ════════════════════════════════════════════════════════════ */
 
+        --announcement-height: 36px;
         --navbar-height: 64px;
         --topbar-height: 64px;
         --sidebar-width: 260px;
@@ -199,14 +157,14 @@
            EFECTOS VISUALES
         ════════════════════════════════════════════════════════════ */
 
-        /* Sombras */
+        /* Sombras — derivadas del negro con opacidades ligeras para light */
         --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
         --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.08);
         --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
         --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
         --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
-        --shadow-accent: 0 4px 16px rgba(24, 0, 173, 0.18);
-        /* Sombra de acción primaria */
+        /* Sombra de acento — usa el azul marino de la paleta del cliente */
+        --shadow-accent: 0 4px 16px rgba(19, 22, 56, 0.18);
 
         /* Bordes redondeados */
         --radius-xs: 2px;
@@ -234,61 +192,69 @@
 
     /* ════════════════════════════════════════════════════════════
        TOKENS SEMÁNTICOS — MODO OSCURO
-       Solo se redefinen los tokens que cambian visualmente.
-       Tipografía, layout y radios no cambian nunca.
+       Base: #1A1A1A (paleta del cliente)
+       Jerarquía de capas:
+         bg-primary   #1A1A1A  ← base de página
+         bg-secondary #222222  ← cards y panels (un paso más claro)
+         bg-tertiary  #2A2A2A  ← skeletons, fondos de imagen
+         bg-sidebar   #1A1A1A  ← al nivel del body
+         bg-topbar    #1A1A1A  ← al nivel del body
     ════════════════════════════════════════════════════════════ */
 
     .dark {
 
         /* Fondos */
-        --bg-primary: #121212;
-        /* --bg dark del cliente      */
-        --bg-secondary: #1A1A1A;
-        /* --card dark del cliente    */
-        --bg-tertiary: #222222;
-        /* Intermedio bg/card         */
+        --bg-primary: #1A1A1A;
+        --bg-secondary: #222222;
+        --bg-tertiary: #2A2A2A;
         --bg-sidebar: #1A1A1A;
         --bg-topbar: #1A1A1A;
-        --bg-hover: rgba(58, 61, 255, 0.10);
-        /* Tinte suave del primario   */
-        --bg-active: rgba(58, 61, 255, 0.07);
+        --bg-hover: rgba(19, 22, 56, 0.18);
+        --bg-active: rgba(19, 22, 56, 0.28);
         --bg-overlay: rgba(0, 0, 0, 0.65);
 
-        /* Texto */
+        /* Texto
+           text-accent → #F3F3F3 de la paleta del cliente (ratio 17.1:1 sobre #1A1A1A)
+        */
         --text-primary: #F3F3F3;
-        /* --text dark del cliente    */
         --text-secondary: #A8A5A2;
-        /* --text-secondary dark      */
         --text-muted: #878480;
-        /* Más apagado que secondary  */
         --text-inverse: #000000;
-        --text-accent: #3A3DFF;
-        /* --primary dark del cliente */
+        --text-accent: #F3F3F3;
 
-        /* Bordes */
+        /* Bordes
+           border-accent → #E8E8E8 de la paleta del cliente, contraste alto y tono cálido
+        */
         --border-color: #2C2C2C;
         --border-strong: #3A3A3A;
-        --border-accent: #3A3DFF;
+        --border-accent: #E8E8E8;
 
-        /* Acento interactivo */
-        --accent: #3A3DFF;
-        /* --primary dark del cliente */
-        --accent-hover: #5A5DFF;
-        /* --primary-hover dark       */
-        --accent-active: #2a2dcc;
-        /* Pressed — más oscuro       */
+        /* Acento interactivo
+           --accent como fondo: #131638 + texto blanco encima = ratio 12.6:1 ✓
+           --accent-subtle → versión translúcida del azul marino sobre fondos oscuros
+        */
+        --accent: #131638;
+        --accent-hover: #1e2050;
+        --accent-active: #0b0d22;
         --accent-text: #FFFFFF;
-        --accent-subtle: rgba(58, 61, 255, 0.12);
+        --accent-subtle: rgba(19, 22, 56, 0.18);
 
-        /* Sombras más pronunciadas en oscuro */
+        /* Announcement bar */
+        --announcement-bg: #0b0d22;
+        --announcement-text: #d5d6ff;
+
+        /* Sombras — más pronunciadas en dark para mantener jerarquía visual */
+        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
         --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.30);
         --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.40);
         --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.50);
-        --shadow-accent: 0 4px 16px rgba(58, 61, 255, 0.20);
+        --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.60);
+        /* Sombra de acento — usa el azul marino de la marca */
+        --shadow-accent: 0 4px 16px rgba(19, 22, 56, 0.50);
 
-        /* Logo */
+        /* Logo — recorte sincronizado con bg-primary */
         --logo-body: #F3F3F3;
-        --logo-cutout: #121212;
+        --logo-cutout: #1A1A1A;
     }
 
 
@@ -313,7 +279,8 @@
         line-height: var(--leading-normal);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        transition: background-color var(--transition-normal),
+        transition:
+            background-color var(--transition-normal),
             color var(--transition-normal);
     }
 
@@ -407,14 +374,14 @@
         }
     }
 
-    /* Móvil: desde top:0, altura completa, padding empuja bajo el navbar */
+    /* Móvil */
     .sidebar-panel {
         top: 0;
         height: 100vh;
         padding-top: var(--navbar-height);
     }
 
-    /* Desktop: arranca justo debajo del navbar, sin padding extra */
+    /* Desktop */
     @media (min-width: 1024px) {
         .sidebar-panel {
             top: var(--navbar-height);
