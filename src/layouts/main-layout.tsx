@@ -1,12 +1,14 @@
 /**
  * @file main-layout.tsx
  * @description Layout principal para todas las rutas públicas de Joyería KOB.
- * Estructura la página con Navbar arriba, contenido principal a ancho completo
- * y navegación flotante sobre el fondo atmosférico del catálogo.
+ * Estructura la página con AnnouncementBar y Navbar fijos, contenido principal
+ * a ancho completo y footer.
  *
  * ## Estructura visual
  * ```
  * ┌─────────────────────────────────────┐
+ * │        ANNOUNCEMENT BAR             │
+ * ├─────────────────────────────────────┤
  * │            NAVBAR                   │
  * ├──────────────┬──────────────────────┤
  * │              │                      │
@@ -19,9 +21,9 @@
  * └─────────────────────────────────────┘
  * ```
  *
- * ## Comportamiento del catálogo
- * - `/catalogo` → navegación de categorías en la página.
- * - cualquier otra ruta → contenido público a ancho completo.
+ * ## Comportamiento de rutas públicas
+ * - `/` → página principal de marca.
+ * - `/catalogo` → catálogo público con filtros y productos.
  *
  * ## Responsive
  * - Desktop: catálogo centrado con max-width elegante.
@@ -35,6 +37,7 @@
  * ```
  */
 import { Outlet } from 'react-router-dom';
+import { AnnouncementBar } from '@/components/announcement-bar/announcement-bar';
 import { Navbar } from '@/components/ui/navbar/navbar';
 import { Footer } from '@/components/ui/footer/footer';
 
@@ -45,10 +48,7 @@ export const MainLayout = () => {
       style={{
         backgroundColor: 'var(--bg-primary)',
         backgroundImage: `
-          radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 34%),
-          radial-gradient(circle at 82% 8%, color-mix(in srgb, var(--bg-tertiary) 84%, transparent), transparent 32%),
-          radial-gradient(circle at 72% 72%, color-mix(in srgb, var(--accent-hover) 10%, transparent), transparent 38%),
-          linear-gradient(135deg, var(--bg-primary), color-mix(in srgb, var(--bg-secondary) 82%, var(--bg-primary)))`,
+          linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 38%, var(--bg-primary) 100%)`,
       }}
     >
       <div
@@ -69,16 +69,17 @@ export const MainLayout = () => {
         aria-hidden="true"
       />
 
+      <AnnouncementBar />
       <Navbar />
-
-      {/*
-        Este div empuja el contenido hacia abajo el alto exacto del navbar.
-        El catálogo ya no reserva una columna lateral: respira a ancho completo.
-      */}
       <div
-        className="relative z-10 flex min-w-0 flex-1"
-        style={{ marginTop: 'calc(var(--navbar-height) + 1rem)' }}
-      >
+        className="relative z-10 flex-shrink-0"
+        style={{
+          height: 'calc(var(--announcement-height) + var(--navbar-height))',
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 flex min-w-0 flex-1">
         <main className="min-w-0 flex-1">
           <Outlet />
         </main>
