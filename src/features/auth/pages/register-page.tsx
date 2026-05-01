@@ -104,11 +104,11 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <div className="relative h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.14),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(212,175,55,0.08),_transparent_22%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom_left,rgba(255,255,255,0.04),transparent,rgba(212,175,55,0.04))] dark:bg-[linear-gradient(to_bottom_left,rgba(255,255,255,0.02),transparent,rgba(212,175,55,0.03))]" />
 
-      <div className="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-2">
+      <div className="relative z-10 grid h-screen grid-cols-1 lg:grid-cols-2">
         <section className="hidden lg:flex lg:flex-col lg:justify-between px-16 py-14 animate-fade-in">
           <div>
             <span className="inline-flex items-center rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)]/70 px-4 py-2 text-xs uppercase tracking-[0.25em] text-[var(--text-secondary)] backdrop-blur-md">

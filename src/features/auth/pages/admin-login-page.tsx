@@ -91,12 +91,12 @@ export const AdminLoginPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <div className="relative h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
       
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.1),_transparent_30%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.03),transparent,rgba(0,0,0,0.05))]" />
 
-      <div className="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-2">
+      <div className="relative z-10 grid h-screen grid-cols-1 lg:grid-cols-2">
 
         <section className="hidden lg:flex lg:flex-col lg:justify-between px-16 py-14">
           <div>
