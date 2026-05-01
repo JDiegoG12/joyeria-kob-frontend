@@ -1,11 +1,15 @@
 import { apiClient } from '@/api/api-client';
 import { useAuthStore } from '@/store/auth.store';
+
 import type {
     AuthLoginData,
     LoginCredentials,
 } from '@/features/auth/types/auth.types';
 
 const USE_MOCK = false;
+
+const TOKEN_KEY = 'auth-token';
+const USER_KEY = 'auth-user';
 
 const MOCK_AUTH_RESPONSE: AuthLoginData = {
     token: 'mock-jwt-token-admin-kob',
@@ -46,8 +50,6 @@ export const AuthService = {
         }
 
         try {
-            // ✅ El backend responde con { success, data: { token, user }, message }
-            // Por eso tipamos el envelope completo y extraemos `.data`
             const { data: envelope } = await apiClient.post<{
                 success: boolean;
                 data: AuthLoginData;
@@ -74,8 +76,6 @@ export const AuthService = {
     // ─────────────────────────────
     // REGISTER
     // ─────────────────────────────
-
-    // ✅ Ahora incluye lastName, requerido por el backend (campo NOT NULL en DB)
     register: async (data: {
         name: string;
         lastName: string;
@@ -106,8 +106,47 @@ export const AuthService = {
     logout: (): void => {
         useAuthStore.getState().clearSession();
 
-        localStorage.removeItem('auth-token');
-        localStorage.removeItem('auth-user');
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+
+        window.location.replace('/login');
+    },
+
+    // ─────────────────────────────
+    // GET TOKEN
+    // ─────────────────────────────
+    getToken: (): string | null => {
+        return localStorage.getItem(TOKEN_KEY);
+    },
+
+    // ─────────────────────────────
+    // VALIDAR AUTENTICACIÓN
+    // ─────────────────────────────
+    isAuthenticated: (): boolean => {
+        const token = localStorage.getItem(TOKEN_KEY);
+
+        if (!token) {
+            return false;
+        }
+
+        try {
+            const payload = JSON.parse(
+                atob(token.split('.')[1]),
+            );
+
+            const isExpired =
+                payload.exp * 1000 < Date.now();
+
+            if (isExpired) {
+                AuthService.logout();
+                return false;
+            }
+
+            return true;
+        } catch  {
+            AuthService.logout();
+            return false;
+        }
     },
 };
 
@@ -116,11 +155,21 @@ export const AuthService = {
 // ─────────────────────────────
 
 function persistSession(data: AuthLoginData) {
-    useAuthStore.getState().setSession(data.token, data.user);
+    useAuthStore
+        .getState()
+        .setSession(data.token, data.user);
 
-    localStorage.setItem('auth-token', data.token);
-    localStorage.setItem('auth-user', JSON.stringify(data.user));
+    localStorage.setItem(TOKEN_KEY, data.token);
+
+    localStorage.setItem(
+        USER_KEY,
+        JSON.stringify(data.user),
+    );
 }
 
-const simulateDelay = (ms: number): Promise<void> =>
-    new Promise((resolve) => setTimeout(resolve, ms));
+const simulateDelay = (
+    ms: number,
+): Promise<void> =>
+    new Promise((resolve) =>
+        setTimeout(resolve, ms),
+    );
