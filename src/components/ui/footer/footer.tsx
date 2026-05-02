@@ -11,6 +11,7 @@ import {
   FacebookIcon,
   InstagramIcon,
   TikTokIcon,
+  WhatsAppIcon,
 } from '@/components/ui/social-icons';
 
 const WHATSAPP_NUMBER = '3135007459';
@@ -116,11 +117,13 @@ export const Footer = () => (
               envíanos tu catálogo:
             </strong>
           </FooterText>
+
+          {/* CTA de proveedor — abre WhatsApp; incluye ícono para reforzar el canal */}
           <a
             href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex cursor-pointer items-center justify-center border px-5 py-2.5 text-center transition-[transform,box-shadow,opacity] duration-200 hover:-translate-y-0.5 hover:opacity-85 hover:shadow-[var(--shadow-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            className="inline-flex cursor-pointer items-center justify-center gap-2 border px-5 py-2.5 text-center transition-[transform,box-shadow,opacity] duration-200 hover:-translate-y-0.5 hover:opacity-85 hover:shadow-[var(--shadow-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
             style={{
               borderColor: 'var(--announcement-text)',
               color: 'var(--accent-text)',
@@ -129,6 +132,8 @@ export const Footer = () => (
             }}
           >
             Quiero ser proveedor
+            {/* Ícono de WhatsApp — indica explícitamente el canal de contacto */}
+            <WhatsAppIcon size={16} aria-hidden="true" />
           </a>
         </div>
       </FooterColumn>
@@ -185,7 +190,15 @@ interface FooterColumnProps {
 /** Columna del footer con separador superior bajo el título. */
 const FooterColumn = ({ title, children }: FooterColumnProps) => (
   <section>
+    {/*
+     * translate="no" impide que Google Translate (u otros motores) muten
+     * el textContent del título cuando el usuario activa la traducción desde
+     * el navegador (p. ej. en Chrome mobile vía ngrok). Sin este atributo,
+     * palabras como "Proveedores" pueden quedar en minúscula o mal traducidas
+     * porque el motor reemplaza el nodo de texto directamente en el DOM.
+     */}
     <h2
+      translate="no"
       style={{
         fontFamily: 'var(--font-heading)',
         fontSize: 'var(--text-lg)',

@@ -22,7 +22,7 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 
-import { AnnouncementBar } from '@/components/announcement-bar/announcement-bar';
+import { AnnouncementBar } from '@/components/ui/announcement-bar/announcement-bar';
 import { Navbar } from '@/components/ui/navbar/navbar';
 import { Footer } from '@/components/ui/footer/footer';
 

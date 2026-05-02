@@ -14,7 +14,9 @@
  * - Navegación por flechas laterales y por puntos indicadores.
  * - Transición con `opacity` + `translateX` suave (CSS transitions).
  * - Compatible con `prefers-reduced-motion`: sin animaciones si el usuario las desactiva.
- * - Responsive: altura fija en desktop (800px), dinámica en mobile (min 560px).
+ * - Responsive:
+ *   - Desktop: altura fija 580px — los botones CTA quedan visibles sin scroll.
+ *   - Mobile: mínimo 420px para mostrar texto y botones completos.
  *
  * ## Props
  * No recibe props — lee el store `useHeroBannerStore` directamente y recibe
@@ -31,6 +33,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHeroBannerStore } from '@/store/hero-banner.store';
+import { WhatsAppIcon } from '@/components/ui/social-icons';
 
 /** Imagen hero estática por defecto cuando no hay imagen configurada. */
 const DEFAULT_HERO_IMAGE = 'src/assets/HERO_IMAGE.jpg';
@@ -126,7 +129,14 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
     <section
       className="relative overflow-hidden"
       style={{
-        height: 'clamp(560px, 800px, 100vh)',
+        /*
+         * Altura reducida para que los botones CTA sean visibles sin scroll:
+         * - Mobile:  mínimo 420px (suficiente para eyebrow + h1 + subtítulo + botones).
+         * - Desktop: fijo en 580px, equivale a ~60vh en pantallas de 1080p.
+         * Se elimina el valor de 800px anterior que ocultaba los botones en viewports
+         * estándar de 768–900px de alto.
+         */
+        height: 'clamp(420px, 58vh, 580px)',
         backgroundColor: 'var(--accent)',
       }}
       aria-label="Carrusel de banner principal"
@@ -226,7 +236,6 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
                   border: 'none',
                   cursor: 'pointer',
                   padding: 0,
-                  outline: 'none',
                 }}
               />
             ))}
@@ -237,7 +246,7 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
   );
 };
 
-// ─── Slide 0: Banner principal ─────────────────────────────────────────────────
+// ─── Slide principal ───────────────────────────────────────────────────────────
 
 interface MainBannerSlideProps {
   imageUrl: string;
@@ -250,6 +259,9 @@ interface MainBannerSlideProps {
 /**
  * Slide principal del carrusel con texto configurable y CTAs fijos.
  * Ocupa el 100% del área del carrusel y siempre es el slide 0.
+ *
+ * El padding inferior se redujo de `pb-14` a `pb-10` para acompañar la menor
+ * altura del contenedor y mantener los botones siempre visibles.
  */
 const MainBannerSlide = ({
   imageUrl,
@@ -294,27 +306,13 @@ const MainBannerSlide = ({
 
     {/* Contenido de texto y CTAs */}
     <div
-      className="relative z-10 mx-auto flex h-full items-end px-5 pb-14 pt-20 sm:px-6 lg:px-10"
+      className="relative z-10 mx-auto flex h-full items-end px-5 pb-10 pt-16 sm:px-6 sm:pb-12 lg:px-10"
       style={{ maxWidth: 'var(--content-max-width)' }}
     >
       <div className="max-w-3xl">
-        {/* Eyebrow */}
-        <p
-          className="mb-4 uppercase"
-          style={{
-            fontFamily: 'var(--font-ui)',
-            fontSize: 'var(--text-xs)',
-            fontWeight: 'var(--font-bold)',
-            letterSpacing: 'var(--tracking-widest)',
-            color: 'var(--announcement-text)',
-          }}
-        >
-          Oro 18k · joyería hecha a medida
-        </p>
-
         {/* Título principal (configurable) */}
         <h1
-          className="text-[2.7rem] sm:text-[var(--text-4xl)] lg:text-[var(--text-5xl)]"
+          className="text-[2.2rem] sm:text-[var(--text-4xl)] lg:text-[var(--text-5xl)]"
           style={{
             fontFamily: 'var(--font-display)',
             fontWeight: 'var(--font-bold)',
@@ -326,12 +324,12 @@ const MainBannerSlide = ({
           {bannerText}
         </h1>
 
-        {/* Subtítulo (configurable) */}
+        {/* Subtítulo (configurable) — oculto en pantallas muy pequeñas para ganar espacio */}
         <p
-          className="mt-5 max-w-2xl"
+          className="mt-3 hidden max-w-2xl sm:block"
           style={{
             fontFamily: 'var(--font-body)',
-            fontSize: 'var(--text-lg)',
+            fontSize: 'var(--text-base)',
             lineHeight: 'var(--leading-relaxed)',
             color: 'var(--announcement-text)',
           }}
@@ -340,10 +338,11 @@ const MainBannerSlide = ({
         </p>
 
         {/* CTAs fijos */}
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          {/* CTA primario — catálogo */}
           <Link
             to="/catalogo"
-            className="inline-flex cursor-pointer items-center justify-center gap-2 px-5 py-3 transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
+            className="inline-flex cursor-pointer items-center justify-center gap-2 px-5 py-2.5 transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
             style={{
               backgroundColor: 'var(--accent-text)',
               color: 'var(--accent)',
@@ -357,11 +356,13 @@ const MainBannerSlide = ({
             Ver catálogo
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
+
+          {/* CTA secundario — WhatsApp con ícono */}
           <a
             href="https://wa.me/573135007459"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex cursor-pointer items-center justify-center gap-2 border px-5 py-3 transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
+            className="inline-flex cursor-pointer items-center justify-center gap-2 border px-5 py-2.5 transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
             style={{
               borderColor: 'var(--announcement-text)',
               color: 'var(--announcement-text)',
@@ -373,6 +374,8 @@ const MainBannerSlide = ({
             }}
           >
             Hablar con asesor
+            {/* Ícono de WhatsApp — refuerza el canal de contacto */}
+            <WhatsAppIcon size={18} aria-hidden="true" />
           </a>
         </div>
       </div>
