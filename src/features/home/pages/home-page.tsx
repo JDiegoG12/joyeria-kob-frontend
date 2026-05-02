@@ -17,10 +17,10 @@ import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   Hammer,
-  HeartHandshake,
+  MessageSquareText,
   Paintbrush,
   ShieldCheck,
-  Sparkles,
+  Handshake,
   Wrench,
 } from 'lucide-react';
 import { ServiceCard } from '@/features/home/components/service-card';
@@ -126,16 +126,16 @@ const SERVICES = [
       'Extendemos la vida de tus joyas con limpieza, ajuste y revisión técnica de cada pieza.',
   },
   {
-    icon: HeartHandshake,
+    icon: MessageSquareText,
     title: 'Asesoría',
     description:
       'Te acompañamos en cada ocasión para elegir una pieza especial para alguien especial.',
   },
   {
-    icon: Sparkles,
-    title: 'Club',
+    icon: Handshake,
+    title: 'SÉ MAYORISTA',
     description:
-      'Ofrecemos facilidades de pago y alianzas comerciales para compras planeadas con calma.',
+      'Trabaja con nosotros para obtener mejores precios y condiciones especiales.',
   },
 ] as const;
 

@@ -69,7 +69,7 @@ export const LoginPage = () => {
       });
 
       toast.success('¡Hola de nuevo!');
-      navigate('/catalogo');
+      navigate('/');
     } catch (error: any) {
       const message = error?.message || 'Error al iniciar sesión';
       toast.error(message);
