@@ -4,44 +4,39 @@
  * del panel de administración de Joyería KOB.
  *
  * Permite al administrador personalizar:
- * - **Imagen de fondo** del primer slide del carrusel (subida desde archivo local).
- * - **Título principal** (bannerText) mostrado sobre la imagen.
- * - **Subtítulo** (bannerSubtitle) debajo del título.
+ * - **Imagen de fondo** del primer slide del carrusel (subida al servidor).
+ * - **Título principal** (title) mostrado sobre la imagen.
+ * - **Subtítulo** (subtitle) debajo del título.
  *
  * ## Almacenamiento
- * Por ahora persiste en `localStorage` via `useHeroBannerStore`.
- * Cuando el backend exponga el endpoint, reemplazar `setBannerConfig` por
- * una llamada a `GeneralService.updateHeroBanner(...)`.
+ * Los cambios se persisten en el backend via `PUT /api/banner` (multipart/form-data).
+ * El store `useHeroBannerStore` actúa como capa intermedia: expone `saveBanner`,
+ * `isSaving` y `saveError`, que esta tarjeta consume directamente.
  *
  * ## Restricciones de imagen
  * - Tamaño recomendado: 1920 × 800 px.
  * - Formatos aceptados: JPG, PNG, WebP.
- * - La imagen se convierte a base64 para almacenarse en localStorage.
- * - Se muestra una advertencia si el archivo supera 2 MB (localStorage tiene límite ~5 MB).
+ * - La imagen se envía como `File` — ya no se convierte a base64.
  *
  * ## Flujo de uso
  * 1. El admin abre esta tarjeta en `/admin/general`.
- * 2. Sube o escribe los datos del banner.
- * 3. Hace clic en "Guardar cambios" → los datos se persisten en el store.
- * 4. La home page refleja los cambios automáticamente en el siguiente render.
+ * 2. Modifica la imagen o los textos del banner.
+ * 3. Hace clic en "Guardar cambios" → se llama a `saveBanner`.
+ * 4. El store llama a `GeneralService.updateBanner` con `FormData`.
+ * 5. El backend persiste los cambios y devuelve el banner actualizado.
+ * 6. El store actualiza su estado → el carrusel de la home refleja los cambios.
  */
 
 import { useState, useRef, type ChangeEvent } from 'react';
-import {
-  Image,
-  RotateCcw,
-  Save,
-  AlertTriangle,
-  CheckCircle,
-} from 'lucide-react';
+import { Image, RotateCcw, Save, CheckCircle, Loader } from 'lucide-react';
 import {
   useHeroBannerStore,
   DEFAULT_BANNER_TEXT,
   DEFAULT_BANNER_SUBTITLE,
 } from '@/store/hero-banner.store';
 
-/** Peso máximo de imagen en bytes antes de mostrar advertencia (2 MB). */
-const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+/** Imagen local estática que se muestra cuando no hay imagen del backend. */
+const DEFAULT_HERO_IMAGE = 'src/assets/HERO_IMAGE.jpg';
 
 /** Formatos de imagen aceptados por el input file. */
 const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp';
@@ -57,17 +52,27 @@ export const HeroBannerCard = () => {
     bannerText,
     bannerSubtitle,
     bannerImageUrl,
-    setBannerConfig,
-    resetBanner,
+    isSaving,
+    saveError,
+    saveBanner,
   } = useHeroBannerStore();
 
   // ── Estado local del formulario ──────────────────────────────────────────
   const [localText, setLocalText] = useState(bannerText);
   const [localSubtitle, setLocalSubtitle] = useState(bannerSubtitle);
-  const [localImageUrl, setLocalImageUrl] = useState<string | null>(
-    bannerImageUrl,
-  );
-  const [imageWarning, setImageWarning] = useState<string | null>(null);
+
+  /**
+   * Archivo de imagen seleccionado por el admin en esta sesión.
+   * `null` = no se seleccionó ningún archivo nuevo (se conserva la imagen actual).
+   */
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  /**
+   * URL temporal de objeto creada con `URL.createObjectURL` para previsualizar
+   * el archivo antes de subirlo. Se revoca al cambiar de archivo o al desmontar.
+   */
+  const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
+
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>(
     'idle',
   );
@@ -78,52 +83,59 @@ export const HeroBannerCard = () => {
   // ── Manejo de imagen ─────────────────────────────────────────────────────
 
   /**
-   * Convierte la imagen seleccionada a base64 y actualiza el estado local.
-   * Muestra advertencia si el archivo supera `MAX_IMAGE_SIZE_BYTES`.
+   * Guarda el `File` seleccionado y crea una URL de objeto para la previsualización.
+   * Revoca la URL anterior para evitar memory leaks.
    */
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setImageWarning(null);
-
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      setImageWarning(
-        `El archivo pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. Se recomienda usar imágenes menores a 2 MB para evitar problemas de almacenamiento.`,
-      );
+    // Revocar URL anterior si existía
+    if (previewObjectUrl) {
+      URL.revokeObjectURL(previewObjectUrl);
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      setLocalImageUrl(base64);
-      setIsDirty(true);
-    };
-    reader.readAsDataURL(file);
+    const objectUrl = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setPreviewObjectUrl(objectUrl);
+    setIsDirty(true);
   };
 
-  /** Elimina la imagen personalizada y vuelve a la imagen estática por defecto. */
+  /** Descarta el archivo seleccionado y vuelve a mostrar la imagen del servidor. */
   const handleRemoveImage = () => {
-    setLocalImageUrl(null);
-    setImageWarning(null);
+    if (previewObjectUrl) {
+      URL.revokeObjectURL(previewObjectUrl);
+    }
+    setSelectedFile(null);
+    setPreviewObjectUrl(null);
     setIsDirty(true);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // ── Guardar ──────────────────────────────────────────────────────────────
 
-  /** Persiste los cambios en el store (y por ende en localStorage). */
-  const handleSave = () => {
-    try {
-      setBannerConfig({
-        bannerText: localText.trim() || DEFAULT_BANNER_TEXT,
-        bannerSubtitle: localSubtitle.trim() || DEFAULT_BANNER_SUBTITLE,
-        bannerImageUrl: localImageUrl,
-      });
+  /**
+   * Llama a `saveBanner` del store con los valores locales del formulario.
+   * Si el admin no seleccionó un archivo nuevo, `imageFile` no se incluye
+   * y el backend conserva la imagen actual.
+   */
+  const handleSave = async () => {
+    const success = await saveBanner({
+      title: localText.trim() || DEFAULT_BANNER_TEXT,
+      subtitle: localSubtitle.trim() || DEFAULT_BANNER_SUBTITLE,
+      // Solo se adjunta si el admin seleccionó una imagen nueva
+      ...(selectedFile ? { imageFile: selectedFile } : {}),
+    });
+
+    if (success) {
       setSaveStatus('saved');
       setIsDirty(false);
+      // Limpiar el archivo local — la imagen ya vive en el servidor
+      if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+      setSelectedFile(null);
+      setPreviewObjectUrl(null);
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch {
+    } else {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 4000);
     }
@@ -131,21 +143,25 @@ export const HeroBannerCard = () => {
 
   // ── Restaurar valores por defecto ────────────────────────────────────────
 
-  /** Restaura el banner a los valores originales de la aplicación. */
+  /**
+   * Descarta todos los cambios locales y vuelve a los valores actuales del store.
+   * No llama al backend — solo resetea el formulario al último estado guardado.
+   */
   const handleReset = () => {
-    resetBanner();
-    setLocalText(DEFAULT_BANNER_TEXT);
-    setLocalSubtitle(DEFAULT_BANNER_SUBTITLE);
-    setLocalImageUrl(null);
-    setImageWarning(null);
+    setLocalText(bannerText);
+    setLocalSubtitle(bannerSubtitle);
+    if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+    setSelectedFile(null);
+    setPreviewObjectUrl(null);
     setIsDirty(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Imagen a mostrar en la previsualización ──────────────────────────────
+  // Prioridad: objeto URL local (nueva selección) > URL del servidor > imagen estática
+  const previewImage = previewObjectUrl ?? bannerImageUrl ?? DEFAULT_HERO_IMAGE;
 
-  /** Imagen a mostrar en la previsualización (local o la guardada). */
-  const previewImage = localImageUrl ?? 'src/assets/HERO_IMAGE.jpg';
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -185,24 +201,25 @@ export const HeroBannerCard = () => {
           </p>
         </div>
 
-        {/* Botón de restaurar */}
+        {/* Botón de descartar cambios locales */}
         <button
           type="button"
           onClick={handleReset}
-          title="Restaurar valores por defecto"
-          className="flex shrink-0 items-center gap-1.5 transition-opacity duration-200 hover:opacity-70"
+          disabled={!isDirty || isSaving}
+          title="Descartar cambios"
+          className="flex shrink-0 items-center gap-1.5 transition-opacity duration-200 hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-40"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-xs)',
             color: 'var(--text-muted)',
             background: 'none',
             border: 'none',
-            cursor: 'pointer',
+            cursor: isDirty && !isSaving ? 'pointer' : 'not-allowed',
             padding: '4px 0',
           }}
         >
           <RotateCcw size={13} aria-hidden="true" />
-          Restaurar
+          Descartar
         </button>
       </div>
 
@@ -225,7 +242,8 @@ export const HeroBannerCard = () => {
         <div
           className="relative mb-3 overflow-hidden"
           style={{
-            aspectRatio: '1920 / 800',
+            aspectRatio:
+              '16 / 9' /* mismo ratio que el carrusel en producción */,
             borderRadius: 'var(--radius-sm)',
             border: '1px solid var(--border-color)',
             backgroundColor: 'var(--bg-tertiary)',
@@ -236,27 +254,33 @@ export const HeroBannerCard = () => {
             alt="Previsualización del banner"
             className="h-full w-full object-cover"
           />
-          {/* Overlay con dimensiones sugeridas */}
+          {/* Dimensiones sugeridas sobre la imagen */}
           <div
             className="absolute bottom-0 left-0 right-0 px-3 py-1.5"
             style={{
               backgroundColor:
-                'color-mix(in srgb, var(--bg-overlay) 70%, transparent)',
-              fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-xs)',
-              color: 'var(--text-inverse)',
+                'color-mix(in srgb, var(--accent-active) 72%, transparent)',
             }}
           >
-            Previsualización · relación 1920 × 800
+            <p
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 'var(--text-xs)',
+                color: 'rgba(255,255,255,0.78)',
+              }}
+            >
+              Formato recomendado: 1920 × 1080 px · JPG, PNG, WebP
+            </p>
           </div>
         </div>
 
-        {/* Botones de imagen */}
-        <div className="flex flex-wrap gap-2">
+        {/* Acciones de imagen */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-2 px-3 py-2 transition-opacity duration-200 hover:opacity-80"
+            disabled={isSaving}
+            className="inline-flex items-center gap-2 px-3 py-2 transition-opacity duration-200 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               fontFamily: 'var(--font-ui)',
               fontSize: 'var(--text-sm)',
@@ -265,18 +289,20 @@ export const HeroBannerCard = () => {
               backgroundColor: 'var(--accent)',
               borderRadius: 'var(--radius-sm)',
               border: 'none',
-              cursor: 'pointer',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
             }}
           >
             <Image size={14} aria-hidden="true" />
-            {localImageUrl ? 'Cambiar imagen' : 'Subir imagen'}
+            {selectedFile ? 'Cambiar imagen' : 'Subir imagen'}
           </button>
 
-          {localImageUrl && (
+          {/* Solo muestra "Quitar imagen" si hay un archivo nuevo seleccionado */}
+          {selectedFile && (
             <button
               type="button"
               onClick={handleRemoveImage}
-              className="inline-flex items-center gap-2 px-3 py-2 transition-opacity duration-200 hover:opacity-80"
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 px-3 py-2 transition-opacity duration-200 hover:opacity-80 disabled:cursor-not-allowed"
               style={{
                 fontFamily: 'var(--font-ui)',
                 fontSize: 'var(--text-sm)',
@@ -285,10 +311,10 @@ export const HeroBannerCard = () => {
                 backgroundColor: 'transparent',
                 borderRadius: 'var(--radius-sm)',
                 border: '1px solid var(--border-color)',
-                cursor: 'pointer',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
               }}
             >
-              Usar imagen por defecto
+              Mantener imagen actual
             </button>
           )}
         </div>
@@ -303,37 +329,19 @@ export const HeroBannerCard = () => {
           aria-label="Seleccionar imagen del banner"
         />
 
-        {/* Advertencia de tamaño de archivo */}
-        {imageWarning && (
-          <div
-            className="mt-2 flex items-start gap-2 rounded-[var(--radius-sm)] p-3"
+        {/* Nombre del archivo seleccionado */}
+        {selectedFile && (
+          <p
+            className="mt-2"
             style={{
-              backgroundColor:
-                'color-mix(in srgb, var(--color-warning) 12%, transparent)',
-              border:
-                '1px solid color-mix(in srgb, var(--color-warning) 35%, transparent)',
+              fontFamily: 'var(--font-ui)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-muted)',
             }}
           >
-            <AlertTriangle
-              size={14}
-              style={{
-                color: 'var(--color-warning)',
-                flexShrink: 0,
-                marginTop: 1,
-              }}
-              aria-hidden="true"
-            />
-            <p
-              style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: 'var(--text-xs)',
-                color: 'var(--text-primary)',
-                lineHeight: 'var(--leading-normal)',
-              }}
-            >
-              {imageWarning}
-            </p>
-          </div>
+            Archivo seleccionado: {selectedFile.name} (
+            {(selectedFile.size / 1024 / 1024).toFixed(1)} MB)
+          </p>
         )}
       </div>
 
@@ -357,12 +365,13 @@ export const HeroBannerCard = () => {
           type="text"
           value={localText}
           maxLength={80}
+          disabled={isSaving}
           onChange={(e) => {
             setLocalText(e.target.value);
             setIsDirty(true);
           }}
           placeholder={DEFAULT_BANNER_TEXT}
-          className="w-full px-3 py-2.5 transition-colors duration-200"
+          className="w-full px-3 py-2.5 transition-colors duration-200 disabled:opacity-60"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
@@ -411,12 +420,13 @@ export const HeroBannerCard = () => {
           value={localSubtitle}
           maxLength={200}
           rows={3}
+          disabled={isSaving}
           onChange={(e) => {
             setLocalSubtitle(e.target.value);
             setIsDirty(true);
           }}
           placeholder={DEFAULT_BANNER_SUBTITLE}
-          className="w-full resize-none px-3 py-2.5 transition-colors duration-200"
+          className="w-full resize-none px-3 py-2.5 transition-colors duration-200 disabled:opacity-60"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
@@ -468,7 +478,7 @@ export const HeroBannerCard = () => {
               </span>
             </>
           )}
-          {saveStatus === 'error' && (
+          {(saveStatus === 'error' || saveError) && (
             <span
               style={{
                 fontFamily: 'var(--font-ui)',
@@ -476,31 +486,42 @@ export const HeroBannerCard = () => {
                 color: 'var(--color-error)',
               }}
             >
-              Error al guardar. Intenta de nuevo.
+              {saveError ?? 'Error al guardar. Intenta de nuevo.'}
             </span>
           )}
         </div>
 
-        {/* Botón guardar */}
+        {/* Botón guardar — muestra spinner mientras `isSaving` es true */}
         <button
           type="button"
           onClick={handleSave}
-          disabled={!isDirty}
+          disabled={!isDirty || isSaving}
           className="inline-flex items-center gap-2 px-4 py-2.5 transition-opacity duration-200 hover:opacity-80 disabled:cursor-not-allowed"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
             fontWeight: 'var(--font-semibold)',
             color: 'var(--accent-text)',
-            backgroundColor: isDirty ? 'var(--accent)' : 'var(--bg-tertiary)',
+            backgroundColor:
+              isDirty && !isSaving ? 'var(--accent)' : 'var(--bg-tertiary)',
             borderRadius: 'var(--radius-sm)',
             border: 'none',
-            cursor: isDirty ? 'pointer' : 'not-allowed',
-            opacity: isDirty ? 1 : 'var(--opacity-disabled)',
+            cursor: isDirty && !isSaving ? 'pointer' : 'not-allowed',
+            opacity: isDirty && !isSaving ? 1 : 'var(--opacity-disabled)',
           }}
         >
-          <Save size={14} aria-hidden="true" />
-          Guardar cambios
+          {isSaving ? (
+            <>
+              {/* Spinner animado durante el guardado */}
+              <Loader size={14} className="animate-spin" aria-hidden="true" />
+              Guardando…
+            </>
+          ) : (
+            <>
+              <Save size={14} aria-hidden="true" />
+              Guardar cambios
+            </>
+          )}
         </button>
       </div>
     </div>
