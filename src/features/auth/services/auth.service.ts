@@ -104,12 +104,15 @@ export const AuthService = {
     // LOGOUT
     // ─────────────────────────────
     logout: (): void => {
+        const role = useAuthStore.getState().user?.role;  // ← leer ANTES de limpiar
         useAuthStore.getState().clearSession();
-
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
-
-        window.location.replace('/login');
+        if (role === 'ADMIN') {
+            window.location.replace('/admin/login');
+        } else {
+            window.location.replace('/');
+        }
     },
 
     // ─────────────────────────────

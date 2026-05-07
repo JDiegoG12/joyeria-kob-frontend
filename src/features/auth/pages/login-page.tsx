@@ -1,184 +1,251 @@
 /**
  * @file login-page.tsx
- * @description Página de inicio de sesión para clientes.
- * UI moderna, premium y compatible con modo claro / oscuro.
+ * @description Página de inicio de sesión.
+ * - Panel izquierdo con textos decorativos (desktop)
+ * - Gradientes bonitos en ambos modos
+ * - 100% responsive — cabe en pantalla sin scroll
  */
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { AuthService } from '@/features/auth/services/auth.service'; // ✅
+import { AuthService } from '@/features/auth/services/auth.service';
 
 interface FormState {
   email: string;
   password: string;
 }
 
+const blockClipboard = (e: React.ClipboardEvent) => e.preventDefault();
+
 export const LoginPage = () => {
   const navigate = useNavigate();
-
-  const [form, setForm] = useState<FormState>({
-    email: '',
-    password: '',
-  });
-
+  const [form, setForm] = useState<FormState>({ email: '', password: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const updateField = (field: keyof FormState, value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    setErrors((prev) => ({
-      ...prev,
-      [field]: '',
-    }));
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
   const validate = () => {
     const newErrors: Partial<FormState> = {};
-
-    if (!form.email.trim()) {
-      newErrors.email = 'El correo es obligatorio';
-    } else if (!/\S+@\S+\.\S+/.test(form.email)) {
-      newErrors.email = 'Correo inválido';
-    }
-
-    if (!form.password.trim()) {
-      newErrors.password = 'La contraseña es obligatoria';
-    }
-
+    if (!form.email.trim()) newErrors.email = 'El correo es obligatorio';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = 'Correo inválido';
+    if (!form.password.trim()) newErrors.password = 'La contraseña es obligatoria';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validate()) return;
-
     try {
       setLoading(true);
-
-      // ✅ Llamada real al servicio de autenticación
-      await AuthService.login({
-        email: form.email,
-        password: form.password,
-      });
-
+      await AuthService.login({ email: form.email, password: form.password });
       toast.success('¡Hola de nuevo!');
       navigate('/');
     } catch (error: any) {
-      const message = error?.message || 'Error al iniciar sesión';
-      toast.error(message);
+      toast.error(error?.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.14),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(212,175,55,0.08),_transparent_22%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.04),transparent,rgba(212,175,55,0.04))] dark:bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.02),transparent,rgba(212,175,55,0.03))]" />
+    /**
+     * h-[calc(100vh-64px)]: ocupa exactamente el espacio bajo el header del AuthLayout
+     * overflow-hidden: evita scroll
+     */
+    <div
+      className="relative flex h-[calc(100vh-64px)] overflow-hidden"
+      style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+    >
+      {/* ── Gradientes decorativos ── */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(212,175,55,0.13),_transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(212,175,55,0.08),_transparent_50%)]" />
+      <div className="pointer-events-none absolute inset-0 dark:bg-[radial-gradient(ellipse_at_top_left,_rgba(212,175,55,0.07),_transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(212,175,55,0.04),_transparent_50%)]" />
 
-      <div className="relative z-10 grid h-screen grid-cols-1 lg:grid-cols-2">
-        <section className="hidden lg:flex lg:flex-col lg:justify-between px-16 py-14 animate-fade-in">
+      {/* ── Grid de dos columnas ── */}
+      <div className="relative z-10 grid w-full grid-cols-1 lg:grid-cols-2">
+
+        {/* ── Panel izquierdo — solo desktop ── */}
+        <section className="hidden lg:flex lg:flex-col lg:justify-between px-14 py-10 xl:px-16 xl:py-14 animate-fade-in">
           <div>
-            <span className="inline-flex items-center rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)]/70 px-4 py-2 text-xs uppercase tracking-[0.25em] text-[var(--text-secondary)] backdrop-blur-md">
+            <span
+              className="inline-flex items-center rounded-full border px-4 py-1.5 text-xs uppercase tracking-[0.25em] backdrop-blur-md"
+              style={{
+                borderColor: 'var(--border-color)',
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-secondary)',
+              }}
+            >
               Joyería KOB
             </span>
           </div>
 
-          <div className="max-w-xl">
-            <p className="mb-5 text-sm uppercase tracking-[0.35em] text-[var(--accent)]">
+          <div className="max-w-lg">
+            <p
+              className="mb-4 text-xs uppercase tracking-[0.35em]"
+              style={{ color: 'var(--accent)' }}
+            >
               Elegancia atemporal
             </p>
-            <h1 className="font-serif text-6xl leading-[1.05] text-[var(--text-primary)]">
+            <h1
+              className="font-serif text-5xl leading-[1.08] xl:text-6xl"
+              style={{ color: 'var(--text-primary)' }}
+            >
               Joyas que cuentan
-              <span className="block text-[var(--accent)]">tu historia</span>
+              <span className="block" style={{ color: 'var(--accent)' }}>
+                tu historia
+              </span>
             </h1>
-            <p className="mt-6 max-w-lg text-lg leading-8 text-[var(--text-secondary)]">
+            <p
+              className="mt-5 max-w-md text-base leading-7 xl:text-lg xl:leading-8"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Ingresa para explorar piezas exclusivas, guardar tus intereses y
               continuar una experiencia diseñada con detalle, lujo y
               personalización.
             </p>
           </div>
 
-          <div className="text-sm text-[var(--text-secondary)]">
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
             Diseño premium • experiencia cuidada • acceso seguro
-          </div>
+          </p>
         </section>
 
-        <section className="flex items-center justify-center px-6 py-10 sm:px-10">
-          <div className="w-full max-w-md animate-fade-in rounded-[32px] border border-[var(--border-color)] bg-[var(--bg-secondary)]/85 p-8 shadow-[0_20px_80px_rgba(0,0,0,0.18)] backdrop-blur-2xl transition-all duration-300 hover:shadow-[0_25px_90px_rgba(0,0,0,0.25)] sm:p-10 dark:shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
-            <div className="mb-8">
-              <p className="text-sm uppercase tracking-[0.3em] text-[var(--accent)]">
+        {/* ── Panel derecho — formulario ── */}
+        <section className="flex h-[calc(100vh-64px)] items-center justify-center px-4 py-6 sm:px-10">
+          <div
+            className="w-full max-w-sm animate-fade-in rounded-2xl border p-6 shadow-lg backdrop-blur-xl sm:max-w-md sm:p-8"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderColor: 'var(--border-color)',
+              boxShadow: 'var(--shadow-lg)',
+            }}
+          >
+            {/* Cabecera */}
+            <div className="mb-5">
+              <p
+                className="text-xs uppercase tracking-[0.3em]"
+                style={{ color: 'var(--accent)' }}
+              >
                 Bienvenida
               </p>
-              <h2 className="mt-3 font-serif text-4xl text-[var(--text-primary)]">
+              <h2
+                className="mt-1 font-serif text-3xl"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 Iniciar sesión
               </h2>
-              <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-                Accede a tu cuenta para continuar con tu experiencia dentro de
-                Joyería KOB.
+              <p
+                className="mt-1 text-xs leading-5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Accede a tu cuenta para continuar en Joyería KOB.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Formulario */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+
+              {/* Correo */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
+                <label
+                  className="mb-1 block text-xs font-medium"
+                  style={{ color: 'var(--text-primary)' }}
+                >
                   Correo electrónico
                 </label>
                 <input
                   type="email"
                   value={form.email}
                   onChange={(e) => updateField('email', e.target.value)}
+                  onCopy={blockClipboard}
+                  onCut={blockClipboard}
+                  onPaste={blockClipboard}
                   placeholder="correo@ejemplo.com"
-                  className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-primary)]/70 px-4 py-3.5 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  autoComplete="email"
+                  className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
+                  style={{
+                    borderColor: 'var(--border-color)',
+                    backgroundColor: 'var(--bg-primary)',
+                    color: 'var(--text-primary)',
+                  }}
                 />
-                {errors.email ? (
-                  <p className="mt-2 text-sm text-red-500">{errors.email}</p>
-                ) : null}
+                {errors.email && (
+                  <p className="mt-1 text-xs text-red-500">{errors.email}</p>
+                )}
               </div>
 
+              {/* Contraseña */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
+                <label
+                  className="mb-1 block text-xs font-medium"
+                  style={{ color: 'var(--text-primary)' }}
+                >
                   Contraseña
                 </label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => updateField('password', e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-primary)]/70 px-4 py-3.5 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                />
-                {errors.password ? (
-                  <p className="mt-2 text-sm text-red-500">{errors.password}</p>
-                ) : null}
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={(e) => updateField('password', e.target.value)}
+                    onCopy={blockClipboard}
+                    onCut={blockClipboard}
+                    onPaste={blockClipboard}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    className="w-full rounded-xl border px-3 py-2.5 pr-10 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
+                    style={{
+                      borderColor: 'var(--border-color)',
+                      backgroundColor: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition hover:opacity-70"
+                    style={{ color: 'var(--text-secondary)' }}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="mt-1 text-xs text-red-500">{errors.password}</p>
+                )}
               </div>
 
+              {/* Botón */}
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-2 w-full rounded-2xl bg-[var(--accent)] px-5 py-3.5 font-medium text-white transition-all hover:scale-[1.02] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-xl py-2.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ backgroundColor: 'var(--accent)' }}
               >
                 {loading ? 'Ingresando...' : 'Entrar'}
               </button>
             </form>
 
-            <div className="mt-8 space-y-3 text-center">
-              <p className="text-sm text-[var(--text-secondary)]">
-                ¿No tienes cuenta?{' '}
-                <Link
-                  to="/registro"
-                  className="font-medium text-[var(--accent)] transition hover:opacity-80"
-                >
-                  Regístrate
-                </Link>
-              </p>
-            </div>
+            {/* Pie */}
+            <p
+              className="mt-4 text-center text-xs"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              ¿No tienes cuenta?{' '}
+              <Link
+                to="/registro"
+                className="font-medium transition hover:opacity-80"
+                style={{ color: 'var(--accent)' }}
+              >
+                Regístrate
+              </Link>
+            </p>
           </div>
         </section>
       </div>
