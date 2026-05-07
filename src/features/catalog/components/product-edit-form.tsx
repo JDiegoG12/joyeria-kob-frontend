@@ -42,7 +42,7 @@ const MAX_IMAGES = 5;
 const MAX_NAME_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 800;
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_IMAGE_SIZE_MB = 5;
+const MAX_IMAGE_SIZE_MB = 25;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 
 // ─── Clases reutilizables ─────────────────────────────────────────────────────
@@ -289,6 +289,24 @@ export const ProductEditForm = ({
   useEffect(() => {
     if (isOpen) void loadGoldPrice();
   }, [isOpen, loadGoldPrice]);
+
+  // Bloquear scroll de fondo mientras el modal esté abierto
+  useEffect(() => {
+    const scrollRoot = document.getElementById('admin-content');
+
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      if (scrollRoot) scrollRoot.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      if (scrollRoot) scrollRoot.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      if (scrollRoot) scrollRoot.style.overflow = '';
+    };
+  }, [isOpen]);
 
   // Revocar URLs de objeto al cerrar o cambiar lista
   useEffect(() => {
@@ -844,7 +862,7 @@ export const ProductEditForm = ({
                       <p className="text-xs text-[var(--text-muted)]">
                         Nuevo precio estimado
                       </p>
-                      <p className="text-2xl font-bold text-[var(--accent)]">
+                      <p className="text-2xl font-bold text-[var(--text-accent)]">
                         {estimatedPrice !== null
                           ? `$${Math.round(estimatedPrice).toLocaleString('es-CO')} COP`
                           : '—'}
@@ -987,8 +1005,9 @@ export const ProductEditForm = ({
                     </span>
                   </h3>
                   <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                    Pares clave-valor. "true"/"false" para booleanos. Separados
-                    por coma para listas.
+                    Agrega detalles como talla, material o piedras. Si es un
+                    sí/no, escribe "true" o "false". Para varios valores,
+                    sepáralos con comas.
                   </p>
                 </div>
                 <button
@@ -1011,7 +1030,7 @@ export const ProductEditForm = ({
                   {specEntries.map((entry) => (
                     <div
                       key={entry.id}
-                      className="grid grid-cols-[1fr_1fr_auto] items-center gap-3"
+                      className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-center"
                     >
                       <input
                         type="text"
@@ -1019,8 +1038,8 @@ export const ProductEditForm = ({
                         onChange={(e) =>
                           updateSpecEntry(entry.id, 'key', e.target.value)
                         }
-                        placeholder="Clave (ej: requiresSize)"
-                        className="rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]"
+                        placeholder="Detalle (ej: talla)"
+                        className="w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]"
                       />
                       <input
                         type="text"
@@ -1028,14 +1047,14 @@ export const ProductEditForm = ({
                         onChange={(e) =>
                           updateSpecEntry(entry.id, 'value', e.target.value)
                         }
-                        placeholder="Valor (ej: true, 6,7,8)"
-                        className="rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]"
+                        placeholder="Valor (ej: 6, 7, 8 o true)"
+                        className="w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]"
                       />
                       <button
                         type="button"
                         onClick={() => removeSpecEntry(entry.id)}
                         aria-label="Eliminar especificación"
-                        className="rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm text-red-500 transition hover:bg-red-500/10 hover:border-red-500/30 active:scale-95"
+                        className="rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm text-red-500 transition hover:bg-red-500/10 hover:border-red-500/30 active:scale-95 sm:justify-self-start"
                       >
                         ✕
                       </button>
@@ -1080,7 +1099,7 @@ export const ProductEditForm = ({
                       ? 'bg-red-500/10 text-red-500'
                       : totalImages === MAX_IMAGES
                         ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                        : 'bg-[var(--accent)]/10 text-[var(--accent)]'
+                        : 'bg-[var(--accent-subtle)] text-[var(--text-accent)]'
                   }`}
                 >
                   {totalImages}/{MAX_IMAGES}

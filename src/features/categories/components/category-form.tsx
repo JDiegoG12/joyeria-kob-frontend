@@ -149,7 +149,8 @@ export const CategoryForm = ({
             border: '1px solid var(--border-color)',
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--accent)';
+            e.currentTarget.style.borderColor =
+              'var(--accent-vivid, var(--accent))';
             e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-subtle)';
           }}
           onBlur={(e) => {
@@ -210,7 +211,8 @@ export const CategoryForm = ({
             lineHeight: 'var(--leading-relaxed)',
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--accent)';
+            e.currentTarget.style.borderColor =
+              'var(--accent-vivid, var(--accent))';
             e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-subtle)';
           }}
           onBlur={(e) => {
@@ -297,17 +299,19 @@ export const CategoryForm = ({
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
             fontWeight: 'var(--font-semibold)',
-            backgroundColor: 'var(--accent)',
+            backgroundColor: 'var(--accent-vivid, var(--accent))',
             color: 'var(--accent-text)',
           }}
           onMouseEnter={(e) => {
             if (!isSaving) {
-              e.currentTarget.style.backgroundColor = 'var(--accent-hover)';
+              e.currentTarget.style.backgroundColor =
+                'var(--accent-vivid, var(--accent-hover))';
               e.currentTarget.style.boxShadow = 'var(--shadow-accent)';
             }
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--accent)';
+            e.currentTarget.style.backgroundColor =
+              'var(--accent-vivid, var(--accent))';
             e.currentTarget.style.boxShadow = 'none';
           }}
         >

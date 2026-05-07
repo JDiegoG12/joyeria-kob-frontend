@@ -4,8 +4,9 @@
  *
  * ## Estructura
  * - Encabezado de página consistente con los módulos admin existentes.
- * - Selector de rango para el histórico del precio del oro.
  * - Card de gráfica responsive con estados de carga, error y vacío.
+ * - Selector de rango integrado dentro de la card del histórico para dejar
+ *   claro que ese control solo afecta esa visualización.
  *
  * ## Ruta
  * `/admin/metricas` — protegida por `ProtectedRoute` con rol `ADMIN`.
@@ -72,9 +73,9 @@ export const AdminMetricsPage = () => {
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
+        className="mb-10"
       >
-        <div className="flex-1">
+        <div className="max-w-3xl">
           <h1
             style={{
               fontFamily: 'var(--font-display)',
@@ -98,8 +99,6 @@ export const AdminMetricsPage = () => {
             Visualiza métricas clave del negocio y su evolución en el tiempo.
           </p>
         </div>
-
-        <RangeSelector value={range} onChange={setRange} />
       </motion.div>
 
       {/* ── Contenido principal ─────────────────────────────────────────── */}
@@ -115,21 +114,68 @@ export const AdminMetricsPage = () => {
           boxShadow: 'var(--shadow-sm)',
         }}
       >
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
-              style={{
-                backgroundColor: 'var(--accent-subtle)',
-                color: 'var(--accent)',
-              }}
-            >
-              <BarChart3 size={20} aria-hidden="true" />
+        <div className="mb-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
+                style={{
+                  backgroundColor: 'var(--accent-subtle)',
+                  color: 'var(--accent-vivid, var(--accent))',
+                }}
+              >
+                <BarChart3 size={20} aria-hidden="true" />
+              </div>
+
+              <div>
+                <p
+                  className="mb-1"
+                  style={{
+                    fontFamily: 'var(--font-ui)',
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 'var(--font-semibold)',
+                    color: 'var(--text-muted)',
+                    letterSpacing: 'var(--tracking-wide)',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Indicadores financieros
+                </p>
+                <h2
+                  id="gold-price-history-title"
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 'var(--text-lg)',
+                    fontWeight: 'var(--font-semibold)',
+                    color: 'var(--text-primary)',
+                    lineHeight: 'var(--leading-tight)',
+                  }}
+                >
+                  Histórico del precio del oro
+                </h2>
+                <p
+                  className="mt-1"
+                  style={{
+                    fontFamily: 'var(--font-ui)',
+                    fontSize: 'var(--text-sm)',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  Evolución histórica del valor por gramo con referencia
+                  temporal.
+                </p>
+              </div>
             </div>
 
+            {!isLoading && error && (
+              <RetryButton onRetry={() => void loadHistory(range)} />
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p
-                className="mb-1"
+                className="m-0"
                 style={{
                   fontFamily: 'var(--font-ui)',
                   fontSize: 'var(--text-xs)',
@@ -139,36 +185,22 @@ export const AdminMetricsPage = () => {
                   textTransform: 'uppercase',
                 }}
               >
-                Indicadores financieros
+                Rango del histórico
               </p>
-              <h2
-                id="gold-price-history-title"
-                style={{
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 'var(--text-lg)',
-                  fontWeight: 'var(--font-semibold)',
-                  color: 'var(--text-primary)',
-                  lineHeight: 'var(--leading-tight)',
-                }}
-              >
-                Histórico del precio del oro
-              </h2>
               <p
-                className="mt-1"
+                className="m-0 mt-1"
                 style={{
                   fontFamily: 'var(--font-ui)',
                   fontSize: 'var(--text-sm)',
-                  color: 'var(--text-muted)',
+                  color: 'var(--text-secondary)',
                 }}
               >
-                Rango seleccionado: {range}
+                Selecciona el periodo que quieres analizar en esta gráfica.
               </p>
             </div>
-          </div>
 
-          {!isLoading && error && (
-            <RetryButton onRetry={() => void loadHistory(range)} />
-          )}
+            <RangeSelector value={range} onChange={setRange} />
+          </div>
         </div>
 
         {isLoading && <ChartSkeleton />}
@@ -214,7 +246,9 @@ const RangeSelector = ({ value, onChange }: RangeSelectorProps) => (
           onClick={() => onChange(option.value)}
           className="cursor-pointer rounded-lg px-3 py-2 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:min-w-14"
           style={{
-            backgroundColor: isActive ? 'var(--accent)' : 'transparent',
+            backgroundColor: isActive
+              ? 'var(--accent-vivid, var(--accent))'
+              : 'transparent',
             color: isActive ? 'var(--accent-text)' : 'var(--text-secondary)',
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
@@ -262,7 +296,8 @@ const ErrorState = ({ message }: ErrorStateProps) => (
     <div
       className="flex h-11 w-11 items-center justify-center rounded-full"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--color-error) 12%, transparent)',
+        backgroundColor:
+          'color-mix(in srgb, var(--color-error) 12%, transparent)',
         color: 'var(--color-error)',
       }}
     >

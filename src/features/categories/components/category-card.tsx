@@ -61,7 +61,7 @@ export const CategoryCard = ({ category, index }: CategoryCardProps) => {
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLElement;
         el.style.boxShadow = 'var(--shadow-md)';
-        el.style.borderColor = 'var(--border-accent)';
+        el.style.borderColor = 'var(--accent-vivid, var(--border-accent))';
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget as HTMLElement;
@@ -95,7 +95,10 @@ export const CategoryCard = ({ category, index }: CategoryCardProps) => {
         <ChevronRight
           size={16}
           className="flex-shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-          style={{ color: 'var(--accent)', marginTop: '2px' }}
+          style={{
+            color: 'var(--accent-vivid, var(--accent))',
+            marginTop: '2px',
+          }}
         />
       </div>
 

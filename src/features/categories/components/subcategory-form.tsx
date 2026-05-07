@@ -164,14 +164,20 @@ export const SubcategoryForm = ({
       >
         <Plus
           size={15}
-          style={{ color: isOpen ? 'var(--accent)' : 'var(--text-muted)' }}
+          style={{
+            color: isOpen
+              ? 'var(--accent-vivid, var(--accent))'
+              : 'var(--text-muted)',
+          }}
         />
         <span
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
             fontWeight: 'var(--font-medium)',
-            color: isOpen ? 'var(--accent)' : 'var(--text-secondary)',
+            color: isOpen
+              ? 'var(--accent-vivid, var(--accent))'
+              : 'var(--text-secondary)',
           }}
         >
           Añadir subcategoría
@@ -235,7 +241,7 @@ export const SubcategoryForm = ({
                   onFocus={(e) =>
                     setFocusStyle(
                       e,
-                      'var(--accent)',
+                      'var(--accent-vivid, var(--accent))',
                       '0 0 0 3px var(--accent-subtle)',
                     )
                   }
@@ -284,7 +290,7 @@ export const SubcategoryForm = ({
                   onFocus={(e) =>
                     setFocusStyle(
                       e,
-                      'var(--accent)',
+                      'var(--accent-vivid, var(--accent))',
                       '0 0 0 3px var(--accent-subtle)',
                     )
                   }
@@ -374,13 +380,16 @@ export const SubcategoryForm = ({
                     fontFamily: 'var(--font-ui)',
                     fontSize: 'var(--text-sm)',
                     fontWeight: 'var(--font-semibold)',
-                    backgroundColor: 'var(--accent)',
+                    backgroundColor: 'var(--accent-vivid, var(--accent))',
                     color: 'var(--accent-text)',
                   }}
                   onHoverStart={(e) => {
                     if (!isSaving) {
                       const el = e as unknown as React.MouseEvent<HTMLElement>;
-                      setHoverStyle(el, 'var(--accent-hover)');
+                      setHoverStyle(
+                        el,
+                        'var(--accent-vivid, var(--accent-hover))',
+                      );
                       if (el.currentTarget)
                         el.currentTarget.style.boxShadow =
                           'var(--shadow-accent)';
@@ -388,7 +397,7 @@ export const SubcategoryForm = ({
                   }}
                   onHoverEnd={(e) => {
                     const el = e as unknown as React.MouseEvent<HTMLElement>;
-                    setHoverStyle(el, 'var(--accent)');
+                    setHoverStyle(el, 'var(--accent-vivid, var(--accent))');
                     if (el.currentTarget)
                       el.currentTarget.style.boxShadow = 'none';
                   }}

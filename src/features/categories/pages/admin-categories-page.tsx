@@ -110,7 +110,7 @@ export const AdminCategoriesPage = () => {
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-sm)',
             fontWeight: 'var(--font-semibold)',
-            backgroundColor: 'var(--accent)',
+            backgroundColor: 'var(--accent-vivid, var(--accent))',
             color: 'var(--accent-text)',
             boxShadow: 'var(--shadow-md)',
             whiteSpace: 'nowrap',
@@ -118,14 +118,14 @@ export const AdminCategoriesPage = () => {
           onHoverStart={(e) => {
             if (!e.currentTarget) return; // Guarda contra desmontaje asíncrono
             (e.currentTarget as HTMLElement).style.backgroundColor =
-              'var(--accent-hover)';
+              'var(--accent-vivid, var(--accent-hover))';
             (e.currentTarget as HTMLElement).style.boxShadow =
               'var(--shadow-accent)';
           }}
           onHoverEnd={(e) => {
             if (!e.currentTarget) return; // Guarda contra desmontaje asíncrono
             (e.currentTarget as HTMLElement).style.backgroundColor =
-              'var(--accent)';
+              'var(--accent-vivid, var(--accent))';
             (e.currentTarget as HTMLElement).style.boxShadow =
               'var(--shadow-md)';
           }}
@@ -168,7 +168,7 @@ export const AdminCategoriesPage = () => {
               onFocus={(e) => {
                 (
                   e.currentTarget.parentElement as HTMLElement
-                ).style.borderColor = 'var(--accent)';
+                ).style.borderColor = 'var(--accent-vivid, var(--accent))';
                 (e.currentTarget.parentElement as HTMLElement).style.boxShadow =
                   '0 0 0 3px var(--accent-subtle)';
               }}
@@ -294,8 +294,8 @@ export const AdminCategoriesPage = () => {
                 fontFamily: 'var(--font-ui)',
                 fontSize: 'var(--text-sm)',
                 fontWeight: 'var(--font-medium)',
-                color: 'var(--accent)',
-                border: '1px solid var(--accent)',
+                color: 'var(--accent-vivid, var(--accent))',
+                border: '1px solid var(--accent-vivid, var(--accent))',
                 backgroundColor: 'transparent',
               }}
             >
@@ -456,7 +456,7 @@ const EmptyState = ({ onCreateClick }: EmptyStateProps) => (
       className="flex h-16 w-16 items-center justify-center rounded-2xl"
       style={{ backgroundColor: 'var(--accent-subtle)' }}
     >
-      <Tag size={28} style={{ color: 'var(--accent)' }} />
+      <Tag size={28} style={{ color: 'var(--accent-vivid, var(--accent))' }} />
     </div>
     <div className="text-center">
       <p
@@ -490,19 +490,19 @@ const EmptyState = ({ onCreateClick }: EmptyStateProps) => (
         fontFamily: 'var(--font-ui)',
         fontSize: 'var(--text-sm)',
         fontWeight: 'var(--font-semibold)',
-        backgroundColor: 'var(--accent)',
+        backgroundColor: 'var(--accent-vivid, var(--accent))',
         color: 'var(--accent-text)',
         boxShadow: 'var(--shadow-md)',
       }}
       onHoverStart={(e) => {
         (e.currentTarget as HTMLElement).style.backgroundColor =
-          'var(--accent-hover)';
+          'var(--accent-vivid, var(--accent-hover))';
         (e.currentTarget as HTMLElement).style.boxShadow =
           'var(--shadow-accent)';
       }}
       onHoverEnd={(e) => {
         (e.currentTarget as HTMLElement).style.backgroundColor =
-          'var(--accent)';
+          'var(--accent-vivid, var(--accent))';
         (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)';
       }}
     >
