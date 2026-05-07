@@ -76,7 +76,14 @@ interface HeroCarouselProps {
  * El primer slide siempre es el banner configurable desde el panel admin.
  */
 export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
-  const { bannerText, bannerSubtitle, bannerImageUrl } = useHeroBannerStore();
+  const { bannerText, bannerSubtitle, bannerImageUrl, fetchBanner } =
+    useHeroBannerStore();
+
+  // Obtiene el banner desde el backend al montar el carrusel.
+  // Se ejecuta una sola vez — el store maneja el estado de carga internamente.
+  useEffect(() => {
+    fetchBanner();
+  }, [fetchBanner]);
 
   const totalSlides = 1 + promoSlides.length;
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -263,6 +270,23 @@ interface MainBannerSlideProps {
  * El padding inferior se redujo de `pb-14` a `pb-10` para acompañar la menor
  * altura del contenedor y mantener los botones siempre visibles.
  */
+// ─── Slide principal ───────────────────────────────────────────────────────────
+
+interface MainBannerSlideProps {
+  imageUrl: string;
+  bannerText: string;
+  bannerSubtitle: string;
+  isActive: boolean;
+  prefersReducedMotion: boolean;
+}
+
+/**
+ * Slide principal del carrusel con texto configurable y CTAs fijos.
+ * Ocupa el 100% del área del carrusel y siempre es el slide 0.
+ *
+ * El padding inferior se redujo de `pb-14` a `pb-10` para acompañar la menor
+ * altura del contenedor y mantener los botones siempre visibles.
+ */
 const MainBannerSlide = ({
   imageUrl,
   bannerText,
@@ -286,18 +310,23 @@ const MainBannerSlide = ({
       className="absolute inset-0 h-full w-full object-cover"
     />
 
-    {/* Overlay degradado para legibilidad del texto */}
+    {/* Overlay degradado para legibilidad del texto.
+     * Opacidades reducidas para que la imagen protagonice:
+     * - Lateral izq: 88% → 62%, fade a 58% → 28%
+     * - Inferior:    76% → 52%
+     * El texto blanco sigue siendo legible sin que el azul tape la foto.
+     */}
     <div
       className="absolute inset-0"
       style={{
         backgroundImage: `
           linear-gradient(90deg,
-            color-mix(in srgb, var(--accent-active) 88%, transparent) 0%,
-            color-mix(in srgb, var(--accent-active) 58%, transparent) 46%,
+            color-mix(in srgb, var(--accent-active) 62%, transparent) 0%,
+            color-mix(in srgb, var(--accent-active) 28%, transparent) 46%,
             transparent 100%
           ),
           linear-gradient(0deg,
-            color-mix(in srgb, var(--accent-active) 76%, transparent) 0%,
+            color-mix(in srgb, var(--accent-active) 52%, transparent) 0%,
             transparent 42%
           )`,
       }}
@@ -310,26 +339,35 @@ const MainBannerSlide = ({
       style={{ maxWidth: 'var(--content-max-width)' }}
     >
       <div className="max-w-3xl">
-        {/* Título principal (configurable) */}
+        {/* Título principal (configurable) - TAMAÑO AUMENTADO */}
         <h1
-          className="text-[2.2rem] sm:text-[var(--text-4xl)] lg:text-[var(--text-5xl)]"
+          className="leading-tight tracking-display"
           style={{
             fontFamily: 'var(--font-display)',
             fontWeight: 'var(--font-bold)',
             lineHeight: 'var(--leading-tight)',
             letterSpacing: 'var(--tracking-display)',
             color: 'var(--accent-text)',
+            // Tamaño responsivo muy grande:
+            // - Móvil: 2.75rem (44px)
+            // - Tablet: 4.5rem (72px)
+            // - Desktop: 6.5rem (104px) - casi del tamaño del mockup
+            fontSize: 'clamp(2.75rem, 8vw, 6.5rem)',
           }}
         >
           {bannerText}
         </h1>
 
-        {/* Subtítulo (configurable) — oculto en pantallas muy pequeñas para ganar espacio */}
+        {/* Subtítulo (configurable) - TAMAÑO MODERADAMENTE AUMENTADO
+         * Oculto en pantallas muy pequeñas para ganar espacio */}
         <p
-          className="mt-3 hidden max-w-2xl sm:block"
+          className="mt-3 max-w-2xl sm:mt-4"
           style={{
             fontFamily: 'var(--font-body)',
-            fontSize: 'var(--text-base)',
+            // Tamaño aumentado moderadamente:
+            // - Mobile: 1rem (16px) - se muestra en móvil ahora
+            // - Desktop: 1.375rem (22px)
+            fontSize: 'clamp(1rem, 2vw, 1.375rem)',
             lineHeight: 'var(--leading-relaxed)',
             color: 'var(--announcement-text)',
           }}
@@ -338,7 +376,7 @@ const MainBannerSlide = ({
         </p>
 
         {/* CTAs fijos */}
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
           {/* CTA primario — catálogo */}
           <Link
             to="/catalogo"
