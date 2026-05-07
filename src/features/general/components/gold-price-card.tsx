@@ -4,8 +4,7 @@
  *
  * ## Responsabilidad
  * Permite al administrador consultar y actualizar el precio del oro por gramo
- * en COP. Es el primer bloque de configuración del módulo General y sirve
- * como plantilla visual para futuras tarjetas de configuración.
+ * en COP. Es el primer bloque visible del módulo General.
  *
  * ## Flujo de actualización
  * 1. La tarjeta carga el precio actual desde el store al montarse.
@@ -27,6 +26,12 @@
  *   cuando el campo está vacío, o cuando hay una petición en curso.
  * - **Habilitado** únicamente cuando el valor numérico del campo difiere
  *   del `goldPricePerGram` actual en el store.
+ *
+ * ## Accesibilidad de color
+ * Los acentos visuales siguen el mismo patrón del `AdminSidebar`:
+ * `var(--accent-vivid, var(--fallback-light))`.
+ * En light mode el fallback resuelve al azul principal y en dark mode
+ * `--accent-vivid` toma el control para mantener contraste suficiente.
  *
  * ## Uso
  * ```tsx
@@ -221,11 +226,12 @@ export const GoldPriceCard = () => {
       >
         {/* Encabezado de la tarjeta */}
         <div className="mb-5 flex items-start gap-3">
+          {/* Contenedor del ícono con el mismo fallback cromático del sidebar. */}
           <div
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg"
             style={{
               backgroundColor: 'var(--accent-subtle)',
-              color: 'var(--accent)',
+              color: 'var(--accent-vivid, var(--accent))',
             }}
           >
             <TrendingUp size={20} />
@@ -286,7 +292,7 @@ export const GoldPriceCard = () => {
               </label>
 
               <div
-                className="flex overflow-hidden rounded-lg border transition-colors focus-within:border-[var(--accent)]"
+                className="flex overflow-hidden rounded-lg border transition-colors focus-within:border-[var(--border-accent)]"
                 style={{ borderColor: 'var(--border-color)' }}
               >
                 {/* Prefijo visual — no interactivo */}
@@ -339,7 +345,7 @@ export const GoldPriceCard = () => {
               }
               className="flex flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg px-5 py-2.5 transition-opacity hover:opacity-85 active:opacity-75 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
               style={{
-                backgroundColor: 'var(--accent)',
+                backgroundColor: 'var(--accent-vivid, var(--accent))',
                 color: 'var(--accent-text)',
                 fontFamily: 'var(--font-ui)',
                 fontSize: 'var(--text-sm)',

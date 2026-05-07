@@ -9,18 +9,26 @@
  * a `text-3xl` desde los bordes de la página, sin `max-w` ni ícono en el
  * encabezado principal.
  *
- * El contenido de configuración sí usa `max-w-3xl` para que las tarjetas
- * no se estiren indefinidamente en pantallas muy anchas.
+ * ## Layout por secciones
+ * En desktop ya no se usa una grilla 1:1 entre tarjetas. Cada categoría
+ * de configuración se renderiza como una fila propia con:
+ * - una columna izquierda compacta para contexto de sección
+ * - una columna derecha más amplia para apilar las tarjetas de esa sección
+ *
+ * Esto escala mejor cuando una categoría, como Apariencia, acumule varias
+ * tarjetas en el futuro y evita que una sola tarjeta quede emparejada de
+ * forma artificial con otra sección distinta.
  *
  * ## Secciones actuales
- * - **Apariencia** → `HeroBannerCard`
  * - **Inventario y precios** → `GoldPriceCard`
+ * - **Apariencia** → `HeroBannerCard`
  *
  * ## Cómo agregar una nueva configuración
  * 1. Crea el componente de tarjeta en `features/general/components/`.
- * 2. Si pertenece a una sección existente, agrégala dentro de ese bloque `<section>`.
- * 3. Si es una categoría nueva, copia el bloque `<section>` y cambia
- *    el título, descripción e ícono del `SectionHeader`.
+ * 2. Si pertenece a una sección existente, agrégala dentro de la columna
+ *    de tarjetas de ese `<section>`.
+ * 3. Si es una categoría nueva, copia el bloque `<section>` con su
+ *    `SectionHeader` correspondiente.
  *
  * ## Ruta
  * `/admin/general` — protegida por `ProtectedRoute` con rol `ADMIN`.
@@ -61,34 +69,36 @@ const SectionHeader = ({
   title,
   description,
 }: SectionHeaderProps) => (
-  <div className="mb-4 flex items-center gap-3">
-    <Icon
-      size={18}
-      style={{ color: 'var(--text-muted)', flexShrink: 0 }}
-      aria-hidden="true"
-    />
-    <div>
-      <h2
-        style={{
-          fontFamily: 'var(--font-heading)',
-          fontSize: 'var(--text-xl)',
-          fontWeight: 'var(--font-semibold)',
-          color: 'var(--text-primary)',
-          lineHeight: 'var(--leading-tight)',
-        }}
-      >
-        {title}
-      </h2>
-      <p
-        style={{
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-sm)',
-          color: 'var(--text-muted)',
-          marginTop: '2px',
-        }}
-      >
-        {description}
-      </p>
+  <div className="mb-4 lg:mb-0 lg:pr-6">
+    <div className="flex items-center gap-3">
+      <Icon
+        size={18}
+        style={{ color: 'var(--text-muted)', flexShrink: 0 }}
+        aria-hidden="true"
+      />
+      <div>
+        <h2
+          className="text-[1.05rem] sm:text-[1.15rem] lg:text-[1.25rem]"
+          style={{
+            fontFamily: 'var(--font-heading)',
+            fontWeight: 'var(--font-semibold)',
+            color: 'var(--text-primary)',
+            lineHeight: 'var(--leading-tight)',
+          }}
+        >
+          {title}
+        </h2>
+        <p
+          className="text-[0.9rem] sm:text-sm"
+          style={{
+            fontFamily: 'var(--font-ui)',
+            color: 'var(--text-muted)',
+            marginTop: '2px',
+          }}
+        >
+          {description}
+        </p>
+      </div>
     </div>
   </div>
 );
@@ -98,21 +108,30 @@ const SectionHeader = ({
 /**
  * Página de configuración general del panel de administración.
  *
+ * ## Layout
+ * Usa una secuencia vertical de secciones. En desktop cada sección se divide
+ * internamente en una columna de contexto y otra de contenido, lo que mantiene
+ * el escaneo claro sin obligar a emparejar tarjetas de naturaleza distinta.
+ *
+ * En móvil y tablet todo colapsa a una sola columna, con el orden:
+ * 1. Inventario y precios (precio del oro)
+ * 2. Apariencia (banner principal y futuras opciones visuales)
+ *
  * El encabezado de página sigue el mismo patrón visual que el resto de
  * módulos del panel (categorías, joyas): sin `max-w`, sin ícono contenedor,
  * `font-display` + `text-3xl` para el título principal.
- *
- * El área de tarjetas usa `max-w-3xl` para que el contenido editable no
- * se estire en pantallas muy anchas, mejorando la legibilidad del formulario.
  */
 export const AdminGeneralPage = () => (
-  <div style={{ backgroundColor: 'var(--bg-primary)' }}>
+  <div
+    className="mx-auto w-full max-w-6xl"
+    style={{ backgroundColor: 'var(--bg-primary)' }}
+  >
     {/* ── Encabezado de página — sin max-w, igual que categorías ────────── */}
     <div className="mb-8">
       <h1
+        className="text-[1.9rem] sm:text-[2.15rem] lg:text-[var(--text-3xl)]"
         style={{
           fontFamily: 'var(--font-display)',
-          fontSize: 'var(--text-3xl)',
           fontWeight: 'var(--font-bold)',
           color: 'var(--text-primary)',
           letterSpacing: 'var(--tracking-tight)',
@@ -122,10 +141,9 @@ export const AdminGeneralPage = () => (
         Configuración general
       </h1>
       <p
-        className="mt-2"
+        className="mt-2 max-w-2xl text-[0.95rem] sm:text-sm"
         style={{
           fontFamily: 'var(--font-body)',
-          fontSize: 'var(--text-sm)',
           color: 'var(--text-secondary)',
         }}
       >
@@ -133,54 +151,53 @@ export const AdminGeneralPage = () => (
       </p>
     </div>
 
-    {/* ── Contenido de configuración — max-w para legibilidad del formulario */}
-    <div className="max-w-3xl space-y-10">
-      {/* ── Sección: Apariencia ─────────────────────────────────────────── */}
-      <section aria-labelledby="section-appearance">
-        <SectionHeader
-          icon={Layout}
-          title="Apariencia"
-          description="Personalización visual de la página principal de la tienda."
-        />
+    <div className="flex flex-col gap-10 lg:gap-12">
+      {/* ── Sección: Inventario y precios ─────────────────────────────── */}
+      <section
+        aria-labelledby="section-prices"
+        className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8"
+      >
+        <div className="lg:sticky lg:top-[calc(var(--topbar-height)+2rem)] lg:self-start">
+          <SectionHeader
+            icon={DollarSign}
+            title="Inventario y precios"
+            description="Variables de referencia usadas en el cálculo de precios del catálogo."
+          />
+        </div>
 
-        <HeroBannerCard />
+        <div className="flex min-w-0 flex-col gap-5">
+          <GoldPriceCard />
 
-        {/*
-         * Aquí irán futuras tarjetas de esta sección.
-         * Ejemplo: <AnnouncementBarCard />, <ThemeCard />
-         */}
+          {/*
+           * Aquí irán futuras tarjetas de esta sección.
+           * Ejemplo: <TaxRateCard />, <ShippingBaseCard />
+           */}
+        </div>
       </section>
 
-      {/* ── Sección: Inventario y precios ──────────────────────────────── */}
-      <section aria-labelledby="section-prices">
-        <SectionHeader
-          icon={DollarSign}
-          title="Inventario y precios"
-          description="Variables de referencia usadas en el cálculo de precios del catálogo."
-        />
+      {/* ── Sección: Apariencia ────────────────────────────────────────── */}
+      <section
+        aria-labelledby="section-appearance"
+        className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8"
+      >
+        <div className="lg:sticky lg:top-[calc(var(--topbar-height)+2rem)] lg:self-start">
+          <SectionHeader
+            icon={Layout}
+            title="Apariencia"
+            description="Personalización visual de la página principal de la tienda."
+          />
+        </div>
 
-        <GoldPriceCard />
+        <div className="flex min-w-0 flex-col gap-5">
+          <HeroBannerCard />
 
-        {/*
-         * Aquí irán futuras tarjetas de esta sección.
-         * Ejemplo: <TaxRateCard />, <ShippingBaseCard />
-         */}
+          {/*
+           * Aquí irán futuras tarjetas de esta sección, cada una en su propia
+           * tarjeta para facilitar la diferenciación entre opciones de Apariencia.
+           * Ejemplo: <AnnouncementBarCard />, <ThemeCard />, <LogoCard />
+           */}
+        </div>
       </section>
-
-      {/*
-       * ── Aquí irán nuevas secciones en el futuro ────────────────────────
-       *
-       * Ejemplo de nueva sección:
-       *
-       * <div>
-       *   <SectionHeader
-       *     icon={Store}
-       *     title="Información de la tienda"
-       *     description="Datos de contacto y ubicación de la joyería."
-       *   />
-       *   <StoreInfoCard />
-       * </div>
-       */}
     </div>
   </div>
 );

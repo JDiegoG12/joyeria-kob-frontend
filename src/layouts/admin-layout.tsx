@@ -52,6 +52,18 @@ export const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isDesktop = useIsDesktop();
 
+  useEffect(() => {
+    if (!isDesktop && sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isDesktop, sidebarOpen]);
+
   /**
    * El margen izquierdo del contenido solo aplica en desktop,
    * donde el sidebar es siempre visible y fijo.

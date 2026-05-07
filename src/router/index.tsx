@@ -16,7 +16,6 @@
  * /admin/joyas               → CRUD de joyas (AdminLayout + ProtectedRoute ADMIN)
  * /admin/categorias          → Gestión de categorías (AdminLayout + ProtectedRoute ADMIN)
  * /admin/clientes            → Gestión de clientes (AdminLayout + ProtectedRoute ADMIN)
- * /admin/disenos             → Gestión de diseños (AdminLayout + ProtectedRoute ADMIN)
  * /admin/promociones         → Gestión de promociones (AdminLayout + ProtectedRoute ADMIN)
  * *                          → Página 404
  * ```
@@ -225,10 +224,6 @@ export const router = createBrowserRouter([
       {
         path: '/admin/clientes',
         element: withSuspense(<PlaceholderPage title="Clientes" />),
-      },
-      {
-        path: '/admin/disenos',
-        element: withSuspense(<PlaceholderPage title="Diseños" />),
       },
       {
         path: '/admin/promociones',

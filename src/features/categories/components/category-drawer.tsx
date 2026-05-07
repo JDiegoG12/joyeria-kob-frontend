@@ -22,7 +22,7 @@
  * ```
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 import {
   Edit2,
@@ -107,6 +107,18 @@ export const CategoryDrawer = () => {
   );
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const isOpen = drawerMode !== 'closed';
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   const handleCreate = async (data: CategoryCreateInput) => {
     await createCategory(data);
@@ -338,7 +350,10 @@ const DrawerContent = ({
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg"
             style={{ backgroundColor: 'var(--accent-subtle)' }}
           >
-            <Tag size={15} style={{ color: 'var(--accent)' }} />
+            <Tag
+              size={15}
+              style={{ color: 'var(--accent-vivid, var(--accent))' }}
+            />
           </div>
           <h2
             className="truncate"
@@ -443,7 +458,7 @@ const DrawerContent = ({
                       <span
                         style={{
                           fontWeight: 'var(--font-semibold)',
-                          color: 'var(--accent)',
+                          color: 'var(--accent-vivid, var(--accent))',
                         }}
                       >
                         {selectedCategory.parent.name}
@@ -562,7 +577,7 @@ const DrawerContent = ({
                                   e.currentTarget as HTMLElement
                                 ).style.backgroundColor = 'var(--bg-hover)';
                                 (e.currentTarget as HTMLElement).style.color =
-                                  'var(--accent)';
+                                  'var(--accent-vivid, var(--accent))';
                               }}
                               onMouseLeave={(e) => {
                                 (
@@ -644,8 +659,9 @@ const DrawerContent = ({
               (e.currentTarget as HTMLElement).style.backgroundColor =
                 'var(--bg-hover)';
               (e.currentTarget as HTMLElement).style.borderColor =
-                'var(--accent)';
-              (e.currentTarget as HTMLElement).style.color = 'var(--accent)';
+                'var(--accent-vivid, var(--accent))';
+              (e.currentTarget as HTMLElement).style.color =
+                'var(--accent-vivid, var(--accent))';
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLElement).style.backgroundColor =
@@ -741,7 +757,7 @@ const SubcategoryEditRow = ({
       className="flex flex-col gap-2 rounded-xl p-3"
       style={{
         backgroundColor: 'var(--bg-tertiary)',
-        border: '1px solid var(--accent)',
+        border: '1px solid var(--accent-vivid, var(--accent))',
         boxShadow: '0 0 0 3px var(--accent-subtle)',
       }}
     >
@@ -835,20 +851,20 @@ const SubcategoryEditRow = ({
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-xs)',
             fontWeight: 'var(--font-semibold)',
-            backgroundColor: 'var(--accent)',
+            backgroundColor: 'var(--accent-vivid, var(--accent))',
             color: 'var(--accent-text)',
           }}
           onMouseEnter={(e) => {
             if (!isSaving) {
               (e.currentTarget as HTMLElement).style.backgroundColor =
-                'var(--accent-hover)';
+                'var(--accent-vivid, var(--accent-hover))';
               (e.currentTarget as HTMLElement).style.boxShadow =
                 'var(--shadow-accent)';
             }
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.backgroundColor =
-              'var(--accent)';
+              'var(--accent-vivid, var(--accent))';
             (e.currentTarget as HTMLElement).style.boxShadow = 'none';
           }}
         >

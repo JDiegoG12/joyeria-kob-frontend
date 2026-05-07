@@ -72,7 +72,7 @@ const CONFIRM_BUTTON_CLASSES: Record<ConfirmModalVariant, string> = {
     'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 active:scale-95 cursor-pointer',
   warning:
     'bg-amber-500 text-white hover:bg-amber-600 active:bg-amber-700 active:scale-95 cursor-pointer',
-  info: 'bg-[var(--accent)] text-[var(--accent-text)] hover:opacity-90 active:opacity-80 active:scale-95 cursor-pointer',
+  info: 'cursor-pointer text-[var(--accent-text)] hover:opacity-90 active:scale-95 active:opacity-80',
 };
 
 /** Mapa de iconos SVG inline por variante. */
@@ -131,7 +131,18 @@ const VARIANT_ICON: Record<ConfirmModalVariant, React.ReactNode> = {
 const ICON_CONTAINER_CLASSES: Record<ConfirmModalVariant, string> = {
   danger: 'bg-red-500/10 text-red-500',
   warning: 'bg-amber-500/10 text-amber-500',
-  info: 'bg-[var(--accent)]/10 text-[var(--accent)]',
+  info: '',
+};
+
+/** Ajustes inline para conservar el patrón azul light / accent-vivid dark. */
+const INFO_ACCENT_STYLE = {
+  backgroundColor: 'var(--accent-vivid, var(--accent))',
+  color: 'var(--accent-text)',
+};
+
+const INFO_ICON_CONTAINER_STYLE = {
+  backgroundColor: 'var(--accent-subtle)',
+  color: 'var(--accent-vivid, var(--accent))',
 };
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -199,6 +210,7 @@ export const ConfirmModal = ({
         <div className="mb-4 flex items-start gap-4">
           <div
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${ICON_CONTAINER_CLASSES[variant]}`}
+            style={variant === 'info' ? INFO_ICON_CONTAINER_STYLE : undefined}
           >
             {VARIANT_ICON[variant]}
           </div>
@@ -236,6 +248,7 @@ export const ConfirmModal = ({
             onClick={onConfirm}
             disabled={isLoading}
             className={`flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${CONFIRM_BUTTON_CLASSES[variant]}`}
+            style={variant === 'info' ? INFO_ACCENT_STYLE : undefined}
           >
             {isLoading && (
               <svg

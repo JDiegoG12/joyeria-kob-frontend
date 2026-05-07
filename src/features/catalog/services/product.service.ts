@@ -247,4 +247,13 @@ export const productService = {
     );
     return response.data.data;
   },
+
+  /**
+   * Elimina permanentemente una joya del catálogo.
+   *
+   * @param id - UUID del producto a eliminar.
+   */
+  async remove(id: string): Promise<void> {
+    await apiClient.delete(`/products/${id}`);
+  },
 };

@@ -39,16 +39,16 @@ import type { JewelryCategory } from '@/features/catalog/types/filter.types';
  * acoplar la feature de catálogo con la de administración.
  */
 interface BackendCategory {
-    id: number;
-    name: string;
-    slug: string;
-    parentId: number | null;
-    children: BackendCategory[];
+  id: number;
+  name: string;
+  slug: string;
+  parentId: number | null;
+  children: BackendCategory[];
 }
 
 interface BackendResponse {
-    success: boolean;
-    data: BackendCategory[];
+  success: boolean;
+  data: BackendCategory[];
 }
 
 // ─── Transformador ────────────────────────────────────────────────────────────
@@ -64,11 +64,13 @@ interface BackendResponse {
  * @returns Categoría en el formato que espera el sidebar del catálogo.
  */
 const toJewelryCategory = (category: BackendCategory): JewelryCategory => ({
-    id: String(category.id),
-    label: category.name,
-    subCategories: category.children.map((child) => ({
-        id: String(child.id),
-        label: child.name,
+  id: String(category.id),
+  label: category.name,
+  subCategories: [...category.children]
+    .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
+    .map((child) => ({
+      id: String(child.id),
+      label: child.name,
     })),
 });
 
@@ -76,30 +78,34 @@ const toJewelryCategory = (category: BackendCategory): JewelryCategory => ({
 
 /** Servicio de categorías para el sidebar de filtros del catálogo público. */
 export const FilterService = {
-    /**
-     * Obtiene todas las categorías raíz con sus subcategorías directas
-     * y las transforma al formato que espera el `filter.store`.
-     *
-     * Solo se incluyen categorías cuyo `parentId` es `null` (raíces).
-     * Las subcategorías anidadas más de un nivel no se exponen en el sidebar.
-     *
-     * @returns Lista de categorías listas para el sidebar de filtros.
-     *
-     * @throws Error de red o de servidor si el backend no responde.
-     *
-     * @example
-     * ```typescript
-     * const categories = await FilterService.getCategories();
-     * // [{ id: '1', label: 'Anillos', subCategories: [...] }, ...]
-     * ```
-     */
-    getCategories: async (): Promise<JewelryCategory[]> => {
-        const response = await apiClient.get<BackendResponse>('/categories');
-        const all = response.data.data;
+  /**
+   * Obtiene todas las categorías raíz con sus subcategorías directas
+   * y las transforma al formato que espera el `filter.store`.
+   *
+   * Solo se incluyen categorías cuyo `parentId` es `null` (raíces).
+   * Las subcategorías anidadas más de un nivel no se exponen en el sidebar.
+   *
+   * @returns Lista de categorías listas para el sidebar de filtros.
+   *
+   * @throws Error de red o de servidor si el backend no responde.
+   *
+   * @example
+   * ```typescript
+   * const categories = await FilterService.getCategories();
+   * // [{ id: '1', label: 'Anillos', subCategories: [...] }, ...]
+   * ```
+   */
+  getCategories: async (): Promise<JewelryCategory[]> => {
+    const response = await apiClient.get<BackendResponse>('/categories');
+    const all = response.data.data;
 
-        // Solo categorías raíz — el backend ya incluye children anidados
-        const roots = all.filter((cat) => cat.parentId === null);
+    // Solo categorías raíz — el backend ya incluye children anidados
+    const roots = all
+      .filter((cat) => cat.parentId === null)
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }),
+      );
 
-        return roots.map(toJewelryCategory);
-    },
+    return roots.map(toJewelryCategory);
+  },
 };

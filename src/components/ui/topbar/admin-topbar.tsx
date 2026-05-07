@@ -8,7 +8,7 @@
  * - **Botón colapsar** — colapsa el sidebar a solo íconos en desktop
  * - **Nombre de sección** — muestra el título de la ruta activa actual
  * - **Toggle de tema** — alterna entre modo claro y oscuro
- * - **Botón "Ver catálogo"** — navega a `/catalogo` en el layout público
+ * - **Botón "Ir al inicio"** — navega a `/` en el layout público
  * - **Avatar de usuario** — muestra nombre y dropdown con opciones de sesión
  *
  * ## Nombre de sección
@@ -41,7 +41,7 @@ import {
   PanelLeftOpen,
   Sun,
   Moon,
-  ShoppingBag,
+  House,
   LogOut,
   User,
 } from 'lucide-react';
@@ -61,7 +61,6 @@ const SECTION_LABELS: Record<string, string> = {
   '/admin/joyas': 'Gestión de Joyas',
   '/admin/categorias': 'Gestión de Categorías',
   '/admin/clientes': 'Clientes',
-  '/admin/disenos': 'Diseños',
   '/admin/promociones': 'Promociones',
 };
 
@@ -150,10 +149,9 @@ export const AdminTopbar = ({
 
         {/* Nombre de la sección activa */}
         <h1
-          className="min-w-0 truncate text-[var(--text-base)] sm:text-[var(--text-xl)]"
+          className="min-w-0 truncate text-[0.95rem] sm:text-[1.05rem] lg:text-[var(--text-xl)]"
           style={{
             fontFamily: 'var(--font-heading)',
-            fontSize: 'var(--text-xl)',
             fontWeight: 'var(--font-bold)',
             color: 'var(--text-primary)',
             letterSpacing: 'var(--tracking-tight)',
@@ -179,9 +177,9 @@ export const AdminTopbar = ({
           {theme === 'light' ? <Moon size={19} /> : <Sun size={19} />}
         </button>
 
-        {/* Botón ver catálogo público */}
+        {/* Botón ir al inicio público */}
         <Link
-          to="/catalogo"
+          to="/"
           className="hidden items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:flex"
           style={{
             fontFamily: 'var(--font-ui)',
@@ -190,20 +188,20 @@ export const AdminTopbar = ({
             color: 'var(--text-secondary)',
             border: '1px solid var(--border-color)',
           }}
-          title="Ir al catálogo público"
+          title="Ir a la página principal"
         >
-          <ShoppingBag size={16} />
-          <span>Ver catálogo</span>
+          <House size={16} />
+          <span>Ir al inicio</span>
         </Link>
 
-        {/* Versión ícono del botón catálogo — solo móvil */}
+        {/* Versión ícono del botón inicio — solo móvil */}
         <Link
-          to="/catalogo"
+          to="/"
           className="flex rounded-md p-2 transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:hidden"
           style={{ color: 'var(--text-secondary)' }}
-          aria-label="Ver catálogo público"
+          aria-label="Ir a la página principal"
         >
-          <ShoppingBag size={19} />
+          <House size={19} />
         </Link>
 
         {/* Avatar de usuario con dropdown */}
