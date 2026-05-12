@@ -71,7 +71,7 @@ interface TickerMessage {
 
 /** Mensajes que se repiten en el ticker. Agregar o quitar entradas aquí. */
 const MESSAGES: readonly TickerMessage[] = [
-  { id: 1, icon: Truck, text: 'Envíos seguros' },
+  { id: 1, icon: Truck, text: 'Envíos a nivel nacional' },
   { id: 2, icon: Gem, text: 'Oro 18k garantizado' },
   { id: 3, icon: ShieldCheck, text: 'Compras seguras' },
 ] as const;
@@ -106,7 +106,7 @@ const TICKER_STYLES = `
   .kob-ticker-track {
     display: flex;
     width: max-content;
-    animation: kob-ticker 30s linear infinite;
+    animation: kob-ticker 60s linear infinite;
   }
 
   .kob-ticker-track:hover {
