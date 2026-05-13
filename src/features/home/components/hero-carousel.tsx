@@ -34,9 +34,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHeroBannerStore } from '@/store/hero-banner.store';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
-
-/** Imagen hero estática por defecto cuando no hay imagen configurada. */
-const DEFAULT_HERO_IMAGE = 'src/assets/HERO_IMAGE.jpg';
+import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.jpg';
 
 /** Duración en ms entre cambios automáticos de slide. */
 const AUTO_ADVANCE_DELAY = 6000;

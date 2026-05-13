@@ -39,8 +39,7 @@ import {
   type PromoSlide,
 } from '@/features/home/components/hero-carousel';
 import { CatalogNavBar } from '@/features/home/components/catalog-nav-bar';
-
-const GOLD_INVESTMENT_IMAGE = 'src/assets/GOLD_INVESTMENT_IMAGE.jpg';
+import GOLD_INVESTMENT_IMAGE from '@/assets/GOLD_INVESTMENT_IMAGE.jpg';
 
 /**
  * Slides promocionales del carrusel (slides 1+).
