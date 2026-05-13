@@ -1,15 +1,16 @@
 /**
  * @file login-page.tsx
- * @description Página de inicio de sesión.
+ * @description Página de inicio de sesión para clientes.
  * - Panel izquierdo con textos decorativos (desktop)
- * - Gradientes bonitos en ambos modos
+ * - Gradientes en modo claro y oscuro
  * - 100% responsive — cabe en pantalla sin scroll
+ * Las notificaciones usan `useToastStore` para respetar el tema activo.
  */
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToastStore } from '@/store/toast.store';
 import { AuthService } from '@/features/auth/services/auth.service';
 
 interface FormState {
@@ -21,6 +22,7 @@ const blockClipboard = (e: React.ClipboardEvent) => e.preventDefault();
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToastStore();
   const [form, setForm] = useState<FormState>({ email: '', password: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
@@ -46,10 +48,10 @@ export const LoginPage = () => {
     try {
       setLoading(true);
       await AuthService.login({ email: form.email, password: form.password });
-      toast.success('¡Hola de nuevo!');
+      showToast('success', '¡Hola de nuevo!');
       navigate('/');
     } catch (error: any) {
-      toast.error(error?.message || 'Error al iniciar sesión');
+      showToast('error', error?.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }

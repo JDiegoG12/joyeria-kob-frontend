@@ -1,15 +1,16 @@
 /**
  * @file register-page.tsx
- * @description Página de registro.
+ * @description Página de registro de nuevos clientes.
  * - Panel izquierdo con textos decorativos (desktop)
- * - Gradientes en ambos modos
+ * - Gradientes en modo claro y oscuro
  * - 100% responsive — cabe sin scroll
+ * Las notificaciones usan `useToastStore` para respetar el tema activo.
  */
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToastStore } from '@/store/toast.store';
 import { AuthService } from '@/features/auth/services/auth.service';
 
 interface FormState {
@@ -24,6 +25,7 @@ const blockClipboard = (e: React.ClipboardEvent) => e.preventDefault();
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToastStore();
 
   const [form, setForm] = useState<FormState>({
     firstName: '',
@@ -68,10 +70,10 @@ export const RegisterPage = () => {
         email: form.email,
         password: form.password,
       });
-      toast.success('¡Cuenta creada exitosamente!');
+      showToast('success', '¡Cuenta creada exitosamente!');
       navigate('/login');
     } catch (error: any) {
-      toast.error(error?.message || 'Error al crear la cuenta');
+      showToast('error', error?.message || 'Error al crear la cuenta');
     } finally {
       setLoading(false);
     }
