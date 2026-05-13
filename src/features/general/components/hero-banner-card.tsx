@@ -60,9 +60,8 @@ import {
   DEFAULT_BANNER_SUBTITLE,
 } from '@/store/hero-banner.store';
 import { useToastStore } from '@/store/toast.store';
-
+import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.jpg';
 /** Imagen local estática que se muestra cuando no hay imagen del backend. */
-const DEFAULT_HERO_IMAGE = 'src/assets/HERO_IMAGE.jpg';
 
 /** Formatos de imagen aceptados por el input file. */
 const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp';
