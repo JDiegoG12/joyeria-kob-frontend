@@ -4,11 +4,12 @@
  * de Joyería KOB. Toda comunicación con el backend pasa por aquí.
  *
  * ## Endpoints que consume
- * - `GET  /products`        → Listado público
- * - `GET  /products?admin=true` → Listado completo para admin
- * - `GET  /products/:id`    → Detalle de un producto
- * - `POST /products`        → Crear nueva joya (multipart/form-data)
- * - `PUT  /products/:id`    → Actualizar joya (multipart/form-data)
+ * - `GET  /products`                → Listado público legacy (admin usa admin=true)
+ * - `GET  /products/catalog`        → Catálogo público paginado con filtros de precio
+ * - `GET  /products?admin=true`     → Listado completo para admin (incluye ocultos)
+ * - `GET  /products/:id`            → Detalle de un producto
+ * - `POST /products`                → Crear nueva joya (multipart/form-data)
+ * - `PUT  /products/:id`            → Actualizar joya (multipart/form-data)
  *
  * ## Nota sobre imágenes
  * Tanto la creación como la actualización usan `multipart/form-data` porque
@@ -29,6 +30,68 @@ import type {
 interface ProductResponse {
   success: boolean;
   data: Product;
+}
+
+/**
+ * Información de paginación devuelta por `GET /products/catalog`.
+ * Refleja el estado de la página actual dentro del conjunto total de resultados.
+ */
+export interface CatalogPagination {
+  /** Total de productos que coinciden con los filtros activos (sin paginar). */
+  total: number;
+  /** Número de página actual (1-indexed). */
+  page: number;
+  /** Productos por página solicitados. */
+  limit: number;
+  /** Número total de páginas disponibles para los filtros activos. */
+  totalPages: number;
+  /** `true` si existe una página siguiente. */
+  hasNextPage: boolean;
+  /** `true` si existe una página anterior. */
+  hasPrevPage: boolean;
+}
+
+/**
+ * Rango real de precios calculados para los productos de la categoría activa.
+ * El backend los calcula ignorando los filtros de `minPrice`/`maxPrice` para
+ * que el slider siempre refleje el rango completo de la categoría.
+ */
+export interface CatalogPriceRange {
+  /** Precio calculado mínimo de la categoría activa (en COP). */
+  min: number;
+  /** Precio calculado máximo de la categoría activa (en COP). */
+  max: number;
+}
+
+/**
+ * Respuesta completa de `GET /products/catalog`.
+ * Incluye la página de productos, la metadata de paginación y el rango de precios.
+ */
+export interface CatalogResponse {
+  products: Product[];
+  pagination: CatalogPagination;
+  priceRange: CatalogPriceRange;
+}
+
+/**
+ * Parámetros opcionales para filtrar el catálogo público paginado.
+ * Todos son opcionales — el backend aplica sus propios valores por defecto.
+ */
+export interface CatalogQueryParams {
+  /**
+   * ID de la categoría (raíz o subcategoría) por la que filtrar.
+   * Si es una categoría raíz, el backend incluye también sus subcategorías.
+   * `null` o `undefined` → sin filtro de categoría.
+   */
+  categoryId?: number | null;
+  /** Precio mínimo en COP. `undefined` → sin límite inferior. */
+  minPrice?: number;
+  /** Precio máximo en COP. `undefined` → sin límite superior. */
+  maxPrice?: number;
+  /** Número de página a recuperar (1-indexed). Por defecto `1`. */
+  page?: number;
+  /** Productos por página. Por defecto `12`. Máximo `48`. */
+  limit?: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -141,8 +204,53 @@ export const productService = {
   },
 
   /**
-   * Obtiene el listado completo de productos para el panel de administración,
-   * incluyendo los que están ocultos o sin stock.
+   * Obtiene el catálogo público paginado con filtros opcionales de categoría y precio.
+   * Consume `GET /products/catalog` — endpoint dedicado al catálogo público que
+   * devuelve únicamente productos `AVAILABLE` y aplica paginación server-side.
+   *
+   * @param params - Filtros opcionales: categoría, rango de precio y página.
+   * @returns Productos paginados, metadata de paginación y rango de precios real.
+   *
+   * @example
+   * ```typescript
+   * // Página 2 de anillos con precio entre $500.000 y $5.000.000
+   * const result = await productService.getCatalog({
+   *   categoryId: 1,
+   *   minPrice: 500000,
+   *   maxPrice: 5000000,
+   *   page: 2,
+   *   limit: 12,
+   * });
+   * const { products, pagination, priceRange } = result;
+   * ```
+   */
+  async getCatalog(params: CatalogQueryParams = {}): Promise<CatalogResponse> {
+    const query = new URLSearchParams();
+
+    if (params.categoryId != null) {
+      query.set('categoryId', String(params.categoryId));
+    }
+    if (params.minPrice !== undefined) {
+      query.set('minPrice', String(params.minPrice));
+    }
+    if (params.maxPrice !== undefined) {
+      query.set('maxPrice', String(params.maxPrice));
+    }
+    if (params.page !== undefined) {
+      query.set('page', String(params.page));
+    }
+    if (params.limit !== undefined) {
+      query.set('limit', String(params.limit));
+    }
+
+    const qs = query.toString();
+    const response = await apiClient.get<{ success: boolean; data: CatalogResponse }>(
+      `/products/catalog${qs ? `?${qs}` : ''}`,
+    );
+    return response.data.data;
+  },
+
+  /**
    *
    * @returns Array completo de productos.
    */

@@ -11,6 +11,15 @@
  * principal configurable desde el panel admin (`/admin/general`).
  * Los slides promocionales (`PROMO_SLIDES`) son imágenes adicionales que
  * se configurarán desde el backend en una fase posterior.
+ *
+ * ## Barra de navegación rápida
+ * `CatalogNavBar` se monta entre el hero y los productos destacados.
+ * Permite acceder al catálogo, a una categoría raíz o a una subcategoría
+ * directamente desde la home sin pasar por el sidebar del catálogo.
+ *
+ * ## Ancla de servicios
+ * `ServicesSection` lleva `id="servicios"` para que el botón "SERVICIOS"
+ * de `CatalogNavBar` pueda hacer scroll suave hasta ella.
  */
 
 import type { ReactNode } from 'react';
@@ -29,6 +38,7 @@ import {
   HeroCarousel,
   type PromoSlide,
 } from '@/features/home/components/hero-carousel';
+import { CatalogNavBar } from '@/features/home/components/catalog-nav-bar';
 
 const GOLD_INVESTMENT_IMAGE = 'src/assets/GOLD_INVESTMENT_IMAGE.jpg';
 
@@ -160,16 +170,31 @@ const TESTIMONIALS = [
 
 /**
  * Página de inicio pública con orden editorial definido por mockups:
- * hero (carrusel), productos destacados, inversión en oro, servicios y testimonios.
+ * hero (carrusel), barra de navegación rápida, productos destacados,
+ * inversión en oro, servicios y testimonios.
  */
 export const HomePage = () => {
   return (
     <div className="overflow-x-hidden">
       {/* Hero como carrusel — slide 0 es el banner configurable desde admin */}
       <HeroCarousel promoSlides={PROMO_SLIDES} />
+
+      {/*
+       * Barra de navegación rápida al catálogo.
+       * Permite navegar directamente a una categoría o subcategoría desde la home.
+       * También incluye acceso directo a la sección de servicios (#servicios).
+       */}
+      <CatalogNavBar />
+
       <FeaturedProductsSection />
       <GoldInvestmentSection />
+
+      {/*
+       * id="servicios" expuesto para que el botón "SERVICIOS" de CatalogNavBar
+       * pueda hacer scroll suave hasta esta sección mediante scrollToSection().
+       */}
       <ServicesSection />
+
       <TestimonialsSection />
     </div>
   );
@@ -292,9 +317,16 @@ const GoldInvestmentSection = () => (
   </section>
 );
 
-/** Servicios de taller y asesoría replicados como tarjetas reutilizables. */
+/**
+ * Servicios de taller y asesoría replicados como tarjetas reutilizables.
+ *
+ * @remarks
+ * El `id="servicios"` permite el scroll suave desde `CatalogNavBar`
+ * mediante `scrollToSection('servicios')`.
+ */
 const ServicesSection = () => (
   <section
+    id="servicios"
     className="py-16 sm:py-20"
     style={{ backgroundColor: 'var(--bg-secondary)' }}
   >

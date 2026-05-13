@@ -1,23 +1,44 @@
 /**
  * @file category.store.ts
- * @description Store Zustand para la gestión de categorías del panel admin.
+ * @description Store Zustand para la gestión de categorías.
  *
- * Responsabilidades
- * - Mantener la lista de categorías cargadas desde el backend.
- * - Controlar el estado del Drawer (modo y categoría seleccionada).
- * - Ejecutar operaciones CRUD actualizando el estado local tras confirmación.
- * - Disparar notificaciones toast para dar feedback visual al usuario.
+ * ## Separación de responsabilidades
  *
- * Flujo del Drawer
+ * Este store maneja DOS contextos distintos:
+ *
+ * ### Contexto Admin (panel de administración)
+ * - CRUD de categorías con feedback toast
+ * - Estado del Drawer (create / view / edit / closed)
+ * - `selectedCategory` para el formulario de edición
+ *
+ * ### Contexto Catálogo público
+ * - `selectedCatalogCategoryId` — categoría raíz activa en la barra de filtros
+ * - `selectedCatalogSubCategoryId` — subcategoría activa (drill-down)
+ * - `selectCatalogCategory` / `selectCatalogSubCategory` — acciones de navegación
+ * - Al cambiar de categoría raíz, la subcategoría se resetea automáticamente
+ *
+ * ## Flujo del Drawer (admin)
+ * ```
  * openCreate()  → drawerMode = 'create', selectedCategory = null
  * openView(cat) → drawerMode = 'view',   selectedCategory = cat
  * openEdit()    → drawerMode = 'edit'    (selectedCategory ya está seteada)
  * closeDrawer() → drawerMode = 'closed', selectedCategory = null
+ * ```
  *
- * Uso en componentes
+ * ## Flujo del catálogo público
+ * ```
+ * selectCatalogCategory(1)    → muestra todos los anillos (raíz)
+ * selectCatalogSubCategory(3) → filtra por la subcategoría "Compromiso"
+ * selectCatalogCategory(null) → limpia todos los filtros de categoría
+ * ```
+ *
+ * @example
  * ```ts
- * import { useCategoryStore } from '@/store/category.store';
- * const { categories, drawerMode, selectedCategory, openView } = useCategoryStore();
+ * // En el catálogo público
+ * const { categories, selectedCatalogCategoryId, selectCatalogCategory } = useCategoryStore();
+ *
+ * // En el panel admin
+ * const { drawerMode, selectedCategory, openView, openCreate } = useCategoryStore();
  * ```
  */
 
@@ -33,8 +54,10 @@ import type {
 } from '@/features/categories/types/category.types';
 
 // ─── Forma del estado ─────────────────────────────────────────────────────────
+
 interface CategoryState {
-  // ── Datos ──────────────────────────────────────────────────────────────────
+  // ── Datos compartidos ───────────────────────────────────────────────────────
+
   /** Lista de todas las categorías (raíz + anidadas en `children`). */
   categories: Category[];
   /** `true` mientras se carga el listado inicial. */
@@ -42,7 +65,23 @@ interface CategoryState {
   /** Mensaje de error de carga, o `null` si no hay error. */
   error: string | null;
 
-  // ── Estado del Drawer ───────────────────────────────────────────────────────
+  // ── Estado del catálogo público ─────────────────────────────────────────────
+
+  /**
+   * ID de la categoría raíz actualmente seleccionada en el catálogo público.
+   * `null` significa "mostrar todo" (sin filtro de categoría activo).
+   */
+  selectedCatalogCategoryId: number | null;
+
+  /**
+   * ID de la subcategoría actualmente seleccionada en el catálogo público.
+   * `null` si no hay subcategoría activa (se muestra toda la categoría raíz).
+   * Se resetea automáticamente al cambiar `selectedCatalogCategoryId`.
+   */
+  selectedCatalogSubCategoryId: number | null;
+
+  // ── Estado del Drawer (admin) ───────────────────────────────────────────────
+
   /** Categoría actualmente abierta en el Drawer. `null` si está cerrado o en modo create. */
   selectedCategory: Category | null;
   /** Modo actual del Drawer. */
@@ -53,17 +92,14 @@ interface CategoryState {
   isDeleting: boolean;
   /** Error de mutación para mostrar en el formulario/drawer. */
   mutationError: string | null;
-  /** Categoría raíz seleccionada en el catálogo público. */
-  selectedCatalogCategoryId: number | null;
-  /** Subcategoría seleccionada en el catálogo público. */
-  selectedCatalogSubCategoryId: number | null;
 
   // ── Acciones de datos ───────────────────────────────────────────────────────
+
   /**
    * Carga todas las categorías desde el backend.
    * Evita peticiones duplicadas si ya hay datos cargados.
    *
-   * @param force - Si `true`, recarga aunque ya haya datos.
+   * @param force - Si `true`, recarga aunque ya haya datos en el store.
    */
   loadCategories: (force?: boolean) => Promise<void>;
 
@@ -91,7 +127,39 @@ interface CategoryState {
    */
   deleteCategory: (id: number) => Promise<void>;
 
-  // ── Acciones de UI ──────────────────────────────────────────────────────────
+  // ── Acciones del catálogo público ───────────────────────────────────────────
+
+  /**
+   * Selecciona una categoría raíz para el filtro del catálogo público.
+   * Resetea automáticamente `selectedCatalogSubCategoryId` a `null`.
+   *
+   * @param categoryId - ID de la categoría raíz, o `null` para mostrar todo.
+   *
+   * @example
+   * ```tsx
+   * <button onClick={() => selectCatalogCategory(1)}>Anillos</button>
+   * <button onClick={() => selectCatalogCategory(null)}>Todo</button>
+   * ```
+   */
+  selectCatalogCategory: (categoryId: number | null) => void;
+
+  /**
+   * Selecciona o deselecciona una subcategoría dentro de la categoría activa.
+   * Si la subcategoría ya estaba seleccionada, la deselecciona (toggle).
+   *
+   * @param subCategoryId - ID de la subcategoría, o `null` para limpiar.
+   *
+   * @example
+   * ```tsx
+   * <button onClick={() => selectCatalogSubCategory(category.id === selectedId ? null : category.id)}>
+   *   {category.name}
+   * </button>
+   * ```
+   */
+  selectCatalogSubCategory: (subCategoryId: number | null) => void;
+
+  // ── Acciones de UI del Drawer (admin) ──────────────────────────────────────
+
   /** Abre el Drawer en modo detalle con la categoría recibida. */
   openView: (category: Category) => void;
   /** Abre el Drawer en modo creación (formulario vacío). */
@@ -102,13 +170,10 @@ interface CategoryState {
   closeDrawer: () => void;
   /** Limpia el error de mutación. */
   clearMutationError: () => void;
-  /** Selecciona una categoría raíz para el drill-down público. */
-  selectCatalogCategory: (categoryId: number | null) => void;
-  /** Selecciona una subcategoría dentro de la categoría activa. */
-  selectCatalogSubCategory: (subCategoryId: number | null) => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
 /**
  * Traduce los códigos de error del backend a mensajes cortos y amigables
  * para notificaciones tipo toast.
@@ -116,7 +181,7 @@ interface CategoryState {
 const ERROR_MESSAGES: Record<CategoryErrorCode, string> = {
   CATEGORY_NOT_FOUND: 'Esta categoría ya no existe o fue eliminada.',
   CATEGORY_HAS_CHILDREN:
-    'Contiene subcategorías. Múevelas o elimínalas primero.',
+    'Contiene subcategorías. Muévelas o elimínalas primero.',
   CATEGORY_HAS_PRODUCTS:
     'No se puede eliminar porque aún contiene joyas asignadas.',
   SLUG_ALREADY_EXISTS:
@@ -131,7 +196,7 @@ const ERROR_MESSAGES: Record<CategoryErrorCode, string> = {
 };
 
 /**
- * Extrae el mensaje de error de una excepción de Axios o genérica.
+ * Extrae el mensaje de error legible de una excepción de Axios o genérica.
  */
 const resolveErrorMessage = (error: unknown): string => {
   if (error && typeof error === 'object' && 'response' in error) {
@@ -147,18 +212,23 @@ const resolveErrorMessage = (error: unknown): string => {
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
+
 export const useCategoryStore = create<CategoryState>()((set, get) => ({
-  // Estado inicial
+  // ── Estado inicial ──────────────────────────────────────────────────────────
   categories: [],
   isLoading: false,
   error: null,
+
+  // Catálogo público
+  selectedCatalogCategoryId: null,
+  selectedCatalogSubCategoryId: null,
+
+  // Admin drawer
   selectedCategory: null,
   drawerMode: 'closed',
   isSaving: false,
   isDeleting: false,
   mutationError: null,
-  selectedCatalogCategoryId: null,
-  selectedCatalogSubCategoryId: null,
 
   // ── loadCategories ──────────────────────────────────────────────────────────
   loadCategories: async (force = false) => {
@@ -233,13 +303,22 @@ export const useCategoryStore = create<CategoryState>()((set, get) => ({
     }
   },
 
-  // ── Acciones de UI ──────────────────────────────────────────────────────────
-  openView: (category) => {
+  // ── Acciones del catálogo público ───────────────────────────────────────────
+  selectCatalogCategory: (categoryId) => {
     set({
-      selectedCategory: category,
-      drawerMode: 'view',
-      mutationError: null,
+      selectedCatalogCategoryId: categoryId,
+      // Siempre resetear subcategoría al cambiar la categoría raíz
+      selectedCatalogSubCategoryId: null,
     });
+  },
+
+  selectCatalogSubCategory: (subCategoryId) => {
+    set({ selectedCatalogSubCategoryId: subCategoryId });
+  },
+
+  // ── Acciones de UI del Drawer (admin) ──────────────────────────────────────
+  openView: (category) => {
+    set({ selectedCategory: category, drawerMode: 'view', mutationError: null });
   },
 
   openCreate: () => {
@@ -256,16 +335,5 @@ export const useCategoryStore = create<CategoryState>()((set, get) => ({
 
   clearMutationError: () => {
     set({ mutationError: null });
-  },
-
-  selectCatalogCategory: (categoryId) => {
-    set({
-      selectedCatalogCategoryId: categoryId,
-      selectedCatalogSubCategoryId: null,
-    });
-  },
-
-  selectCatalogSubCategory: (subCategoryId) => {
-    set({ selectedCatalogSubCategoryId: subCategoryId });
   },
 }));
