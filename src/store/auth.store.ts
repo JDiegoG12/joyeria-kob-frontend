@@ -1,8 +1,10 @@
 /**
  * @file auth.store.ts
  * @description Store de Zustand para gestionar el estado de autenticación.
- * Persiste el token JWT y los datos del usuario en `localStorage`
- * bajo la clave `"kob-auth"`.
+ * Persiste el token JWT y los datos del usuario en `localStorage` bajo la
+ * clave `"kob-auth"` mediante el middleware `persist`. Es la **única fuente
+ * de verdad** para la sesión activa — no existe ninguna escritura manual
+ * paralela en `localStorage`.
  *
  * ## Uso básico en componentes
  * ```tsx
@@ -109,8 +111,11 @@ interface AuthState {
 /**
  * Store global de autenticación construido con Zustand + middleware `persist`.
  *
- * - Persiste `token` y `user` en `localStorage` con la clave `"kob-auth"`.
- * - Las acciones no se persisten (quedan excluidas con `partialize`).
+ * - Persiste `token`, `user` e `isAuthenticated` en `localStorage["kob-auth"]`.
+ * - Es la única fuente de verdad para la sesión: `AuthService` no escribe en
+ *   `localStorage` directamente; delega toda la persistencia a este store.
+ * - Las funciones (`setSession`, `clearSession`, `hasRole`) quedan excluidas
+ *   de la serialización mediante `partialize`.
  *
  * @see {@link ProtectedRoute} para el uso en guards de rutas.
  * @see {@link AuthService} para el servicio que llama a `setSession`.

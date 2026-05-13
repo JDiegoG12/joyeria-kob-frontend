@@ -1,12 +1,14 @@
 /**
  * @file admin-login-page.tsx
- * @description Panel admin — con panel izquierdo, gradientes, sin opción de registro.
+ * @description Página de inicio de sesión del panel administrativo.
+ * Solo accesible para usuarios con rol ADMIN. Sin opción de registro.
+ * Las notificaciones usan `useToastStore` para respetar el tema activo.
  */
 
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { useToastStore } from '@/store/toast.store';
 import { AuthService } from '@/features/auth/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -19,6 +21,7 @@ const blockClipboard = (e: React.ClipboardEvent) => e.preventDefault();
 
 export const AdminLoginPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToastStore();
   const [form, setForm] = useState<FormState>({ email: '', password: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
@@ -46,14 +49,14 @@ export const AdminLoginPage = () => {
       await AuthService.login({ email: form.email, password: form.password });
       const user = useAuthStore.getState().user;
       if (user?.role !== 'ADMIN') {
-        toast.error('No tienes permisos de administrador');
+        showToast('error', 'No tienes permisos de administrador');
         AuthService.logout();
         return;
       }
-      toast.success('Bienvenido al panel admin');
+      showToast('success', 'Bienvenido al panel admin');
       navigate('/admin/joyas');
     } catch (error: any) {
-      toast.error(error?.message || 'Error al iniciar sesión');
+      showToast('error', error?.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
