@@ -22,6 +22,7 @@
  * ## Secciones actuales
  * - **Inventario y precios** → `GoldPriceCard`
  * - **Apariencia** → `HeroBannerCard`
+ * - **Página de inicio** → `FeaturedProductsCard`
  *
  * ## Cómo agregar una nueva configuración
  * 1. Crea el componente de tarjeta en `features/general/components/`.
@@ -34,9 +35,10 @@
  * `/admin/general` — protegida por `ProtectedRoute` con rol `ADMIN`.
  */
 
-import { DollarSign, Layout } from 'lucide-react';
+import { DollarSign, Layout, Star } from 'lucide-react';
 import { GoldPriceCard } from '@/features/general/components/gold-price-card';
 import { HeroBannerCard } from '@/features/general/components/hero-banner-card';
+import { FeaturedProductsCard } from '@/features/featured-products/components/featured-products-card';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -195,6 +197,29 @@ export const AdminGeneralPage = () => (
            * Aquí irán futuras tarjetas de esta sección, cada una en su propia
            * tarjeta para facilitar la diferenciación entre opciones de Apariencia.
            * Ejemplo: <AnnouncementBarCard />, <ThemeCard />, <LogoCard />
+           */}
+        </div>
+      </section>
+
+      {/* ── Sección: Página de inicio ──────────────────────────────────── */}
+      <section
+        aria-labelledby="section-home"
+        className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8"
+      >
+        <div className="lg:sticky lg:top-[calc(var(--topbar-height)+2rem)] lg:self-start">
+          <SectionHeader
+            icon={Star}
+            title="Página de inicio"
+            description="Productos que aparecen en la sección de destacados de la home."
+          />
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-5">
+          <FeaturedProductsCard />
+
+          {/*
+           * Aquí irán futuras tarjetas relacionadas con la página de inicio.
+           * Ejemplo: <PromoSlidesCard />, <ServicesOrderCard />
            */}
         </div>
       </section>

@@ -39,6 +39,7 @@ import {
   type PromoSlide,
 } from '@/features/home/components/hero-carousel';
 import { CatalogNavBar } from '@/features/home/components/catalog-nav-bar';
+import { FeaturedProductsSection } from '@/features/featured-products/components/featured-products-section';
 import GOLD_INVESTMENT_IMAGE from '@/assets/GOLD_INVESTMENT_IMAGE.jpg';
 
 /**
@@ -66,48 +67,6 @@ const PROMO_SLIDES: PromoSlide[] = [
     linkTo: '/catalogo',
   },
 ];
-
-const FEATURED_GROUPS = [
-  {
-    title: 'Anillos',
-    images: [
-      {
-        src: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=900&q=85',
-        alt: 'Anillo dorado con detalle artesanal',
-      },
-      {
-        src: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=900&q=85',
-        alt: 'Anillo de oro sobre superficie oscura',
-      },
-    ],
-  },
-  {
-    title: 'Cadenas',
-    images: [
-      {
-        src: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=900&q=85',
-        alt: 'Cadena dorada con dije',
-      },
-      {
-        src: 'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=900&q=85',
-        alt: 'Dijes dorados con textura fina',
-      },
-    ],
-  },
-  {
-    title: 'Pulseras',
-    images: [
-      {
-        src: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=900&q=85',
-        alt: 'Pulsera dorada con brillo',
-      },
-      {
-        src: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=900&q=85',
-        alt: 'Pulseras finas de joyería',
-      },
-    ],
-  },
-] as const;
 
 const SERVICES = [
   {
@@ -198,60 +157,6 @@ export const HomePage = () => {
     </div>
   );
 };
-
-/** Productos destacados justo debajo del hero, replicando la grilla del mockup. */
-const FeaturedProductsSection = () => (
-  <section
-    className="py-14 sm:py-16 lg:py-20"
-    style={{ backgroundColor: 'var(--bg-primary)' }}
-  >
-    <div
-      className="mx-auto px-5 sm:px-6 lg:px-10"
-      style={{ maxWidth: 'var(--content-max-width)' }}
-    >
-      <SectionHeading title="Productos destacados" centered />
-
-      <div className="mt-10 grid gap-9 lg:grid-cols-3">
-        {FEATURED_GROUPS.map((group, index) => (
-          <RevealBlock key={group.title} delay={index * 0.05}>
-            <article>
-              <h3
-                className="mb-7 text-center uppercase"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 'var(--text-3xl)',
-                  fontWeight: 'var(--font-bold)',
-                  lineHeight: 'var(--leading-tight)',
-                  letterSpacing: 'var(--tracking-display)',
-                  color: 'var(--text-accent)',
-                }}
-              >
-                {group.title}
-              </h3>
-
-              <div className="grid gap-3">
-                {group.images.map((image) => (
-                  <div
-                    key={image.src}
-                    className="group aspect-[4/2.75] overflow-hidden shadow-[var(--shadow-xs)] transition-shadow duration-500 hover:shadow-[var(--shadow-md)]"
-                    style={{ backgroundColor: 'var(--bg-tertiary)' }}
-                  >
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
-              </div>
-            </article>
-          </RevealBlock>
-        ))}
-      </div>
-    </div>
-  </section>
-);
 
 /** Sección editorial que explica el valor del oro como inversión. */
 const GoldInvestmentSection = () => (

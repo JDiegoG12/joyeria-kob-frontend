@@ -22,9 +22,20 @@
  * se aplica sobre los productos ya cargados en la página activa. Se muestra un
  * aviso cuando `pagination.totalPages > 1` para que el usuario sepa que puede
  * haber resultados en otras páginas.
+ *
+ * ## Deep-linking de producto vía query param
+ * El catálogo escucha el query param `?product=<uuid>`. Si está presente al
+ * montar (o al cambiar), se carga el producto correspondiente y se abre
+ * automáticamente el `ProductDetailModal`. Esto permite que la sección
+ * "Productos destacados" de la home navegue directamente al detalle de un
+ * producto sin duplicar la UI del modal.
+ *
+ * Cuando el usuario cierra el modal, el query param se limpia para mantener
+ * la URL sincronizada con el estado real de la página.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
@@ -85,6 +96,7 @@ const emptyVariants: Variants = {
 
 export const CatalogPage = () => {
   const shouldReduceMotion = useReducedMotion();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const {
     categories,
@@ -205,6 +217,84 @@ export const CatalogPage = () => {
     setSearchInput(''); // Limpiar búsqueda al cambiar de página
     void fetchCatalog(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ── Deep-linking: abrir modal de detalle cuando llega `?product=<uuid>` ──────
+  //
+  // Caso de uso: la sección "Productos destacados" de la home navega a
+  // /catalogo?product=<uuid> al hacer click en una tarjeta. Aquí detectamos
+  // ese param y cargamos el producto para reutilizar el `ProductDetailModal`
+  // existente del catálogo en lugar de duplicar UI en otra ruta.
+  //
+  // **Importante sobre el ciclo de cierre del modal**
+  // El effect NO depende de `selectedProduct?.id` para evitar reaperturas.
+  // Cuando se cierra el modal se hacen DOS updates (`setSelectedProduct(null)`
+  // + `setSearchParams({})`); si no viajan en el mismo batch, un render
+  // intermedio dejaría `selectedProduct=null` con `productIdFromUrl='X'`, y
+  // un effect que mire `selectedProduct?.id` reabriría el modal.
+  //
+  // **Importante sobre StrictMode (React 19 dev)**
+  // El ref `lastFetchedProductIdRef` se asigna DENTRO de la promesa, tras
+  // hidratar `selectedProduct`. Si lo hacemos antes del await, el primer
+  // run del effect (que StrictMode cancela inmediatamente) deja el ref
+  // marcado, y el segundo run salta el fetch sin haber abierto el modal
+  // jamás. Asignar el ref después garantiza que solo "recordamos" lo que
+  // realmente cargamos en el estado.
+  const productIdFromUrl = searchParams.get('product');
+  const lastFetchedProductIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!productIdFromUrl) {
+      // URL limpia: olvidamos el último id para que una próxima navegación
+      // al mismo producto (back/forward, click de nuevo) vuelva a abrir.
+      lastFetchedProductIdRef.current = null;
+      return;
+    }
+
+    // Si ya hidratamos `selectedProduct` con este mismo id, no repetimos
+    // el fetch (evita reaperturas tras un cierre y dobles requests en el
+    // re-render inmediato a setSelectedProduct).
+    if (lastFetchedProductIdRef.current === productIdFromUrl) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const product = await productService.getById(productIdFromUrl);
+        if (!cancelled) {
+          // El ref SOLO se marca tras setear el estado. Así StrictMode puede
+          // disparar el effect dos veces en montaje sin que la primera (que
+          // siempre se cancela) bloquee a la segunda.
+          lastFetchedProductIdRef.current = productIdFromUrl;
+          setSelectedProduct(product);
+        }
+      } catch {
+        if (!cancelled) {
+          // El producto del deep-link no existe o falló su carga: limpiamos
+          // el param para que la URL refleje el estado real (sin modal).
+          // No tocamos el ref porque nunca se llegó a marcar.
+          setSearchParams({}, { replace: true });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [productIdFromUrl, setSearchParams]);
+
+  /**
+   * Cierra el modal de detalle y limpia el query param `product` para
+   * mantener la URL en sintonía con el estado de la página.
+   *
+   * El ref `lastFetchedProductIdRef` se limpia automáticamente en el effect
+   * cuando `productIdFromUrl` vuelva a `null`, así que aquí no hace falta
+   * tocarlo manualmente.
+   */
+  const handleCloseDetail = () => {
+    setSelectedProduct(null);
+    if (searchParams.get('product')) {
+      setSearchParams({}, { replace: true });
+    }
   };
 
   // ── Callback del slider de precios ───────────────────────────────────────────
@@ -595,10 +685,10 @@ export const CatalogPage = () => {
         </div>
       </div>
 
-      {/* Modal de detalle */}
+      {/* Modal de detalle — su cierre también limpia el query param ?product */}
       <ProductDetailModal
         product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
+        onClose={handleCloseDetail}
       />
     </>
   );
