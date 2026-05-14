@@ -29,7 +29,7 @@
  * ```
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type TouchEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHeroBannerStore } from '@/store/hero-banner.store';
@@ -87,6 +87,8 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Almacena la coordenada X del inicio del toque para detectar swipe horizontal.
+  const touchStartX = useRef<number | null>(null);
 
   // Detecta si el usuario prefiere movimiento reducido
   const prefersReducedMotion =
@@ -128,6 +130,27 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
     [goToNext, prefersReducedMotion],
   );
 
+  /**
+   * Registra la posición X inicial del toque para calcular la distancia del swipe.
+   * Solo en móvil (el evento no se dispara con ratón en desktop).
+   */
+  const handleTouchStart = (e: TouchEvent<HTMLElement>) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  /**
+   * Al soltar el dedo, compara la posición final con la inicial.
+   * Un desplazamiento > 60px hacia la izquierda avanza al siguiente slide;
+   * hacia la derecha retrocede. Por debajo del umbral se ignora (fue un tap).
+   */
+  const handleTouchEnd = (e: TouchEvent<HTMLElement>) => {
+    if (touchStartX.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartX.current;
+    if (diff < -60) handleManualNav(goToNext);
+    else if (diff > 60) handleManualNav(goToPrev);
+    touchStartX.current = null;
+  };
+
   const heroImage = bannerImageUrl ?? DEFAULT_HERO_IMAGE;
 
   return (
@@ -147,6 +170,8 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
       aria-label="Carrusel de banner principal"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {/* ── Pista de slides ─────────────────────────────────────────────── */}
       <div className="relative h-full w-full">
@@ -173,11 +198,11 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
       {/* ── Controles de navegación (solo si hay más de un slide) ────────── */}
       {totalSlides > 1 && (
         <>
-          {/* Flecha izquierda */}
+          {/* Flecha izquierda — solo en desktop; en móvil se usa swipe */}
           <button
             type="button"
             onClick={() => handleManualNav(goToPrev)}
-            className="absolute top-1/2 left-4 z-20 flex -translate-y-1/2 items-center justify-center transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 sm:left-6"
+            className="absolute top-1/2 left-4 z-20 hidden -translate-y-1/2 items-center justify-center transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 lg:flex lg:left-6"
             style={{
               width: 44,
               height: 44,
@@ -194,11 +219,11 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
             <ChevronLeft size={20} aria-hidden="true" />
           </button>
 
-          {/* Flecha derecha */}
+          {/* Flecha derecha — solo en desktop; en móvil se usa swipe */}
           <button
             type="button"
             onClick={() => handleManualNav(goToNext)}
-            className="absolute top-1/2 right-4 z-20 flex -translate-y-1/2 items-center justify-center transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 sm:right-6"
+            className="absolute top-1/2 right-4 z-20 hidden -translate-y-1/2 items-center justify-center transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 lg:flex lg:right-6"
             style={{
               width: 44,
               height: 44,

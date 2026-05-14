@@ -38,7 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, Search } from 'lucide-react';
 import { useCategoryStore } from '@/store/category.store';
 import { productService } from '@/features/catalog/services/product.service';
 import type {
@@ -46,6 +46,7 @@ import type {
   CatalogPriceRange,
 } from '@/features/catalog/services/product.service';
 import { CatalogFilterSidebar } from '@/features/catalog/components/catalog-filter-sidebar';
+import { CatalogMobileFiltersSheet } from '@/features/catalog/components/catalog-mobile-filters-sheet';
 import { PublicProductCard } from '@/features/catalog/components/public-product-card';
 import { ProductDetailModal } from '@/features/catalog/components/product-detail-modal';
 import type { Product } from '@/features/catalog/types/product.types';
@@ -98,14 +99,26 @@ export const CatalogPage = () => {
   const shouldReduceMotion = useReducedMotion();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  /*
+   * Solo necesitamos los IDs seleccionados (para construir el query del
+   * backend) y `loadCategories` (defensivo: garantiza la carga aunque la
+   * sidebar/sheet también la disparen). Las acciones de selección de
+   * categoría viven dentro de los componentes que las controlan.
+   */
   const {
-    categories,
     loadCategories,
     selectedCatalogCategoryId,
     selectedCatalogSubCategoryId,
-    selectCatalogCategory,
-    selectCatalogSubCategory,
   } = useCategoryStore();
+
+  /**
+   * Estado del bottom sheet de filtros móvil.
+   *
+   * El sheet contiene categorías + slider de precio, reutilizando el
+   * `CatalogFilterSidebar` por dentro. Es independiente del sidebar de
+   * desktop (que sigue visible en `lg+`) y solo se usa en `<lg`.
+   */
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // ── Estado del catálogo ──────────────────────────────────────────────────────
 
@@ -309,11 +322,29 @@ export const CatalogPage = () => {
 
   // ── Datos derivados ──────────────────────────────────────────────────────────
 
-  const rootCategories = categories.filter((c) => c.parentId === null);
-  const activeCategory = categories.find(
-    (c) => c.id === selectedCatalogCategoryId,
-  );
-  const subCategories = activeCategory?.children ?? [];
+  /**
+   * Cantidad de filtros activos — informativo para el botón móvil "Filtros (n)"
+   * y la cabecera del bottom sheet.
+   *
+   * Se cuenta:
+   * · Categoría raíz seleccionada (1 si != null).
+   * · Subcategoría seleccionada (1 si != null).
+   * · Filtro de precio activo (1 si min/max difieren del rango completo
+   *   devuelto por el backend).
+   *
+   * Se evita marcar el precio como "activo" mientras `priceRange` aún es
+   * `null` (primera carga), para que el botón no parpadee con "Filtros (1)"
+   * antes de que el usuario haga nada.
+   */
+  const priceFilterActive =
+    priceRange !== null &&
+    (minPrice !== undefined || maxPrice !== undefined) &&
+    (minPrice !== priceRange.min || maxPrice !== priceRange.max);
+
+  const activeFiltersCount =
+    (selectedCatalogCategoryId !== null ? 1 : 0) +
+    (selectedCatalogSubCategoryId !== null ? 1 : 0) +
+    (priceFilterActive ? 1 : 0);
 
   const resolvedGridVariants = shouldReduceMotion ? {} : gridContainerVariants;
   const resolvedCardVariants = shouldReduceMotion
@@ -376,61 +407,98 @@ export const CatalogPage = () => {
                 />
               </div>
 
-              {/* ── Pills de categorías — solo móvil ── */}
+              {/* ── Botón "Filtros" — solo móvil ──
+               *
+               * Reemplaza los pills horizontales (que no escalaban bien con
+               * muchas categorías y dejaban el slider de precio fuera del
+               * alcance del usuario móvil). Abre el bottom sheet con
+               * categorías + slider de precio en una sola UI consistente.
+               *
+               * El badge "(n)" solo aparece cuando hay filtros activos —
+               * evita ruido visual en el estado limpio.
+               */}
               <div className="mb-5 lg:hidden">
-                <div className="flex flex-wrap gap-2">
-                  {[{ id: null, name: 'Todo' }, ...rootCategories].map(
-                    (cat, i) => (
-                      <motion.div
-                        key={cat.id ?? 'all'}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05, duration: 0.25 }}
-                      >
-                        <CategoryPill
-                          label={cat.name}
-                          active={selectedCatalogCategoryId === cat.id}
-                          onClick={() =>
-                            selectCatalogCategory(cat.id as number | null)
-                          }
-                        />
-                      </motion.div>
-                    ),
-                  )}
-                </div>
-                <AnimatePresence>
-                  {subCategories.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.28 }}
-                      className="mt-2 flex flex-wrap gap-2 overflow-hidden"
+                <motion.button
+                  type="button"
+                  onClick={() => setMobileFiltersOpen(true)}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+                  className="flex w-full cursor-pointer items-center justify-between border px-4 py-3 transition-colors duration-200 hover:bg-[var(--bg-secondary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                  style={{
+                    borderColor:
+                      activeFiltersCount > 0
+                        ? 'var(--accent)'
+                        : 'var(--border-strong)',
+                    backgroundColor: 'transparent',
+                  }}
+                  aria-label={
+                    activeFiltersCount > 0
+                      ? `Abrir filtros, ${activeFiltersCount} activos`
+                      : 'Abrir filtros del catálogo'
+                  }
+                  aria-haspopup="dialog"
+                  aria-expanded={mobileFiltersOpen}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Filter
+                      size={15}
+                      strokeWidth={1.8}
+                      style={{
+                        color:
+                          activeFiltersCount > 0
+                            ? 'var(--accent)'
+                            : 'var(--text-secondary)',
+                      }}
+                      aria-hidden="true"
+                    />
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-ui)',
+                        fontSize: 'var(--text-sm)',
+                        fontWeight: 'var(--font-bold)',
+                        letterSpacing: 'var(--tracking-widest)',
+                        textTransform: 'uppercase',
+                        color:
+                          activeFiltersCount > 0
+                            ? 'var(--text-accent)'
+                            : 'var(--text-secondary)',
+                      }}
                     >
-                      {subCategories.map((sub, i) => (
-                        <motion.div
-                          key={sub.id}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: i * 0.04 }}
-                        >
-                          <CategoryPill
-                            label={sub.name}
-                            active={selectedCatalogSubCategoryId === sub.id}
-                            compact
-                            onClick={() =>
-                              selectCatalogSubCategory(
-                                selectedCatalogSubCategoryId === sub.id
-                                  ? null
-                                  : sub.id,
-                              )
-                            }
-                          />
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      Filtros
+                    </span>
+                  </span>
+
+                  {/*
+                   * Badge contador animado: aparece/desaparece con AnimatePresence
+                   * para suavizar la transición entre "sin filtros" y "n filtros".
+                   */}
+                  <AnimatePresence mode="popLayout">
+                    {activeFiltersCount > 0 && (
+                      <motion.span
+                        key={activeFiltersCount}
+                        initial={{ opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.6 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                        className="inline-flex h-5 min-w-5 items-center justify-center px-1.5"
+                        style={{
+                          fontFamily: 'var(--font-ui)',
+                          fontSize: '10px',
+                          fontWeight: 'var(--font-bold)',
+                          letterSpacing: 'var(--tracking-wide)',
+                          color: 'var(--accent-text)',
+                          backgroundColor: 'var(--accent)',
+                          borderRadius: '999px',
+                          lineHeight: 1,
+                        }}
+                      >
+                        {activeFiltersCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
               </div>
 
               {/* ── Barra superior: contador + buscador ── */}
@@ -690,44 +758,27 @@ export const CatalogPage = () => {
         product={selectedProduct}
         onClose={handleCloseDetail}
       />
+
+      {/*
+       * Bottom sheet de filtros móviles.
+       * El propio componente lleva `lg:hidden` internamente, así que es
+       * seguro montarlo siempre — no afecta la vista desktop.
+       */}
+      <CatalogMobileFiltersSheet
+        isOpen={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        priceRange={priceRange}
+        minPrice={minPrice}
+        maxPrice={maxPrice}
+        onPriceCommit={handlePriceCommit}
+        productCount={pagination.total}
+        activeFiltersCount={activeFiltersCount}
+      />
     </>
   );
 };
 
 // ─── Componentes auxiliares ───────────────────────────────────────────────────
-
-interface CategoryPillProps {
-  label: string;
-  active: boolean;
-  compact?: boolean;
-  onClick: () => void;
-}
-
-const CategoryPill = ({
-  label,
-  active,
-  compact = false,
-  onClick,
-}: CategoryPillProps) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="cursor-pointer border transition-all duration-200"
-    style={{
-      padding: compact ? '0.3rem 0.65rem' : '0.5rem 0.9rem',
-      fontFamily: 'var(--font-ui)',
-      fontSize: 'var(--text-xs)',
-      fontWeight: active ? 'var(--font-bold)' : 'var(--font-semibold)',
-      letterSpacing: 'var(--tracking-widest)',
-      textTransform: 'uppercase' as const,
-      borderColor: active ? 'var(--accent)' : 'var(--border-color)',
-      backgroundColor: active ? 'var(--accent)' : 'transparent',
-      color: active ? 'var(--accent-text)' : 'var(--text-secondary)',
-    }}
-  >
-    {label}
-  </button>
-);
 
 const ProductSkeletonGrid = () => (
   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">

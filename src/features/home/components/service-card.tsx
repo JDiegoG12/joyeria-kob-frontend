@@ -20,6 +20,16 @@ interface ServiceCardProps {
 /**
  * Presenta un servicio de taller/asesoría en una tarjeta compacta.
  *
+ * ─── Padding responsive ─────────────────────────────────────────────────────
+ * · Mobile (<sm): padding compacto (`px-5 pb-6 pt-7`, `min-h-40`) para que
+ *   dos tarjetas quepan cómodamente en grids de 2 columnas en ~360px de
+ *   ancho sin que el texto pierda respiro.
+ * · sm+ (≥640px): padding original generoso, sensación luxury.
+ *
+ * El icono flotante en `-top-5 -left-5` se mantiene igual en todos los
+ * breakpoints; con `pl-5` en el grid contenedor (ver `ServicesSection`)
+ * no se corta en ninguna columna.
+ *
  * @param props - Datos visuales y editoriales del servicio.
  * @returns Tarjeta responsive con icono, título y descripción.
  */
@@ -30,7 +40,7 @@ export const ServiceCard = ({
 }: ServiceCardProps) => {
   return (
     <article
-      className="group relative flex min-h-44 flex-col border px-8 pb-8 pt-9 shadow-[var(--shadow-xs)] transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-accent)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:min-h-48 sm:px-9 lg:px-10"
+      className="group relative flex h-full flex-col border px-5 pb-6 pt-7 shadow-[var(--shadow-xs)] transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-accent)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:px-9 sm:pb-8 sm:pt-9 lg:px-10"
       style={{
         backgroundColor: 'var(--bg-primary)',
         borderColor: 'var(--border-accent)',
@@ -67,10 +77,14 @@ export const ServiceCard = ({
         {title}
       </h3>
 
+      {/*
+       * Descripción: en móvil usa texto un punto más pequeño (xs) para que
+       * fluya mejor en la columna estrecha de los grids 2×n; en sm+ vuelve
+       * al tamaño original (sm) que da el respiro luxury de desktop.
+       */}
       <p
-        className="mt-5 w-full"
+        className="mt-4 w-full text-xs sm:mt-5 sm:text-sm"
         style={{
-          fontSize: 'var(--text-sm)',
           lineHeight: 'var(--leading-normal)',
           color: 'var(--text-secondary)',
         }}
