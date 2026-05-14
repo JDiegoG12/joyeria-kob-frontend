@@ -1,13 +1,13 @@
 /**
  * @file catalog-nav-bar.tsx
- * @description Barra de navegación rápida al catálogo — estética luxury/minimalista.
+ * @description Barra de navegación rápida al catálogo — estética luxury/editorial.
  *
  * ─── Posicionamiento ──────────────────────────────────────────────────────────
  * La barra usa `position: fixed` porque el contenedor raíz de `MainLayout`
  * tiene `overflow-hidden`, lo que invalida `position: sticky` en cualquier
  * descendiente. Se apila justo debajo del navbar principal:
  *
- * top = --announcement-height + --navbar-height
+ *   top = --announcement-height + --navbar-height
  *
  * El contenido de la página se desplaza hacia abajo con `<CatalogNavBarSpacer>`,
  * que debe montarse inmediatamente después de `<CatalogNavBar />`.
@@ -17,47 +17,59 @@
  * · Centro    : categorías raíz. Al hover aparece el panel de subcategorías.
  * · Derecha   : "SERVICIOS" → scroll suave hasta el elemento `#servicios`.
  *
- * ─── Panel de subcategorías (luxury) ─────────────────────────────────────────
- * Diseño inspirado en ecommerce de moda/joyería premium:
+ * ─── Filosofía de diseño (rev. luxury editorial) ─────────────────────────────
+ * Inspirado en navegaciones de casas de moda/joyería de alto nivel
+ * (Cartier, Boucheron, Loewe, Net-a-Porter):
  *
- * · Fondo anclado a `var(--accent)` (azul marino de marca), independiente del tema.
- * — En modo claro: contrasta nítidamente con la barra blanca y el contenido.
- * — En modo oscuro: `var(--accent)` ≠ `var(--bg-primary)`, el panel sigue
- * siendo perceptible sin necesitar tokens semánticos adicionales.
+ * 1. **Panel claro, no oscuro.** El fondo navy de la versión anterior se
+ *    leía como un dropdown funcional. Ahora el panel usa `--bg-secondary`,
+ *    que adapta automáticamente entre blanco (light) y gris elevado (dark).
+ *    El navy queda reservado únicamente como acento (línea de hover, dot
+ *    indicator, arrow) — nunca como fondo.
  *
- * · Sin título redundante. La categoría activa ya es visible en la barra;
- * repetirla como encabezado dentro del panel genera ruido visual innecesario.
+ * 2. **Indicador editorial, no UI.** El subrayado de 2px del estado activo
+ *    se reemplaza por un punto centrado de 4px bajo el texto. Es el patrón
+ *    de Cartier: minimalista, simétrico, no compite con la tipografía.
  *
- * · El panel nace directamente de la barra: `top: 100%` sin marginTop negativo.
- * La zona muerta anti-gap (hover bridge) se implementa con `paddingBottom`
- * en el contenedor del ítem — ver sección siguiente.
+ * 3. **Tipografía calibrada.** En la barra se mantiene uppercase tracking
+ *    widest (utilitaria, navegacional) pero baja a `--font-medium`. En el
+ *    panel los items son sentence/title case con tracking-wide y tamaño
+ *    `--text-sm` — más legibles, más editoriales, claro contraste con la
+ *    barra superior.
  *
- * ─── Técnica anti-gap (hover bridge) ─────────────────────────────────────────
- * Cuando el panel está abierto, el contenedor del ítem recibe
- * `paddingBottom: HOVER_BRIDGE_PX`. Esta zona invisible "tiende un puente"
- * entre el borde inferior del botón y el borde superior del panel, impidiendo
- * que `onMouseLeave` se dispare cuando el cursor cruza ese espacio.
+ * 4. **Sin separadores entre items.** Los separadores horizontales fragmentan
+ *    visualmente y son un patrón típico de UI funcional. El hover por sí solo
+ *    (background + trazo izquierdo + arrow) ya marca cada item con claridad.
  *
- * A diferencia de implementaciones anteriores, el panel ya NO aplica
- * `marginTop` negativo. El panel arranca en `top: 100%` del contenedor
- * (que ya incluye el paddingBottom), por lo que visualmente nace pegado al
- * borde de la barra sin gap. El puente queda oculto detrás del panel.
+ * 5. **Animaciones lentas y sin rebote.** Curvas `cubic-bezier(0.22, 1, 0.36, 1)`
+ *    (easeOutQuart suavizado), nunca springs con overshoot. El rebote
+ *    transmite "juguetón", no "luxury". Duraciones generosas (350-450ms).
  *
- * ─── Estado activo del ítem de la barra ──────────────────────────────────────
- * Cuando el panel de una categoría está abierto, su botón recibe:
- * · `font-weight: bold` (vs. semibold en reposo) — sutil pero perceptible.
- * · Opacidad 1 en el texto (sin la atenuación del hover normal).
- * · Línea inferior de 2px siempre visible (no solo en hover).
- * · Chevron rotado 180° con spring elástico y opacidad plena.
+ * ─── Adaptación light / dark ──────────────────────────────────────────────────
+ * Todos los colores se resuelven a través de tokens semánticos definidos en
+ * `tokens.css`. La misma hoja de estilos funciona en ambos modos sin lógica
+ * condicional. Mapa de tokens usados:
  *
- * ─── Animaciones ──────────────────────────────────────────────────────────────
- * · Panel     : fade suave con easing premium. Sin movimiento vertical para
- * preservar la ilusión de continuidad con la barra.
- * · Ítems     : stagger de opacidad escalonado. Sin movimiento horizontal
- * (el deslizamiento lateral es menos elegante en contexto luxury).
- * · Chevron   : spring elástico que transmite suavidad orgánica.
- * · Línea     : crece desde el centro (`origin-center`) para efecto simétrico.
- * · Respeta `prefers-reduced-motion` eliminando todos los desplazamientos.
+ *   Panel       → `--bg-secondary`     (#FFFFFF light · #222222 dark)
+ *   Borde panel → `--border-color`     (#DCDCDC light · #2C2C2C dark)
+ *   Sombra      → `--shadow-lg`        (más densa en dark)
+ *   Texto bar   → `--text-accent`      (#131638 light · #F3F3F3 dark)
+ *   Texto sub   → `--text-secondary`   (reposo)
+ *   Texto hover → `--text-primary`     (sub items en hover)
+ *   Hover bg    → `--bg-hover`         (tinte navy translúcido en ambos modos)
+ *   Acento      → `--text-accent`      (dot, trazo izquierdo, arrow)
+ *
+ * ─── Continuidad de hover (sin bridge artificial) ────────────────────────────
+ * El panel se posiciona con `top: 100%` del contenedor del ítem, lo que lo
+ * pega exactamente al borde inferior del botón (sin gap). Como el panel es
+ * descendiente DOM del contenedor con `onMouseLeave`, el cursor que viaja
+ * del botón al panel nunca sale del subtree → `onMouseLeave` no dispara.
+ * No se necesita `paddingBottom` artificial ni elemento puente.
+ *
+ * Versiones anteriores usaban `paddingBottom` en el contenedor como bridge,
+ * pero esto encogía la altura efectiva del botón (box-sizing border-box +
+ * altura forzada por el flex padre), lo que recentraba el texto hacia arriba
+ * — el efecto que el usuario percibía como "elevación" del item al hover.
  *
  * ─── Store ────────────────────────────────────────────────────────────────────
  * Usa `useCategoryStore` exclusivamente, igual que `CatalogFilterSidebar` y
@@ -86,92 +98,79 @@ import type { Category } from '@/features/categories/types/category.types';
 const NAV_BAR_HEIGHT = 48;
 
 /**
- * Altura del puente invisible de hover en px.
+ * Ancho mínimo del panel de subcategorías en px.
  *
- * El contenedor del ítem recibe este `paddingBottom` cuando el panel está
- * abierto. Crea una zona invisible que conecta el botón con el panel,
- * evitando que `onMouseLeave` dispare al cruzar el espacio entre ambos.
- *
- * El panel arranca en `top: 100%` del contenedor (que ya incluye este padding),
- * por lo que visualmente queda pegado al borde inferior de la barra.
+ * Calibrado para 4-7 items en una sola columna con padding generoso.
+ * Más estrecho se sentiría apretado; más ancho desperdicia espacio en
+ * categorías con pocos hijos.
  */
-const HOVER_BRIDGE_PX = 12;
+const PANEL_MIN_WIDTH_PX = 380;
 
-// ─── Tokens de color del panel ────────────────────────────────────────────────
-//
-// Todos extraídos estrictamente de tokens.css.
-// Se emplea color-mix() para calcular las opacidades directamente en CSS
-// a partir de los tokens existentes, evitando colores hexadecimales o rgba quemados.
-
-/** Azul marino de marca (idéntico en light y dark) — fondo del panel. */
-const PANEL_BG = 'var(--accent)';
+// ─── Curvas de animación premium ──────────────────────────────────────────────
 
 /**
- * Texto de subcategoría en reposo.
- * Se mezcla --accent-text (blanco) al 78% con transparente para emular rgba(255,255,255,0.78).
+ * Easing principal para entradas — easeOutQuart suavizado.
+ *
+ * Decelera con elegancia sin "snap" inicial brusco. Es la curva estándar
+ * de transiciones premium en frameworks como Material You y la mayoría de
+ * design systems luxury.
  */
-const PANEL_TEXT = 'color-mix(in srgb, var(--accent-text) 78%, transparent)';
-
-/** Texto de subcategoría en hover/focus — blanco puro extraído del token. */
-const PANEL_TEXT_HOVER = 'var(--accent-text)';
+const EASE_OUT_PREMIUM: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 /**
- * Separador entre ítems del panel.
- * Se mezcla al 7% para emular rgba(255,255,255,0.07).
+ * Easing simétrico para transiciones reversibles (chevron, salidas).
+ *
+ * easeInOut estándar — natural en ambos sentidos, sin overshoot.
+ * Reemplaza el spring elástico anterior, cuyo rebote rompía la sensación luxury.
  */
-const PANEL_ITEM_BORDER =
-  'color-mix(in srgb, var(--accent-text) 7%, transparent)';
-
-/** Fondo del ítem en hover — mantiene la coherencia usando la mezcla al 7%. */
-const PANEL_ITEM_HOVER_BG =
-  'color-mix(in srgb, var(--accent-text) 7%, transparent)';
+const EASE_IN_OUT_PREMIUM: [number, number, number, number] = [0.65, 0, 0.35, 1];
 
 // ─── Variantes de animación ───────────────────────────────────────────────────
 
 /**
  * Animación de entrada y salida del panel completo.
  *
- * Solo opacidad, sin movimiento vertical:
- * · El panel nace de la barra (no cae desde arriba), por lo que desplazarlo
- * verticalmente rompería la ilusión de continuity.
- * · `visible`: easing suave tipo `spring` — sensación premium, no robótica.
- * · `exit`   : fade rápido para no interrumpir el flujo si el usuario se mueve.
+ * Combina opacidad con un descenso sutil de 6px: el panel "desciende desde
+ * la barra" en lugar de simplemente parpadear. 420ms es deliberadamente
+ * generoso — cualquier valor por debajo de 350ms se siente apresurado en
+ * contexto luxury.
  */
 const panelVariants: Variants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 0, y: -6 },
   visible: {
     opacity: 1,
-    transition: { duration: 0.28, ease: [0.16, 1, 0.3, 1] },
+    y: 0,
+    transition: { duration: 0.42, ease: EASE_OUT_PREMIUM },
   },
   exit: {
     opacity: 0,
-    transition: { duration: 0.18, ease: 'easeIn' },
+    y: -4,
+    transition: { duration: 0.22, ease: EASE_IN_OUT_PREMIUM },
   },
 };
 
-/** Variante sin animación para `prefers-reduced-motion`. */
+/** Variante sin movimiento para `prefers-reduced-motion`. */
 const panelVariantsReduced: Variants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.12 } },
-  exit: { opacity: 0, transition: { duration: 0.08 } },
+  visible: { opacity: 1, transition: { duration: 0.15 } },
+  exit: { opacity: 0, transition: { duration: 0.1 } },
 };
 
 /**
- * Stagger de opacidad de cada ítem de subcategoría.
+ * Stagger de opacidad de cada subcategoría.
  *
- * Sin movimiento horizontal: el deslizamiento lateral resta elegancia en
- * contextos luxury. La opacidad escalonada es más sutil y refinada.
- *
- * `custom` prop recibe el índice del ítem para calcular el delay escalonado.
+ * Sin movimiento (ni vertical ni horizontal): los items aparecen en cascada
+ * pero sin desplazamiento, lo que evita la sensación de "ráfaga" típica
+ * de dropdowns funcionales y refuerza la calma editorial del panel.
  */
 const subItemVariants: Variants = {
   hidden: { opacity: 0 },
   visible: (i: number) => ({
     opacity: 1,
     transition: {
-      delay: i * 0.045,
-      duration: 0.24,
-      ease: 'easeOut',
+      delay: i * 0.05,
+      duration: 0.32,
+      ease: EASE_OUT_PREMIUM,
     },
   }),
 };
@@ -213,7 +212,7 @@ const scrollToSection = (id: string): void => {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 /**
- * Barra de navegación rápida al catálogo — estilo luxury/minimalista.
+ * Barra de navegación rápida al catálogo — estilo luxury/editorial.
  *
  * Estructura de tres zonas:
  * 1. "CATÁLOGO" (izquierda)  → limpia filtros y navega a /catalogo.
@@ -280,9 +279,16 @@ export const CatalogNavBar = () => {
   };
 
   return (
+    /*
+     * `hidden lg:block`: la barra rápida es exclusiva de desktop.
+     * En móvil/tablet, los accesos a catálogo/categorías y a la sección
+     * de servicios se entregan a través del menú hamburguesa del navbar
+     * principal, que es más usable sin hover y consistente con el patrón
+     * de navegación del sitio en pantallas pequeñas.
+     */
     <nav
       aria-label="Navegación rápida al catálogo"
-      className="w-full border-b"
+      className="hidden w-full border-b lg:block"
       style={{
         /*
          * position: fixed — necesario porque MainLayout tiene overflow-hidden,
@@ -292,8 +298,6 @@ export const CatalogNavBar = () => {
          *
          * z-index: 39 — sobre el contenido de página,
          * bajo el navbar principal (z-40) y los overlays/modales (z-50).
-         *
-         * boxShadow mínimo en la barra usando el sistema de tokens.
          */
         position: 'fixed',
         top: 'calc(var(--announcement-height) + var(--navbar-height))',
@@ -366,10 +370,16 @@ export const CatalogNavBar = () => {
  * distancia, evitando que la barra fija tape el primer elemento de la página.
  *
  * Debe montarse **inmediatamente después** de `<CatalogNavBar />`.
+ *
+ * `hidden lg:block` — debe acompañar al breakpoint de la propia barra:
+ * en móvil/tablet la barra no se renderiza, por lo que el spacer tampoco
+ * debe reservar espacio (de lo contrario quedaría un hueco vacío de 48px
+ * justo bajo el navbar principal).
  */
 export const CatalogNavBarSpacer = () => (
   <div
     aria-hidden="true"
+    className="hidden lg:block"
     style={{ height: `${NAV_BAR_HEIGHT}px`, flexShrink: 0 }}
   />
 );
@@ -383,7 +393,7 @@ export const CatalogNavBarSpacer = () => (
  */
 const Divider = () => (
   <div
-    className="my-3.5 w-px flex-shrink-0 self-stretch"
+    className="my-3.5 w-px shrink-0 self-stretch"
     style={{ backgroundColor: 'var(--border-color)' }}
     aria-hidden="true"
   />
@@ -397,7 +407,7 @@ interface NavBarEdgeButtonProps {
   /** Acción ejecutada al hacer click. */
   onClick: () => void;
   /**
-   * Aplica `font-bold` al texto.
+   * Aplica `font-semibold` al texto (vs. `font-medium` por defecto).
    * Reservado para "CATÁLOGO" como anclaje principal de navegación.
    */
   bold?: boolean;
@@ -408,54 +418,86 @@ interface NavBarEdgeButtonProps {
 /**
  * Botón de los extremos de la barra ("CATÁLOGO" y "SERVICIOS").
  *
- * Tipografía uppercase + tracking amplio coherente con la identidad luxury.
- * El indicador de hover es una línea inferior que crece desde el centro
- * (`origin-center scaleX`) en lugar de desde la izquierda: efecto más
- * simétrico y elegante.
+ * Tipografía uppercase + tracking widest coherente con la identidad luxury.
  *
- * La transición de opacidad usa 200ms (más lento que lo habitual) para
- * transmitir suavidad y no brusquedad.
+ * ── Indicador de hover: línea inferior expansiva ─────────────────────────────
+ * Una línea de 2px en `--text-accent` aparece pegada al borde inferior del
+ * botón (con 6px de separación del border-b del nav). Crece desde el centro
+ * hacia los extremos (`scaleX(0) → scaleX(1)`) en 450ms con curva premium —
+ * efecto simétrico y editorial, inspirado en navegaciones de Hermès y Loewe.
+ *
+ * ── Por qué `useState` + transform inline en vez de `group-hover` ────────────
+ * Tailwind 4 implementa los utilitarios de escala (`scale-x-0`, `scale-x-100`)
+ * usando la propiedad CSS nativa `scale`, no `transform`. Si declaras
+ * `transition: transform`, la transición no captura los cambios de `scale`
+ * y la línea aparece instantáneamente sin animación.
+ *
+ * Solución: rastrear el hover con `useState` y aplicar `transform: scaleX()`
+ * directamente como inline style. La transición sobre `transform` ahora sí
+ * encuentra la propiedad correcta y anima de forma garantizada en cualquier
+ * versión de Tailwind.
+ *
+ * ── Item visualmente fijo ────────────────────────────────────────────────────
+ * Sin atenuación de opacidad ni cambio de font-weight en hover: el texto
+ * permanece estático y solo la línea inferior responde. Cualquier variación
+ * tipográfica se percibe como un micro-desplazamiento ("lift") que rompe la
+ * sensación luxury.
  */
 const NavBarEdgeButton = ({
   children,
   onClick,
   bold = false,
   'aria-label': ariaLabel,
-}: NavBarEdgeButtonProps) => (
-  <button
-    type="button"
-    onClick={onClick}
-    aria-label={ariaLabel}
-    className="group relative flex cursor-pointer items-center px-5 sm:px-6 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
-    style={{ background: 'none', border: 'none' }}
-  >
-    <span
-      className="transition-opacity duration-200 group-hover:opacity-55"
-      style={{
-        fontFamily: 'var(--font-ui)',
-        fontSize: 'var(--text-xs)',
-        fontWeight: bold ? 'var(--font-bold)' : 'var(--font-semibold)',
-        letterSpacing: 'var(--tracking-widest)',
-        textTransform: 'uppercase',
-        color: 'var(--text-accent)',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {children}
-    </span>
+}: NavBarEdgeButtonProps) => {
+  const [hovered, setHovered] = useState(false);
 
-    {/*
-     * Línea inferior que crece desde el centro en hover.
-     * `origin-center` da un efecto simétrico más sofisticado que `origin-left`.
-     * Duración 300ms: deliberadamente más lenta para sensación premium.
-     */}
-    <span
-      className="absolute bottom-0 left-0 h-px w-full origin-center scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100"
-      style={{ backgroundColor: 'var(--accent)' }}
-      aria-hidden="true"
-    />
-  </button>
-);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-label={ariaLabel}
+      className="relative flex cursor-pointer items-center px-5 sm:px-6 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--accent)"
+      style={{ background: 'none', border: 'none' }}
+    >
+      <span
+        style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-xs)',
+          fontWeight: bold ? 'var(--font-semibold)' : 'var(--font-medium)',
+          letterSpacing: 'var(--tracking-widest)',
+          textTransform: 'uppercase',
+          color: 'var(--text-accent)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {children}
+      </span>
+
+      {/*
+       * Línea inferior — animación garantizada por transform inline.
+       * scaleX(0) en reposo (invisible pero ocupando ancho completo, sin
+       * layout shift), scaleX(1) en hover. transformOrigin centrado para
+       * crecimiento bidireccional desde el centro hacia los extremos.
+       */}
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          bottom: '6px',
+          left: 0,
+          width: '100%',
+          height: '2px',
+          backgroundColor: 'var(--text-accent)',
+          transformOrigin: 'center',
+          transform: hovered ? 'scaleX(1)' : 'scaleX(0)',
+          transition: 'transform 450ms cubic-bezier(0.22, 1, 0.36, 1)',
+        }}
+      />
+    </button>
+  );
+};
 
 // ─── Ítem de categoría con panel luxury ───────────────────────────────────────
 
@@ -481,25 +523,31 @@ interface CategoryItemProps {
  * Ítem de categoría raíz con panel luxury de subcategorías.
  *
  * ── Estado activo del botón ──────────────────────────────────────────────────
- * Cuando el panel está abierto, el botón recibe señales visuales diferenciadas:
- * · `font-weight: bold` en lugar de semibold — refuerzo sutil pero efectivo.
- * · Opacidad 1 sin atenuación (contrariamente al hover normal que baja a 0.55).
- * · Línea inferior de 2px permanente (no condicional al hover).
- * · Chevron a 180° con spring elástico, opacidad plena.
+ * Cuando el panel está abierto, el botón recibe DOS señales visuales:
+ * · Línea inferior permanente a scaleX(1) — el mismo indicador del hover,
+ *   pero anclada en posición expandida (no condicional al cursor).
+ * · Chevron a 180° con easing simétrico (sin overshoot/rebote).
+ *
+ * Tipografía constante (medium siempre): el ítem nunca cambia de peso para
+ * evitar el ensanchamiento sutil de los caracteres, que se percibe como
+ * "elevación" del texto. Toda la diferenciación visual va a la línea.
  *
  * ── Sin título redundante ────────────────────────────────────────────────────
  * El nombre de la categoría ya es visible en la barra de navegación.
  * Repetirlo como encabezado dentro del panel genera jerarquía innecesaria
  * y ocupa espacio que corresponde a las subcategorías.
  *
- * ── Panel ancho y espacioso ──────────────────────────────────────────────────
- * `minWidth: 260px` garantiza que ningún ítem se sienta comprimido.
- * El padding por ítem (14px vertical) es generoso para transmitir premium.
+ * ── Panel claro y editorial ──────────────────────────────────────────────────
+ * `minWidth: PANEL_MIN_WIDTH_PX` (380px) garantiza que ningún ítem se sienta
+ * comprimido y que haya aire suficiente para el arrow lateral en hover.
  *
- * ── Anti-gap (hover bridge) ──────────────────────────────────────────────────
- * Ver sección "Técnica anti-gap" en el JSDoc del archivo para la explicación
- * completa. El panel NO usa marginTop negativo; el paddingBottom del contenedor
- * actúa como puente invisible.
+ * ── Continuidad de hover (sin paddingBottom) ────────────────────────────────
+ * El panel se posiciona con `top: 100%` del contenedor, pegado al borde
+ * inferior del botón sin gap. Como el panel es descendiente DOM del
+ * contenedor con `onMouseLeave`, mover el cursor del botón al panel no
+ * dispara `onMouseLeave` (mouseleave no se activa entre descendientes).
+ * No se necesita `paddingBottom` artificial — y eliminarlo corrige la
+ * elevación que producía al encoger la altura útil del botón.
  *
  * ── Cierre por click fuera ───────────────────────────────────────────────────
  * Listener en `document` activo solo cuando el panel está abierto.
@@ -546,15 +594,12 @@ const CategoryItem = ({
 
   return (
     /*
-     * paddingBottom activo = puente invisible de hover.
-     * El panel arranca en top:100% de este contenedor (que incluye el padding),
-     * por lo que visualmente nace pegado al borde inferior de la barra sin gap.
-     * Ver "Técnica anti-gap" en el JSDoc del archivo.
+     * Sin paddingBottom: el panel a `top: 100%` ya hace de bridge sin
+     * alterar la altura del botón ni desplazar verticalmente el texto.
      */
     <div
       ref={containerRef}
       className="relative flex items-stretch"
-      style={{ paddingBottom: isOpen ? `${HOVER_BRIDGE_PX}px` : '0' }}
       onMouseEnter={onOpen}
       onMouseLeave={onClose}
     >
@@ -564,28 +609,23 @@ const CategoryItem = ({
         onClick={() => onSelectCategory(category.id)}
         aria-haspopup={hasSubCategories ? 'listbox' : undefined}
         aria-expanded={hasSubCategories ? isOpen : undefined}
-        className="group relative flex cursor-pointer items-center gap-1.5 px-4 sm:px-5 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
+        className="relative flex cursor-pointer items-center gap-2 px-5 sm:px-6 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--accent)"
         style={{ background: 'none', border: 'none' }}
       >
-        {/* Nombre de la categoría */}
+        {/*
+         * Nombre de la categoría — completamente estático.
+         *
+         * Sin cambios de opacidad ni de font-weight entre reposo y activo.
+         * Mantener `--font-medium` constante evita el ensanchamiento sutil
+         * de los caracteres al pasar a semibold (causa real de la sensación
+         * de "elevación" que se percibía al hacer hover). Toda la señal
+         * visual de estado va en la línea inferior expansiva.
+         */}
         <span
-          className={
-            /*
-             * Estado activo (isOpen): sin grupo-hover, opacidad plena.
-             * Estado reposo: baja a 0.55 en hover para señalar interactividad.
-             */
-            isOpen
-              ? undefined
-              : 'transition-opacity duration-200 group-hover:opacity-55'
-          }
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-xs)',
-            /*
-             * Bold cuando está activo: diferencia perceptible sin ser gritona.
-             * No animar font-weight (no interpolable en CSS); el cambio es inmediato.
-             */
-            fontWeight: isOpen ? 'var(--font-bold)' : 'var(--font-semibold)',
+            fontWeight: 'var(--font-medium)',
             letterSpacing: 'var(--tracking-widest)',
             textTransform: 'uppercase',
             color: 'var(--text-accent)',
@@ -596,43 +636,54 @@ const CategoryItem = ({
         </span>
 
         {/*
-         * Chevron: spring elástico al abrir/cerrar.
-         * La opacidad plena en estado activo refuerza la señal visual.
+         * Chevron: easing simétrico (sin overshoot).
+         * El spring elástico anterior rebotaba — un patrón "juguetón" que
+         * rompe la sensación luxury. Curva easeInOut natural, 350ms.
          */}
         {hasSubCategories && (
           <motion.span
             animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
-            style={{
-              display: 'flex',
-              flexShrink: 0,
-              opacity: isOpen ? 1 : 0.55,
-              transition: 'opacity 200ms ease',
-            }}
+            transition={{ duration: 0.35, ease: EASE_IN_OUT_PREMIUM }}
+            style={{ display: 'flex', flexShrink: 0 }}
             aria-hidden="true"
           >
             <ChevronDown
-              size={10}
-              strokeWidth={2}
+              size={11}
+              strokeWidth={1.75}
               style={{ color: 'var(--text-accent)' }}
             />
           </motion.span>
         )}
 
         {/*
-         * Indicador de estado activo — línea inferior de 2px.
-         * · Abierto : permanente, escala completa.
-         * · Reposo  : aparece solo en hover, crece desde el centro (simétrico).
-         * Duración más lenta (300ms) para sensación premium.
+         * Línea inferior — indicador unificado para hover y estado activo.
+         *
+         * Aquí basta con `isOpen` porque hover sobre el contenedor invoca
+         * `onOpen` inmediatamente: el item siempre se abre cuando se hace
+         * hover. No hay diferencia entre "hovered" y "isOpen" en este
+         * componente, así que un único estado controla la línea.
+         *
+         * · Posición : `bottom: 6px` la separa del border-b del nav.
+         * · Grosor   : 2px — visible sin ser pesada.
+         * · Animación: scaleX(0) → scaleX(1) en 450ms con curva premium,
+         *   declarada en transform inline para garantizar el animado en
+         *   cualquier versión de Tailwind (Tailwind 4 usa `scale` CSS,
+         *   no `transform`, lo que rompía las clases utilitarias previas).
+         * · Origen   : `center` → crecimiento bidireccional simétrico.
          */}
         <span
-          className={`absolute bottom-0 left-0 h-0.5 w-full origin-center transition-transform ease-out ${
-            isOpen
-              ? 'scale-x-100 duration-200'
-              : 'scale-x-0 duration-300 group-hover:scale-x-100'
-          }`}
-          style={{ backgroundColor: 'var(--accent)' }}
           aria-hidden="true"
+          style={{
+            position: 'absolute',
+            bottom: '6px',
+            left: 0,
+            width: '100%',
+            height: '2px',
+            backgroundColor: 'var(--text-accent)',
+            transformOrigin: 'center',
+            transform: isOpen ? 'scaleX(1)' : 'scaleX(0)',
+            transition: 'transform 450ms cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
         />
       </button>
 
@@ -644,12 +695,17 @@ const CategoryItem = ({
        * Posicionamiento:
        * · `position: absolute`  → flota sobre el contenido de la página.
        * · `top: 100%`           → arranca al final del contenedor (incluye el
-       * HOVER_BRIDGE_PX de paddingBottom cuando abierto).
+       *                          HOVER_BRIDGE_PX de paddingBottom cuando abierto).
        * · `left: 0`             → alineado con el borde izquierdo del botón.
        * · `z-index: 50`         → sobre todo el contenido y la barra (z-39).
-       * · Sin marginTop negativo: el panel nace de la barra sin gap artificial.
        *
-       * Sombra y radio se aplican mediante tokens.
+       * Estilo:
+       * · Fondo `--bg-secondary`  → blanco en light, gris elevado en dark.
+       * · Borde `--border-color`  → solo lados y abajo (no top, sería redundante
+       *                            con el border-b de la barra).
+       * · Sombra `--shadow-lg`    → elevación visible pero no agresiva.
+       * · Radius solo en esquinas inferiores → refuerza que el panel es una
+       *                                       extensión natural de la barra.
        */}
       {hasSubCategories && (
         <AnimatePresence>
@@ -665,22 +721,28 @@ const CategoryItem = ({
               style={{
                 top: '100%',
                 left: 0,
-                minWidth: '260px',
-                /* Configuración de UI extraída íntegramente de tokens.css */
-                backgroundColor: PANEL_BG,
-                boxShadow: 'var(--shadow-xl)',
+                minWidth: `${PANEL_MIN_WIDTH_PX}px`,
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderTop: 'none',
+                boxShadow: 'var(--shadow-lg)',
                 borderRadius: '0 0 var(--radius-md) var(--radius-md)',
                 overflow: 'hidden',
               }}
             >
               {/*
-               * Lista de subcategorías — sin encabezado con el nombre de la categoría.
-               * El ítem activo ya es visible en la barra; repetirlo añade ruido.
-               * El padding superior e inferior del contenedor da respiro al bloque.
+               * Lista de subcategorías — sin separadores entre items.
+               * El hover (background tintado + trazo izquierdo + arrow)
+               * marca cada item con suficiente claridad. Los separadores
+               * horizontales fragmentan visualmente y se leen como UI
+               * funcional, no editorial.
+               *
+               * Padding vertical del contenedor: 8px arriba y abajo da
+               * respiro al bloque sin desperdiciar altura.
                */}
               <ul
                 role="presentation"
-                style={{ listStyle: 'none', margin: 0, padding: '8px 0 10px' }}
+                style={{ listStyle: 'none', margin: 0, padding: '8px 0' }}
               >
                 {subCategories.map((sub, i) => (
                   <motion.li
@@ -690,17 +752,6 @@ const CategoryItem = ({
                     variants={resolvedSubItemVariants}
                     initial="hidden"
                     animate="visible"
-                    style={{
-                      /*
-                       * Separador entre ítems — muy sutil para no fragmentar
-                       * visualmente el panel; solo orienta sin interrumpir.
-                       * El último ítem no lleva separador.
-                       */
-                      borderBottom:
-                        i < subCategories.length - 1
-                          ? `1px solid ${PANEL_ITEM_BORDER}`
-                          : 'none',
-                    }}
                   >
                     <SubCategoryButton
                       label={sub.name}
@@ -733,19 +784,34 @@ interface SubCategoryButtonProps {
  * idiomático de React, en lugar de manipular el DOM directamente.
  *
  * ── Anatomía del ítem ────────────────────────────────────────────────────────
- * · Padding vertical generoso (14px): cada ítem "respira" — sensación premium.
- * · Tipografía uppercase + tracking amplio, consistente con la barra superior.
- * · Indicador de hover: trazo izquierdo de 3px usando color-mix de var(--accent-text).
- * Aparece solo en hover; en reposo ocupa el mismo espacio pero transparente
- * para evitar que el texto salte al aparecer el borde (layout shift).
- * · Color de texto que transiciona suavemente a blanco puro en hover.
- * · `font-weight` sube a semibold en hover para un refuerzo tipográfico sutil.
+ * Layout: `justify-between` con label a la izquierda y arrow `→` a la derecha.
+ * El arrow solo se materializa en hover (opacidad 0→1 + translateX -6px → 0).
  *
- * ── Por qué un trazo izquierdo y no una flecha ───────────────────────────────
- * La flecha `›` (implementación anterior) añadía un carácter extra que
- * fragmenta la lectura. El trazo izquierdo, inspirado en las navegaciones de
- * casas de moda de lujo (Cartier, Tiffany, Boucheron), es más elegante y
- * tipográficamente limpio.
+ * · Padding vertical generoso (14px): cada ítem "respira" — sensación premium.
+ * · Padding horizontal: 28px derecha, 26px izquierda (28 - 2px del trazo).
+ *   Asimetría calculada para que el texto no se desplace al aparecer el trazo.
+ * · Tipografía: `--text-sm` (más grande que la barra) + `--tracking-wide`
+ *   (menos agresivo que el `tracking-widest` de arriba). Sin `text-transform`:
+ *   se respeta la capitalización natural del backend, que es más editorial
+ *   que el uppercase forzado del menú anterior.
+ *
+ * ── Indicadores de hover ─────────────────────────────────────────────────────
+ * Tres señales visuales superpuestas que actúan en conjunto:
+ *
+ * 1. **Background tintado** — `--bg-hover` (rgba navy con baja opacidad).
+ *    Adapta automáticamente entre light (6% opacidad) y dark (18% opacidad).
+ *
+ * 2. **Trazo izquierdo de 2px** — `--text-accent` (navy en light, blanco
+ *    en dark). En reposo es transparente pero ocupa el mismo espacio para
+ *    evitar layout shift. Inspirado en navegaciones de Cartier, Boucheron.
+ *
+ * 3. **Arrow `→` deslizándose** — entra desde la izquierda con curva premium.
+ *    Refuerza la affordance "click me" sin ocupar espacio en reposo.
+ *
+ * ── Tipografía en hover ──────────────────────────────────────────────────────
+ * El texto sube de `--text-secondary` a `--text-primary` y de `--font-medium`
+ * a `--font-semibold`. Refuerzo tipográfico sutil que confirma la selección
+ * sin gritar. Las transiciones de color usan 250ms para sensación suave.
  */
 const SubCategoryButton = ({ label, onClick }: SubCategoryButtonProps) => {
   const [hovered, setHovered] = useState(false);
@@ -757,37 +823,65 @@ const SubCategoryButton = ({ label, onClick }: SubCategoryButtonProps) => {
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="flex w-full cursor-pointer items-center text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent-text)]"
+      className="flex w-full cursor-pointer items-center justify-between text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--accent)"
       style={{
-        background: hovered ? PANEL_ITEM_HOVER_BG : 'transparent',
+        background: hovered ? 'var(--bg-hover)' : 'transparent',
         border: 'none',
         /*
-         * Trazo izquierdo como indicador de hover extrayendo alfa del token maestro.
-         * En reposo: transparente pero presente (evita layout shift).
-         * En hover : usa color-mix para la opacidad (no color sólido puro).
+         * Trazo izquierdo como indicador de hover. En reposo es transparente
+         * pero presente (mantiene el ancho), evitando layout shift al activar.
          */
-        borderLeft: `3px solid ${hovered ? 'color-mix(in srgb, var(--accent-text) 32%, transparent)' : 'transparent'}`,
+        borderLeft: `2px solid ${hovered ? 'var(--text-accent)' : 'transparent'}`,
         /*
-         * paddingLeft: 17px = 20px - 3px del borde,
-         * para que el texto no se desplace al aparecer el trazo.
+         * paddingLeft 26px = 28px - 2px del trazo. Garantiza que el texto
+         * permanezca en la misma X al aparecer el borde lateral.
          */
-        padding: '14px 24px 14px 17px',
-        transition: 'background-color 200ms ease, border-color 200ms ease',
+        padding: '14px 28px 14px 26px',
+        transition:
+          'background-color 250ms ease, border-color 250ms ease',
       }}
     >
       <span
         style={{
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-xs)',
+          fontFamily: 'var(--font-body)',
+          fontSize: 'var(--text-sm)',
+          /*
+           * Refuerzo tipográfico en hover: medium → semibold.
+           * Cambio inmediato (font-weight no es interpolable en CSS).
+           */
           fontWeight: hovered ? 'var(--font-semibold)' : 'var(--font-medium)',
-          letterSpacing: 'var(--tracking-widest)',
-          textTransform: 'uppercase',
-          color: hovered ? PANEL_TEXT_HOVER : PANEL_TEXT,
+          letterSpacing: 'var(--tracking-wide)',
+          color: hovered ? 'var(--text-primary)' : 'var(--text-secondary)',
           whiteSpace: 'nowrap',
-          transition: 'color 200ms ease',
+          transition: 'color 250ms ease',
         }}
       >
         {label}
+      </span>
+
+      {/*
+       * Arrow indicador — entra desde la izquierda en hover.
+       * · Reposo: opacidad 0 + translateX(-6px) — invisible, fuera de posición.
+       * · Hover : opacidad 1 + translateX(0)   — visible, en posición final.
+       * El transform usa la curva premium para deslizamiento elegante;
+       * la opacidad usa easing estándar (no necesita refinamiento extra).
+       */}
+      <span
+        style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-base)',
+          color: 'var(--text-accent)',
+          opacity: hovered ? 1 : 0,
+          transform: hovered ? 'translateX(0)' : 'translateX(-6px)',
+          transition:
+            'opacity 250ms ease, transform 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+          lineHeight: 1,
+          flexShrink: 0,
+          marginLeft: '24px',
+        }}
+        aria-hidden="true"
+      >
+        →
       </span>
     </button>
   );

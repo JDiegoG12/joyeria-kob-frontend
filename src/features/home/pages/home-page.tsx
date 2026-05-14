@@ -22,7 +22,8 @@
  * de `CatalogNavBar` pueda hacer scroll suave hasta ella.
  */
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   Hammer,
@@ -34,6 +35,7 @@ import {
 } from 'lucide-react';
 import { ServiceCard } from '@/features/home/components/service-card';
 import { TestimonialCard } from '@/features/home/components/testimonial-card';
+import { TestimonialsCarousel } from '@/features/home/components/testimonials-carousel';
 import {
   HeroCarousel,
   type PromoSlide,
@@ -130,8 +132,53 @@ const TESTIMONIALS = [
  * Página de inicio pública con orden editorial definido por mockups:
  * hero (carrusel), barra de navegación rápida, productos destacados,
  * inversión en oro, servicios y testimonios.
+ *
+ * ─── Scroll a sección por navegación externa ─────────────────────────────────
+ * Al llegar desde otra ruta con `location.state.scrollTo = '<id>'` (por
+ * ejemplo, desde el ítem "Servicios" del menú móvil), el efecto detecta el
+ * id, hace scroll suave a la sección compensando el offset de las barras
+ * fijas y limpia el state para evitar re-scroll en navegaciones de back/forward.
  */
 export const HomePage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  /*
+   * Scroll diferido a una sección de la home al llegar desde otra ruta.
+   *
+   * Se espera un pequeño tick (60ms) para que React termine de pintar todas
+   * las secciones antes de medir su posición; sin ese delay, el scroll puede
+   * caer "corto" porque la imagen de oro o las tarjetas aún no han
+   * reservado su altura final.
+   *
+   * Tras el scroll se limpia `location.state` con `replace: true` para que
+   * un back/forward no vuelva a disparar el efecto.
+   */
+  useEffect(() => {
+    const target = (location.state as { scrollTo?: string } | null)?.scrollTo;
+    if (!target) return;
+
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(target);
+      if (!el) return;
+
+      const style = getComputedStyle(document.documentElement);
+      const announcementPx =
+        parseFloat(style.getPropertyValue('--announcement-height')) || 36;
+      const navbarPx =
+        parseFloat(style.getPropertyValue('--navbar-height')) || 64;
+      const offset = announcementPx + navbarPx + 16;
+      const top = el.getBoundingClientRect().top + window.scrollY - offset;
+
+      window.scrollTo({ top, behavior: 'smooth' });
+
+      // Limpia el state para que back/forward no vuelva a disparar el scroll.
+      navigate(location.pathname, { replace: true, state: null });
+    }, 60);
+
+    return () => window.clearTimeout(timer);
+  }, [location, navigate]);
+
   return (
     <div className="overflow-x-hidden">
       {/* Hero como carrusel — slide 0 es el banner configurable desde admin */}
@@ -139,8 +186,9 @@ export const HomePage = () => {
 
       {/*
        * Barra de navegación rápida al catálogo.
-       * Permite navegar directamente a una categoría o subcategoría desde la home.
-       * También incluye acceso directo a la sección de servicios (#servicios).
+       * Solo se muestra en desktop (lg+): en móvil se reemplaza por el ítem
+       * "Servicios" del menú hamburguesa, que es más usable sin hover.
+       * El propio componente aplica `hidden lg:block` internamente.
        */}
       <CatalogNavBar />
 
@@ -148,8 +196,9 @@ export const HomePage = () => {
       <GoldInvestmentSection />
 
       {/*
-       * id="servicios" expuesto para que el botón "SERVICIOS" de CatalogNavBar
-       * pueda hacer scroll suave hasta esta sección mediante scrollToSection().
+       * id="servicios" expuesto para que tanto el botón "SERVICIOS" de
+       * `CatalogNavBar` (desktop) como el ítem "Servicios" del menú móvil
+       * puedan hacer scroll suave hasta esta sección.
        */}
       <ServicesSection />
 
@@ -158,7 +207,20 @@ export const HomePage = () => {
   );
 };
 
-/** Sección editorial que explica el valor del oro como inversión. */
+/**
+ * Sección editorial que explica el valor del oro como inversión.
+ *
+ * ─── Layout ──────────────────────────────────────────────────────────────────
+ * · Mobile (<lg): una sola columna. Texto primero (centrado para mayor
+ *   impacto editorial y mejor jerarquía en pantallas estrechas), imagen
+ *   debajo full-width.
+ * · Desktop (lg+): dos columnas (texto izquierda, imagen derecha) con la
+ *   alineación a la izquierda original.
+ *
+ * El título evita `<br>` forzados: en su lugar deja que el `clamp()` del
+ * tamaño y el ancho de columna controlen el wrap de forma natural,
+ * lo que produce mejores quiebres en cualquier viewport.
+ */
 const GoldInvestmentSection = () => (
   <section
     className="py-16 sm:py-20 lg:py-24"
@@ -169,8 +231,13 @@ const GoldInvestmentSection = () => (
       style={{ maxWidth: 'var(--content-max-width)' }}
     >
       <RevealBlock>
+        {/*
+         * Título: centrado en móvil, izquierda en desktop.
+         * Sin <br> forzados — se confía en `clamp()` y el ancho de columna
+         * para definir los quiebres de línea de manera natural.
+         */}
         <h2
-          className="uppercase"
+          className="text-center uppercase lg:text-left"
           style={{
             fontFamily: 'var(--font-display)',
             fontSize: 'clamp(var(--text-3xl), 7vw, var(--text-5xl))',
@@ -180,14 +247,15 @@ const GoldInvestmentSection = () => (
             color: 'var(--text-accent)',
           }}
         >
-          ¿Por qué
-          <br />
-          invertir
-          <br />
-          en oro?
+          ¿Por qué invertir en oro?
         </h2>
 
-        <div className="mt-8 max-w-md">
+        {/*
+         * Bloque de párrafos: en móvil va centrado y centrado en su
+         * contenedor (`mx-auto`); en desktop vuelve a alinearse a la
+         * izquierda y se ancla al inicio de su columna.
+         */}
+        <div className="mt-8 max-w-md mx-auto text-center lg:mx-0 lg:text-left">
           <p>
             Invertir en oro es proteger tu capital con uno de los activos más
             sólidos y valorados del mundo.
@@ -224,9 +292,19 @@ const GoldInvestmentSection = () => (
 /**
  * Servicios de taller y asesoría replicados como tarjetas reutilizables.
  *
+ * ─── Layout responsive ───────────────────────────────────────────────────────
+ * · Mobile (<sm): 2 columnas con gap reducido para que la sección no se haga
+ *   "eterna" en scroll. Las tarjetas tienen padding interno más compacto
+ *   (ver `ServiceCard`) para caber cómodas en ~360px de ancho.
+ * · sm (≥640px): 2 columnas con gap mayor.
+ * · lg (≥1024px): 3 columnas con gap aún mayor (layout original desktop).
+ *
+ * El `pl-5` del grid mantiene el icono flotante de la primera columna sin
+ * que se corte contra el borde izquierdo de la sección.
+ *
  * @remarks
  * El `id="servicios"` permite el scroll suave desde `CatalogNavBar`
- * mediante `scrollToSection('servicios')`.
+ * (desktop) y desde el ítem "Servicios" del menú móvil.
  */
 const ServicesSection = () => (
   <section
@@ -240,9 +318,9 @@ const ServicesSection = () => (
     >
       <SectionHeading title="Servicios" centered />
 
-      <div className="mt-12 grid gap-x-12 gap-y-14 pl-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-14 lg:gap-y-16">
+      <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-12 pl-5 sm:gap-x-12 sm:gap-y-14 lg:grid-cols-3 lg:gap-x-14 lg:gap-y-16">
         {SERVICES.map((service, index) => (
-          <RevealBlock key={service.title} delay={index * 0.04}>
+          <RevealBlock key={service.title} delay={index * 0.04} className="h-full">
             <ServiceCard {...service} />
           </RevealBlock>
         ))}
@@ -251,7 +329,19 @@ const ServicesSection = () => (
   </section>
 );
 
-/** Testimonios de clientes con énfasis en la tarjeta central del mockup. */
+/**
+ * Testimonios de clientes con énfasis en la tarjeta central del mockup.
+ *
+ * ─── Layout responsive ───────────────────────────────────────────────────────
+ * · Mobile/Tablet (<md): carrusel horizontal con swipe nativo + dots.
+ *   Mantiene la sección compacta y sustituye un scroll vertical largo por
+ *   una interacción táctil más natural en pantallas pequeñas.
+ * · Desktop (md+):       grid 1×3 idéntico al original, los tres testimonios
+ *   visibles a la vez para lectura comparativa.
+ *
+ * Ambas variantes usan los mismos datos (`TESTIMONIALS`) y comparten el
+ * componente `TestimonialCard`, evitando divergencias de contenido.
+ */
 const TestimonialsSection = () => (
   <section
     className="py-16 sm:py-20 lg:py-24"
@@ -263,7 +353,15 @@ const TestimonialsSection = () => (
     >
       <SectionHeading title="Testimonios" centered />
 
-      <div className="mt-10 grid gap-6 md:grid-cols-3 md:items-stretch">
+      {/* ── Variante móvil/tablet: carrusel ──────────────────────────────── */}
+      <div className="mt-10 md:hidden">
+        <RevealBlock>
+          <TestimonialsCarousel testimonials={TESTIMONIALS} />
+        </RevealBlock>
+      </div>
+
+      {/* ── Variante desktop: grid 1×3 (layout original) ─────────────────── */}
+      <div className="mt-10 hidden gap-6 md:grid md:grid-cols-3 md:items-stretch">
         {TESTIMONIALS.map((testimonial, index) => (
           <RevealBlock key={testimonial.name} delay={index * 0.06}>
             <TestimonialCard {...testimonial} />

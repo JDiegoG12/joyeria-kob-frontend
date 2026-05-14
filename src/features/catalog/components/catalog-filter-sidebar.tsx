@@ -79,6 +79,16 @@ interface CatalogFilterSidebarProps {
    * Recibe `undefined` en ambos valores cuando se limpia el filtro.
    */
   onPriceCommit: (min: number | undefined, max: number | undefined) => void;
+  /**
+   * Oculta el título "CATÁLOGO" y su separador.
+   *
+   * Útil cuando el sidebar se renderiza embebido dentro de un contenedor
+   * que ya provee su propio título (por ejemplo, el bottom sheet de filtros
+   * móvil), para evitar doble jerarquía visual.
+   *
+   * @default false
+   */
+  hideTitle?: boolean;
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -88,6 +98,7 @@ export const CatalogFilterSidebar = ({
   minPrice,
   maxPrice,
   onPriceCommit,
+  hideTitle = false,
 }: CatalogFilterSidebarProps) => {
   const {
     categories,
@@ -114,29 +125,35 @@ export const CatalogFilterSidebar = ({
 
   return (
     <aside aria-label="Filtros del catálogo" className="w-full select-none">
-      {/* ── Título ── */}
-      <div className="mb-8">
-        <h1
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(1.6rem, 2.5vw, var(--text-3xl))',
-            fontWeight: 'var(--font-bold)',
-            letterSpacing: 'var(--tracking-display)',
-            lineHeight: 'var(--leading-tight)',
-            color: 'var(--text-accent)',
-          }}
-        >
-          CATÁLOGO
-        </h1>
-        <div
-          className="mt-3 h-px w-full"
-          style={{
-            background:
-              'linear-gradient(to right, var(--border-strong) 60%, transparent)',
-          }}
-          aria-hidden="true"
-        />
-      </div>
+      {/* ── Título ──
+       * Se omite cuando el sidebar se embebe en un contenedor que ya tiene
+       * su propio título (p.ej. el bottom sheet móvil de filtros), para
+       * evitar doble jerarquía. Ver prop `hideTitle`.
+       */}
+      {!hideTitle && (
+        <div className="mb-8">
+          <h1
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(1.6rem, 2.5vw, var(--text-3xl))',
+              fontWeight: 'var(--font-bold)',
+              letterSpacing: 'var(--tracking-display)',
+              lineHeight: 'var(--leading-tight)',
+              color: 'var(--text-accent)',
+            }}
+          >
+            CATÁLOGO
+          </h1>
+          <div
+            className="mt-3 h-px w-full"
+            style={{
+              background:
+                'linear-gradient(to right, var(--border-strong) 60%, transparent)',
+            }}
+            aria-hidden="true"
+          />
+        </div>
+      )}
 
       {/* ── Lista de categorías ── */}
       <nav aria-label="Categorías del catálogo">
