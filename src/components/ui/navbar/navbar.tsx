@@ -51,14 +51,11 @@ const NAV_ITEMS = [
 export const Navbar = () => {
   const { pathname } = useLocation();
 
-  const { theme, toggleTheme } =
-    useThemeStore();
+  const { theme, toggleTheme } = useThemeStore();
 
-  const { isAuthenticated, user } =
-    useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
-  const [mobileMenuOpen, setMobileMenuOpen] =
-    useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <>
@@ -75,8 +72,7 @@ export const Navbar = () => {
         <div
           className="mx-auto flex h-full min-w-0 items-center justify-between gap-3 px-4 sm:px-6 lg:px-10"
           style={{
-            maxWidth:
-              'var(--content-max-width)',
+            maxWidth: 'var(--content-max-width)',
           }}
         >
           {/* ───────────────────────────────────────────── */}
@@ -85,19 +81,14 @@ export const Navbar = () => {
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             {/* Menú móvil */}
             <button
-              onClick={() =>
-                setMobileMenuOpen(true)
-              }
+              onClick={() => setMobileMenuOpen(true)}
               className={`${ICON_BUTTON_CLASSNAME} lg:hidden`}
               style={{
                 color: 'var(--text-secondary)',
               }}
               aria-label="Abrir menú"
             >
-              <Menu
-                size={21}
-                aria-hidden="true"
-              />
+              <Menu size={21} aria-hidden="true" />
             </button>
 
             {/* Logo */}
@@ -115,8 +106,7 @@ export const Navbar = () => {
             <div
               className="hidden h-8 w-px sm:block"
               style={{
-                backgroundColor:
-                  'var(--border-color)',
+                backgroundColor: 'var(--border-color)',
               }}
               aria-hidden="true"
             />
@@ -131,21 +121,14 @@ export const Navbar = () => {
                 color: 'var(--text-primary)',
                 fontFamily: 'var(--font-ui)',
                 fontSize: 'var(--text-lg)',
-                fontWeight:
-                  'var(--font-medium)',
-                letterSpacing:
-                  'var(--tracking-normal)',
+                fontWeight: 'var(--font-medium)',
+                letterSpacing: 'var(--tracking-normal)',
               }}
               aria-label={`Contactar por WhatsApp al +57 ${WHATSAPP_NUMBER}`}
             >
-              <WhatsAppIcon
-                size={21}
-                aria-hidden="true"
-              />
+              <WhatsAppIcon size={21} aria-hidden="true" />
 
-              <span className="truncate">
-                +57 {WHATSAPP_NUMBER}
-              </span>
+              <span className="truncate">+57 {WHATSAPP_NUMBER}</span>
             </a>
           </div>
 
@@ -155,78 +138,49 @@ export const Navbar = () => {
           <div className="flex items-center justify-end gap-1 sm:gap-2">
             {/* Usuario autenticado */}
             {isAuthenticated ? (
-              <UserMenu
-                name={user?.name ?? ''}
-                role={
-                  user?.role ?? 'CLIENT'
-                }
-              />
+              <UserMenu name={user?.name ?? ''} role={user?.role ?? 'CLIENT'} />
             ) : (
               <Link
                 to="/login"
-                className={
-                  ICON_BUTTON_CLASSNAME
-                }
+                className={ICON_BUTTON_CLASSNAME}
                 style={{
-                  color:
-                    'var(--text-secondary)',
+                  color: 'var(--text-secondary)',
                 }}
                 aria-label="Ir a iniciar sesión"
               >
-                <User
-                  size={21}
-                  aria-hidden="true"
-                />
+                <User size={21} aria-hidden="true" />
               </Link>
             )}
 
             {/* Favoritos */}
             <Link
               to={FAVORITES_PATH}
-              className={
-                ICON_BUTTON_CLASSNAME
-              }
+              className={ICON_BUTTON_CLASSNAME}
               style={{
-                color: pathname.startsWith(
-                  FAVORITES_PATH,
-                )
+                color: pathname.startsWith(FAVORITES_PATH)
                   ? 'var(--text-primary)'
                   : 'var(--text-secondary)',
               }}
               aria-label="Ir a favoritos"
             >
-              <Heart
-                size={21}
-                aria-hidden="true"
-              />
+              <Heart size={21} aria-hidden="true" />
             </Link>
 
             {/* Tema */}
             <button
               onClick={toggleTheme}
-              className={
-                ICON_BUTTON_CLASSNAME
-              }
+              className={ICON_BUTTON_CLASSNAME}
               style={{
-                color:
-                  'var(--text-secondary)',
+                color: 'var(--text-secondary)',
               }}
               aria-label={
-                theme === 'light'
-                  ? 'Activar modo oscuro'
-                  : 'Activar modo claro'
+                theme === 'light' ? 'Activar modo oscuro' : 'Activar modo claro'
               }
             >
               {theme === 'light' ? (
-                <Moon
-                  size={21}
-                  aria-hidden="true"
-                />
+                <Moon size={21} aria-hidden="true" />
               ) : (
-                <Sun
-                  size={21}
-                  aria-hidden="true"
-                />
+                <Sun size={21} aria-hidden="true" />
               )}
             </button>
           </div>
@@ -236,9 +190,7 @@ export const Navbar = () => {
       {/* Menú móvil */}
       <MobileMenu
         isOpen={mobileMenuOpen}
-        onClose={() =>
-          setMobileMenuOpen(false)
-        }
+        onClose={() => setMobileMenuOpen(false)}
         navItems={NAV_ITEMS}
         currentPath={pathname}
       />
@@ -258,44 +210,30 @@ interface UserMenuProps {
 /**
  * Menú dropdown del usuario autenticado.
  */
-const UserMenu = ({
-  name,
-  role,
-}: UserMenuProps) => {
+const UserMenu = ({ name, role }: UserMenuProps) => {
   const [open, setOpen] = useState(false);
 
-  const firstName =
-    name.trim().split(' ')[0] ||
-    'usuario';
+  const firstName = name.trim().split(' ')[0] || 'usuario';
 
   return (
     <div className="relative">
       {/* Botón perfil */}
       <button
-        onClick={() =>
-          setOpen((prev) => !prev)
-        }
+        onClick={() => setOpen((prev) => !prev)}
         className={ICON_BUTTON_CLASSNAME}
         style={{
           color: 'var(--text-secondary)',
-          backgroundColor: open
-            ? 'var(--bg-hover)'
-            : 'transparent',
+          backgroundColor: open ? 'var(--bg-hover)' : 'transparent',
         }}
         aria-label={`Abrir menú de ${firstName}`}
         aria-expanded={open}
       >
-        <User
-          size={21}
-          aria-hidden="true"
-        />
+        <User size={21} aria-hidden="true" />
       </button>
 
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-40 ${
-          open ? 'block' : 'hidden'
-        }`}
+        className={`fixed inset-0 z-40 ${open ? 'block' : 'hidden'}`}
         onClick={() => setOpen(false)}
         aria-hidden="true"
       />
@@ -308,10 +246,8 @@ const UserMenu = ({
             : 'pointer-events-none scale-95 opacity-0'
         }`}
         style={{
-          backgroundColor:
-            'var(--bg-secondary)',
-          borderColor:
-            'var(--border-color)',
+          backgroundColor: 'var(--bg-secondary)',
+          borderColor: 'var(--border-color)',
         }}
         role="menu"
       >
@@ -321,8 +257,7 @@ const UserMenu = ({
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-xs)',
-            letterSpacing:
-              'var(--tracking-wide)',
+            letterSpacing: 'var(--tracking-wide)',
             color: 'var(--text-muted)',
           }}
         >
@@ -330,41 +265,30 @@ const UserMenu = ({
         </p>
 
         {/* Perfil */}
-        <DropdownItem
-          to="/perfil"
-          label="Mi perfil"
-        />
+        <DropdownItem to="/perfil" label="Mi perfil" />
 
         {/* Admin */}
         {role === 'ADMIN' && (
-          <DropdownItem
-            to="/admin/joyas"
-            label="Panel admin"
-          />
+          <DropdownItem to="/admin/general" label="Panel admin" />
         )}
 
         <div
           className="my-2 h-px"
           style={{
-            backgroundColor:
-              'var(--border-color)',
+            backgroundColor: 'var(--border-color)',
           }}
         />
 
         {/* Logout CORRECTO */}
         <button
-          onClick={() =>
-            AuthService.logout()
-          }
+          onClick={() => AuthService.logout()}
           role="menuitem"
           className="block w-full px-4 py-2.5 text-left transition-colors duration-200 hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
           style={{
             fontFamily: 'var(--font-ui)',
             fontSize: 'var(--text-xs)',
-            fontWeight:
-              'var(--font-medium)',
-            letterSpacing:
-              'var(--tracking-wide)',
+            fontWeight: 'var(--font-medium)',
+            letterSpacing: 'var(--tracking-wide)',
             textTransform: 'uppercase',
             color:
               'color-mix(in srgb, var(--color-error) 70%, var(--text-secondary))',
@@ -390,11 +314,7 @@ interface DropdownItemProps {
 /**
  * Ítem normal de navegación del dropdown.
  */
-const DropdownItem = ({
-  to,
-  label,
-  danger = false,
-}: DropdownItemProps) => (
+const DropdownItem = ({ to, label, danger = false }: DropdownItemProps) => (
   <Link
     to={to}
     role="menuitem"
@@ -402,11 +322,8 @@ const DropdownItem = ({
     style={{
       fontFamily: 'var(--font-ui)',
       fontSize: 'var(--text-xs)',
-      fontWeight: danger
-        ? 'var(--font-medium)'
-        : 'var(--font-semibold)',
-      letterSpacing:
-        'var(--tracking-wide)',
+      fontWeight: danger ? 'var(--font-medium)' : 'var(--font-semibold)',
+      letterSpacing: 'var(--tracking-wide)',
       textTransform: 'uppercase',
       color: danger
         ? 'color-mix(in srgb, var(--color-error) 70%, var(--text-secondary))'

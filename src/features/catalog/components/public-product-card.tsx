@@ -18,11 +18,10 @@
 
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { SERVER_URL } from '@/api/server-url';
 import type { Product } from '@/features/catalog/types/product.types';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
-
-const SERVER_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=800&q=80';

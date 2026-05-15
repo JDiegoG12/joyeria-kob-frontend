@@ -39,12 +39,10 @@
 
 import { useNavigate } from 'react-router-dom';
 import { Images } from 'lucide-react';
+import { SERVER_URL } from '@/api/server-url';
 import type { Product } from '@/features/catalog/types/product.types';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
-
-/** Base del servidor para resolver rutas de imágenes subidas. */
-const SERVER_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
 
 /** Imagen de respaldo si el producto no tiene fotos o falla la carga. */
 const FALLBACK_IMAGE =

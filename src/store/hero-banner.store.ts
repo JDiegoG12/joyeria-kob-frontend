@@ -43,6 +43,7 @@
 import { create } from 'zustand';
 import { GeneralService } from '@/features/general/services/general.service';
 import type { UpdateBannerParams } from '@/features/general/services/general.service';
+import { SERVER_URL } from '@/api/server-url';
 
 
 // ─── Helper de URL de imagen ──────────────────────────────────────────────────
@@ -59,11 +60,8 @@ const resolveImageUrl = (imageUrl: string | null): string | null => {
     // Si ya es una URL absoluta (ej. CDN), la devolvemos tal cual
     if (imageUrl.startsWith('http')) return imageUrl;
 
-    // Obtenemos el origen del servidor eliminando el segmento "/api" de la variable de entorno
-    const serverOrigin = (import.meta.env.VITE_API_URL as string).replace(/\/api\/?$/, '');
-
     // Concatenamos directamente: http://host:port + /uploads/banners/foto.webp
-    return `${serverOrigin}${imageUrl}`;
+    return `${SERVER_URL}${imageUrl}`;
 };
 
 // ─── Constantes de valores por defecto ────────────────────────────────────────
