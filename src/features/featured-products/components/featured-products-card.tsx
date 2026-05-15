@@ -52,11 +52,10 @@ import {
   MAX_FEATURED_PRODUCTS,
   type FeaturedProductWithProduct,
 } from '@/features/featured-products/types/featured-product.types';
+import { SERVER_URL } from '@/api/server-url';
 import { FeaturedProductPickerModal } from './featured-product-picker-modal';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
-
-const SERVER_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=200&q=80';

@@ -372,7 +372,11 @@ export const MobileMenu = ({
                 }}
                 aria-label={`Contactar por WhatsApp al +57 ${WHATSAPP_NUMBER}`}
               >
-                <WhatsAppIcon size={18} className="shrink-0" aria-hidden="true" />
+                <WhatsAppIcon
+                  size={18}
+                  className="shrink-0"
+                  aria-hidden="true"
+                />
                 <span className="whitespace-nowrap">+57 {WHATSAPP_NUMBER}</span>
               </motion.a>
 
@@ -469,7 +473,7 @@ export const MobileMenu = ({
                       Mi perfil
                     </MobileAuthLink>
                     {user?.role === 'ADMIN' && (
-                      <MobileAuthLink to="/admin/joyas" onClose={onClose}>
+                      <MobileAuthLink to="/admin/general" onClose={onClose}>
                         Panel admin
                       </MobileAuthLink>
                     )}
@@ -488,7 +492,10 @@ export const MobileMenu = ({
               className="border-t px-5 py-5"
               style={{ borderColor: 'var(--border-color)' }}
             >
-              <nav className="flex items-center gap-3" aria-label="Redes sociales">
+              <nav
+                className="flex items-center gap-3"
+                aria-label="Redes sociales"
+              >
                 {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
                   <a
                     key={label}

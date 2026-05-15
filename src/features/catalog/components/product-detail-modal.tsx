@@ -18,11 +18,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { X, Heart, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
+import { SERVER_URL } from '@/api/server-url';
 import type { Product } from '@/features/catalog/types/product.types';
 import FALLBACK_IMAGE from '@/assets/HERO_IMAGE.jpg';
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
-const SERVER_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
 const WHATSAPP_NUMBER = '573135007459';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

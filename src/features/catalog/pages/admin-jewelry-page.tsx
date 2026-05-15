@@ -27,6 +27,7 @@ import { motion } from 'framer-motion';
 import { AlertCircle, Package2, Plus, RefreshCw, Search } from 'lucide-react';
 import { ConfirmModal } from '@/components/ui/modal/confirm-modal';
 import { useToastStore } from '@/store/toast.store';
+import { SERVER_URL } from '@/api/server-url';
 import { ProductCard } from '../components/product-card';
 import { ProductCreateForm } from '../components/product-create-form';
 import { ProductEditForm } from '../components/product-edit-form';
@@ -68,7 +69,6 @@ export const AdminJewelryPage = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [productToHide, setProductToHide] = useState<Product | null>(null);
-  const serverUrl = import.meta.env.VITE_API_URL.replace('/api', '');
 
   // ── Carga de productos ─────────────────────────────────────────────────────
   /**
@@ -400,7 +400,7 @@ export const AdminJewelryPage = () => {
             <ProductCard
               key={product.id}
               product={product}
-              serverUrl={serverUrl}
+              serverUrl={SERVER_URL}
               processingAction={
                 actionState?.id === product.id ? actionState.type : null
               }

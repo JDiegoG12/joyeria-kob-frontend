@@ -33,6 +33,7 @@ import { ConfirmModal } from '@/components/ui/modal/confirm-modal';
 import { useCategorySelector } from '../hooks/use-category-selector';
 import { useGoldPriceStore } from '@/store/gold-price.store';
 import { useToastStore } from '@/store/toast.store';
+import { SERVER_URL } from '@/api/server-url';
 import { productService } from '../services/product.service';
 import type { Product, ProductSpecifications } from '../types/product.types';
 
@@ -224,7 +225,6 @@ export const ProductEditForm = ({
     loadGoldPrice,
   } = useGoldPriceStore();
   const { showToast } = useToastStore();
-  const serverUrl = import.meta.env.VITE_API_URL.replace('/api', '');
 
   // ── Selector de categoría ──────────────────────────────────────────────────
   const {
@@ -1119,7 +1119,7 @@ export const ProductEditForm = ({
                         className="overflow-hidden rounded-2xl border border-[var(--border-color)] transition hover:border-[var(--border-strong)]"
                       >
                         <img
-                          src={`${serverUrl}/uploads/products/${imageName}`}
+                          src={`${SERVER_URL}/uploads/products/${imageName}`}
                           alt={product.name}
                           className="h-32 w-full object-cover"
                         />
@@ -1151,7 +1151,7 @@ export const ProductEditForm = ({
                         className="overflow-hidden rounded-2xl border border-red-500/40 opacity-60 transition hover:opacity-80"
                       >
                         <img
-                          src={`${serverUrl}/uploads/products/${imageName}`}
+                          src={`${SERVER_URL}/uploads/products/${imageName}`}
                           alt={product.name}
                           className="h-32 w-full object-cover"
                         />
