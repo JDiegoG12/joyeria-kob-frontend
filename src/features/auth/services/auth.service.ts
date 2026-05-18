@@ -104,7 +104,7 @@ export const AuthService = {
         const role = useAuthStore.getState().user?.role;
         useAuthStore.getState().clearSession();
         if (role === 'ADMIN') {
-            window.location.replace('/admin/login');
+            window.location.replace('/login');
         } else {
             window.location.replace('/');
         }
