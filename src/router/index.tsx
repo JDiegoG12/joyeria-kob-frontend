@@ -7,6 +7,7 @@
  * /                          → Página principal pública (MainLayout)
  * /catalogo                  → Catálogo público de joyas (MainLayout)
  * /favoritos                 → Placeholder de favoritos (MainLayout)
+ * /perfil                    → Perfil del usuario autenticado (MainLayout)
  * /login                     → Inicio de sesión cliente (sin MainLayout)
  * /registro                  → Registro de cliente (sin MainLayout)
  * /admin/login               → Inicio de sesión administrador (sin MainLayout)
@@ -83,14 +84,22 @@ const LoginPage = lazy(() =>
     default: m.LoginPage,
   })),
 );
+
 const RegisterPage = lazy(() =>
   import('@/features/auth/pages/register-page').then((m) => ({
     default: m.RegisterPage,
   })),
 );
+
 const AdminLoginPage = lazy(() =>
   import('@/features/auth/pages/admin-login-page').then((m) => ({
     default: m.AdminLoginPage,
+  })),
+);
+
+const ProfilePage = lazy(() =>
+  import('@/features/auth/pages/profile-page').then((m) => ({
+    default: m.ProfilePage,
   })),
 );
 
@@ -102,16 +111,19 @@ const AdminGeneralPage = lazy(() =>
     default: m.AdminGeneralPage,
   })),
 );
+
 const AdminMetricsPage = lazy(() =>
   import('@/features/metrics/pages/admin-metrics-page').then((m) => ({
     default: m.AdminMetricsPage,
   })),
 );
+
 const AdminJewelryPage = lazy(() =>
   import('@/features/catalog/pages/admin-jewelry-page').then((m) => ({
     default: m.AdminJewelryPage,
   })),
 );
+
 const AdminCategoriesPage = lazy(() =>
   import('@/features/categories/pages/admin-categories-page').then((m) => ({
     default: m.AdminCategoriesPage,
@@ -124,6 +136,7 @@ const NotFoundPage = lazy(() =>
     default: m.NotFoundPage,
   })),
 );
+
 const PlaceholderPage = lazy(() =>
   import('@/features/shared/pages/placeholder-page').then((m) => ({
     default: m.PlaceholderPage,
@@ -164,6 +177,10 @@ export const router = createBrowserRouter([
       {
         path: '/favoritos',
         element: withSuspense(<PlaceholderPage title="Favoritos" />),
+      },
+      {
+        path: '/perfil',
+        element: withSuspense(<ProfilePage />),
       },
     ],
   },
