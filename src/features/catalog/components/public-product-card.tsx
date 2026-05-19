@@ -87,7 +87,7 @@ export const PublicProductCard = ({
 
   return (
     <article
-      className="group cursor-pointer"
+      className="group flex h-full cursor-pointer flex-col"
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -181,8 +181,20 @@ export const PublicProductCard = ({
         aria-hidden="true"
       />
 
-      {/* Info del producto — centrada, color azul de marca */}
-      <div className="px-3 pb-4 pt-3 text-center">
+      {/*
+       * Info del producto — centrada, color azul de marca.
+       *
+       * El wrapper usa `flex-1 flex flex-col justify-center` para que la zona
+       * inferior crezca y rellene el espacio que sobra cuando la grid estira
+       * el article. Así, todas las cartas de una misma fila tienen la misma
+       * altura aunque el nombre del producto tenga 1 o 2 líneas.
+       *
+       * El `<h3>` reserva siempre `min-height: 2lh` (dos alturas de línea)
+       * mediante `line-clamp-2`: los nombres de 1 línea ocupan el mismo
+       * espacio vertical que los de 2, y los más largos quedan truncados
+       * con elipsis sin romper el layout.
+       */}
+      <div className="flex flex-1 flex-col justify-center px-3 pb-4 pt-3 text-center">
         <h3
           className="line-clamp-2"
           style={{
@@ -191,6 +203,7 @@ export const PublicProductCard = ({
             fontWeight: 'var(--font-normal)',
             lineHeight: 'var(--leading-normal)',
             color: 'var(--text-accent)',
+            minHeight: '2lh',
           }}
         >
           {product.name}

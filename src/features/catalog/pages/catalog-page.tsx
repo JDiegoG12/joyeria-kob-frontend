@@ -14,14 +14,24 @@
  * ## Filtros activos
  * - Categoría / subcategoría: gestionados en `category.store`
  * - Rango de precio: estado local (`minPrice`, `maxPrice`), se aplica al soltar el slider
- * - Búsqueda por nombre: filtro client-side sobre los productos de la página actual
- *   (debounced 300 ms). Muestra aviso si hay más páginas para alertar al usuario.
+ * - Búsqueda por nombre: filtro server-side debounced 450 ms.
  *
  * ## Buscador
- * El backend no tiene soporte para `search` en `/catalog`, por lo que el filtrado
- * se aplica sobre los productos ya cargados en la página activa. Se muestra un
- * aviso cuando `pagination.totalPages > 1` para que el usuario sepa que puede
- * haber resultados en otras páginas.
+ * El backend resuelve la búsqueda directamente en SQL (Prisma `contains`), por
+ * lo que opera sobre el catálogo completo y devuelve `pagination.total` con el
+ * número real de coincidencias.
+ *
+ * Optimizaciones de tráfico aplicadas:
+ * - **Debounce de 450 ms** sobre el input para evitar disparar fetch por cada tecla.
+ * - **Mínimo de 2 caracteres**: términos más cortos no se envían al backend.
+ * - **Dedup**: si el último fetch fue con la misma combinación de filtros +
+ *   página + término, no se vuelve a llamar.
+ * - **AbortController**: se cancela el fetch en vuelo cuando llega otro nuevo
+ *   para evitar race conditions (que un response viejo pinte resultados
+ *   desfasados) y liberar al backend de enviar un response que se descartaría.
+ *
+ * Al cambiar la categoría, subcategoría o el slider de precio, el input de
+ * búsqueda se limpia para evitar combinaciones vacías sorpresivas.
  *
  * ## Deep-linking de producto vía query param
  * El catálogo escucha el query param `?product=<uuid>`. Si está presente al
@@ -34,11 +44,12 @@
  * la URL sincronizada con el estado real de la página.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Filter, Search } from 'lucide-react';
+import axios from 'axios';
 import { useCategoryStore } from '@/store/category.store';
 import { productService } from '@/features/catalog/services/product.service';
 import type {
@@ -54,7 +65,18 @@ import type { Product } from '@/features/catalog/types/product.types';
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const PRODUCTS_PER_PAGE = 12;
-const SEARCH_DEBOUNCE_MS = 300;
+/**
+ * Debounce del input de búsqueda antes de disparar el fetch al backend.
+ * 450 ms balancea fluidez percibida y ahorro de tráfico (a 300 ms se disparaban
+ * llamadas con cada pequeña pausa entre teclas).
+ */
+const SEARCH_DEBOUNCE_MS = 450;
+/**
+ * Mínimo de caracteres requeridos para enviar el filtro `search` al backend.
+ * Búsquedas de 0 o 1 caracter devolverían demasiados resultados poco útiles y
+ * generarían tráfico innecesario.
+ */
+const SEARCH_MIN_CHARS = 2;
 
 // ─── Variantes de animación ───────────────────────────────────────────────────
 
@@ -143,22 +165,27 @@ export const CatalogPage = () => {
 
   /** Texto que el usuario escribe en tiempo real. */
   const [searchInput, setSearchInput] = useState('');
-  /** Término debounced que se usa para filtrar. */
+  /**
+   * Término debounced que se envía al backend.
+   *
+   * Reglas de transformación respecto a `searchInput`:
+   * - Se aplica `trim()` para descartar espacios accidentales.
+   * - Si el resultado tiene menos de `SEARCH_MIN_CHARS` caracteres, se
+   *   guarda como cadena vacía → no se envía filtro `search` al backend.
+   * - **No** se aplica `toLowerCase()`: el backend usa `contains` insensible
+   *   a mayúsculas y conservar el case original mejora el texto del contador
+   *   y del empty state (`"X resultados para "Anillo""` vs `"anillo"`).
+   */
   const [searchTerm, setSearchTerm] = useState('');
 
   // Debounce del término de búsqueda
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSearchTerm(searchInput.trim().toLowerCase());
+      const trimmed = searchInput.trim();
+      setSearchTerm(trimmed.length >= SEARCH_MIN_CHARS ? trimmed : '');
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [searchInput]);
-
-  // Productos filtrados por el buscador client-side
-  const filteredProducts = useMemo(() => {
-    if (!searchTerm) return products;
-    return products.filter((p) => p.name.toLowerCase().includes(searchTerm));
-  }, [products, searchTerm]);
 
   // ── Carga inicial de categorías ──────────────────────────────────────────────
 
@@ -176,32 +203,76 @@ export const CatalogPage = () => {
     };
   }, []);
 
+  /**
+   * Ref con el AbortController de la petición en vuelo. Antes de disparar una
+   * nueva petición se aborta la anterior para evitar race conditions: si el
+   * usuario tipea rápido y se encolan dos requests, queremos garantizar que
+   * el response que pinta el grid es siempre el del último filtro activo.
+   */
+  const inFlightControllerRef = useRef<AbortController | null>(null);
+
+  /**
+   * Ref con la "key" del último fetch lanzado (combinación serializada de
+   * filtros + página + término). Si la siguiente llamada tiene la misma key,
+   * se omite el fetch — defensa barata contra duplicados (ej. el debounce
+   * dispara pero el término no cambió, o el usuario hace click en la misma
+   * página).
+   */
+  const lastFetchKeyRef = useRef<string | null>(null);
+
   const fetchCatalog = useCallback(
-    async (page: number) => {
+    async (page: number, search: string) => {
       const activeCategoryId =
         selectedCatalogSubCategoryId ?? selectedCatalogCategoryId;
 
+      const fetchKey = JSON.stringify({
+        categoryId: activeCategoryId ?? null,
+        minPrice: minPrice ?? null,
+        maxPrice: maxPrice ?? null,
+        search,
+        page,
+      });
+
+      if (lastFetchKeyRef.current === fetchKey) return;
+      lastFetchKeyRef.current = fetchKey;
+
+      // Cancela la petición previa todavía en vuelo, si la hay.
+      inFlightControllerRef.current?.abort();
+      const controller = new AbortController();
+      inFlightControllerRef.current = controller;
+
       setLoadingProducts(true);
       try {
-        const result = await productService.getCatalog({
-          categoryId: activeCategoryId,
-          minPrice,
-          maxPrice,
-          page,
-          limit: PRODUCTS_PER_PAGE,
-        });
+        const result = await productService.getCatalog(
+          {
+            categoryId: activeCategoryId,
+            minPrice,
+            maxPrice,
+            search: search || undefined,
+            page,
+            limit: PRODUCTS_PER_PAGE,
+          },
+          controller.signal,
+        );
 
-        if (!mountedRef.current) return;
+        if (!mountedRef.current || controller.signal.aborted) return;
 
         setProducts(result.products);
         setPagination(result.pagination);
         setPriceRange(result.priceRange);
-      } catch {
+      } catch (error) {
+        // Una cancelación intencional no es un error real; ignorarla evita
+        // limpiar el grid mientras un fetch posterior todavía está cargando.
+        if (axios.isCancel(error) || controller.signal.aborted) return;
         if (!mountedRef.current) return;
         setProducts([]);
         setPriceRange(null);
       } finally {
-        if (mountedRef.current) setLoadingProducts(false);
+        // Solo apagamos el loader si esta petición sigue siendo la activa;
+        // si fue abortada por una posterior, dejamos que esa otra lo apague.
+        if (mountedRef.current && inFlightControllerRef.current === controller) {
+          setLoadingProducts(false);
+        }
       }
     },
     [
@@ -212,11 +283,23 @@ export const CatalogPage = () => {
     ],
   );
 
+  /**
+   * Effect de filtros (categoría/precio): resetea la página, limpia el input
+   * y el término de búsqueda, y dispara el fetch desde la página 1.
+   *
+   * Importante: limpiamos `searchTerm` directamente además de `searchInput`
+   * para evitar que durante el debounce (450 ms) el contador siga mostrando
+   * el término anterior aunque los productos ya correspondan al nuevo filtro.
+   * La doble actualización de `searchTerm` que esto provoca (aquí y de nuevo
+   * cuando el debounce dispare un setter idéntico) es absorbida por la dedup
+   * de `fetchCatalog`.
+   */
   useEffect(() => {
     setCurrentPage(1);
     setGridKey((k) => k + 1);
-    setSearchInput(''); // Limpiar búsqueda al cambiar filtros
-    void fetchCatalog(1);
+    setSearchInput('');
+    setSearchTerm('');
+    void fetchCatalog(1, '');
   }, [
     selectedCatalogCategoryId,
     selectedCatalogSubCategoryId,
@@ -225,10 +308,22 @@ export const CatalogPage = () => {
     fetchCatalog,
   ]);
 
+  /**
+   * Effect del buscador server-side: cuando cambia el término debounced,
+   * volvemos a página 1 y disparamos un fetch incluyendo `search`.
+   *
+   * Se separa del effect anterior para no resetear `searchInput` cuando lo
+   * único que cambió es el propio término.
+   */
+  useEffect(() => {
+    setCurrentPage(1);
+    setGridKey((k) => k + 1);
+    void fetchCatalog(1, searchTerm);
+  }, [searchTerm, fetchCatalog]);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    setSearchInput(''); // Limpiar búsqueda al cambiar de página
-    void fetchCatalog(page);
+    void fetchCatalog(page, searchTerm);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -350,10 +445,6 @@ export const CatalogPage = () => {
   const resolvedCardVariants = shouldReduceMotion
     ? { hidden: {}, visible: {}, exit: {} }
     : cardVariants;
-
-  /** Si hay búsqueda activa y más páginas, alertar al usuario */
-  const showSearchPageWarning =
-    searchTerm.length > 0 && pagination.totalPages > 1;
 
   return (
     <>
@@ -534,18 +625,18 @@ export const CatalogPage = () => {
                         {searchTerm ? (
                           <>
                             <motion.span
-                              key={filteredProducts.length}
+                              key={pagination.total}
                               initial={{ opacity: 0, y: -4 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ duration: 0.2 }}
                               style={{ display: 'inline-block' }}
                             >
-                              {filteredProducts.length}
+                              {pagination.total}
                             </motion.span>{' '}
-                            {filteredProducts.length === 1
+                            {pagination.total === 1
                               ? 'resultado'
                               : 'resultados'}{' '}
-                            en esta página.
+                            para &ldquo;{searchTerm}&rdquo;.
                           </>
                         ) : (
                           <>
@@ -650,29 +741,6 @@ export const CatalogPage = () => {
                   </div>
                 </div>
 
-                {/* Aviso: la búsqueda solo aplica en la página actual */}
-                <AnimatePresence>
-                  {showSearchPageWarning && (
-                    <motion.p
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="border-t px-5 py-2"
-                      style={{
-                        fontFamily: 'var(--font-ui)',
-                        fontSize: 'var(--text-xs)',
-                        color: 'var(--text-muted)',
-                        borderColor: 'var(--border-color)',
-                        letterSpacing: 'var(--tracking-wide)',
-                      }}
-                    >
-                      La búsqueda aplica sobre los {products.length} productos
-                      de esta página. Navega a otras páginas para buscar en el
-                      catálogo completo.
-                    </motion.p>
-                  )}
-                </AnimatePresence>
               </motion.div>
 
               {/* ── Grid de productos ── */}
@@ -687,16 +755,16 @@ export const CatalogPage = () => {
                   >
                     <ProductSkeletonGrid />
                   </motion.div>
-                ) : filteredProducts.length > 0 ? (
+                ) : products.length > 0 ? (
                   <motion.div
-                    key={`grid-${gridKey}-page-${currentPage}-search-${searchTerm}`}
+                    key={`grid-${gridKey}-page-${currentPage}`}
                     className="grid grid-cols-2 gap-4 sm:grid-cols-3"
                     variants={resolvedGridVariants}
                     initial="hidden"
                     animate="visible"
                     exit="exit"
                   >
-                    {filteredProducts.map((product) => (
+                    {products.map((product) => (
                       <motion.div
                         key={product.id}
                         variants={resolvedCardVariants}
@@ -710,6 +778,7 @@ export const CatalogPage = () => {
                               }
                         }
                         whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+                        className="h-full"
                         style={{ cursor: 'pointer' }}
                       >
                         <PublicProductCard
@@ -852,7 +921,7 @@ const EmptyState = ({ searchTerm }: { searchTerm: string }) => (
       }}
     >
       {searchTerm
-        ? `No se encontraron joyas con "${searchTerm}" en esta página.`
+        ? `No se encontraron joyas con "${searchTerm}".`
         : 'No hay productos disponibles en esta categoría.'}
     </p>
   </div>
