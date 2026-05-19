@@ -5,7 +5,7 @@
  *
  * ## Endpoints que consume
  * - `GET  /products`                → Listado público legacy (admin usa admin=true)
- * - `GET  /products/catalog`        → Catálogo público paginado con filtros de precio
+ * - `GET  /products/catalog`        → Catálogo público paginado con filtros de precio y búsqueda
  * - `GET  /products?admin=true`     → Listado completo para admin (incluye ocultos)
  * - `GET  /products/:id`            → Detalle de un producto
  * - `POST /products`                → Crear nueva joya (multipart/form-data)
@@ -88,6 +88,13 @@ export interface CatalogQueryParams {
   minPrice?: number;
   /** Precio máximo en COP. `undefined` → sin límite superior. */
   maxPrice?: number;
+  /**
+   * Término de búsqueda parcial por nombre de producto.
+   * El backend aplica `contains` insensible a mayúsculas directamente en SQL,
+   * por lo que el filtro opera sobre el catálogo completo y no solo sobre la
+   * página actual. `undefined` o `''` → sin filtro de nombre.
+   */
+  search?: string;
   /** Número de página a recuperar (1-indexed). Por defecto `1`. */
   page?: number;
   /** Productos por página. Por defecto `12`. Máximo `48`. */
@@ -213,18 +220,26 @@ export const productService = {
    *
    * @example
    * ```typescript
-   * // Página 2 de anillos con precio entre $500.000 y $5.000.000
+   * // Página 2 de anillos con precio entre $500.000 y $5.000.000, búsqueda "solitario"
    * const result = await productService.getCatalog({
    *   categoryId: 1,
    *   minPrice: 500000,
    *   maxPrice: 5000000,
+   *   search: 'solitario',
    *   page: 2,
    *   limit: 12,
    * });
    * const { products, pagination, priceRange } = result;
    * ```
+   *
+   * @param signal - `AbortSignal` opcional para cancelar la petición en vuelo
+   *                 (útil para evitar race conditions cuando el usuario tipea
+   *                 rápido en el buscador y se disparan varias peticiones).
    */
-  async getCatalog(params: CatalogQueryParams = {}): Promise<CatalogResponse> {
+  async getCatalog(
+    params: CatalogQueryParams = {},
+    signal?: AbortSignal,
+  ): Promise<CatalogResponse> {
     const query = new URLSearchParams();
 
     if (params.categoryId != null) {
@@ -236,6 +251,9 @@ export const productService = {
     if (params.maxPrice !== undefined) {
       query.set('maxPrice', String(params.maxPrice));
     }
+    if (typeof params.search === 'string' && params.search.trim() !== '') {
+      query.set('search', params.search.trim());
+    }
     if (params.page !== undefined) {
       query.set('page', String(params.page));
     }
@@ -246,6 +264,7 @@ export const productService = {
     const qs = query.toString();
     const response = await apiClient.get<{ success: boolean; data: CatalogResponse }>(
       `/products/catalog${qs ? `?${qs}` : ''}`,
+      { signal },
     );
     return response.data.data;
   },
