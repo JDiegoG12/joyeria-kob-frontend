@@ -23,6 +23,7 @@
  * - **Inventario y precios** → `GoldPriceCard`
  * - **Apariencia** → `HeroBannerCard`
  * - **Página de inicio** → `FeaturedProductsCard`
+ * - **Contenido social** → `SocialContentCard`
  *
  * ## Cómo agregar una nueva configuración
  * 1. Crea el componente de tarjeta en `features/general/components/`.
@@ -36,8 +37,11 @@
  */
 
 import { DollarSign, Layout, Star } from 'lucide-react';
+
 import { GoldPriceCard } from '@/features/general/components/gold-price-card';
 import { HeroBannerCard } from '@/features/general/components/hero-banner-card';
+import { SocialContentCard } from '@/features/general/components/social-content-card';
+
 import { FeaturedProductsCard } from '@/features/featured-products/components/featured-products-card';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
@@ -50,8 +54,10 @@ import { FeaturedProductsCard } from '@/features/featured-products/components/fe
 interface SectionHeaderProps {
   /** Ícono representativo de la sección (componente de lucide-react). */
   icon: React.ElementType;
+
   /** Título corto de la sección. */
   title: string;
+
   /** Descripción breve del tipo de configuraciones que contiene. */
   description: string;
 }
@@ -78,6 +84,7 @@ const SectionHeader = ({
         style={{ color: 'var(--text-muted)', flexShrink: 0 }}
         aria-hidden="true"
       />
+
       <div>
         <h2
           className="text-[1.05rem] sm:text-[1.15rem] lg:text-[1.25rem]"
@@ -90,6 +97,7 @@ const SectionHeader = ({
         >
           {title}
         </h2>
+
         <p
           className="text-[0.9rem] sm:text-sm"
           style={{
@@ -115,9 +123,7 @@ const SectionHeader = ({
  * internamente en una columna de contexto y otra de contenido, lo que mantiene
  * el escaneo claro sin obligar a emparejar tarjetas de naturaleza distinta.
  *
- * En móvil y tablet todo colapsa a una sola columna, con el orden:
- * 1. Inventario y precios (precio del oro)
- * 2. Apariencia (banner principal y futuras opciones visuales)
+ * En móvil y tablet todo colapsa a una sola columna.
  *
  * El encabezado de página sigue el mismo patrón visual que el resto de
  * módulos del panel (categorías, joyas): sin `max-w`, sin ícono contenedor,
@@ -128,7 +134,7 @@ export const AdminGeneralPage = () => (
     className="mx-auto w-full max-w-6xl"
     style={{ backgroundColor: 'var(--bg-primary)' }}
   >
-    {/* ── Encabezado de página — sin max-w, igual que categorías ────────── */}
+    {/* ── Encabezado de página ─────────────────────────────────────── */}
     <div className="mb-8">
       <h1
         className="text-[1.9rem] sm:text-[2.15rem] lg:text-[var(--text-3xl)]"
@@ -142,6 +148,7 @@ export const AdminGeneralPage = () => (
       >
         Configuración general
       </h1>
+
       <p
         className="mt-2 max-w-2xl text-[0.95rem] sm:text-sm"
         style={{
@@ -154,7 +161,7 @@ export const AdminGeneralPage = () => (
     </div>
 
     <div className="flex flex-col gap-10 lg:gap-12">
-      {/* ── Sección: Inventario y precios ─────────────────────────────── */}
+      {/* ── Sección: Inventario y precios ─────────────────────────── */}
       <section
         aria-labelledby="section-prices"
         className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8"
@@ -177,7 +184,7 @@ export const AdminGeneralPage = () => (
         </div>
       </section>
 
-      {/* ── Sección: Apariencia ────────────────────────────────────────── */}
+      {/* ── Sección: Apariencia ───────────────────────────────────── */}
       <section
         aria-labelledby="section-appearance"
         className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8"
@@ -194,14 +201,13 @@ export const AdminGeneralPage = () => (
           <HeroBannerCard />
 
           {/*
-           * Aquí irán futuras tarjetas de esta sección, cada una en su propia
-           * tarjeta para facilitar la diferenciación entre opciones de Apariencia.
+           * Aquí irán futuras tarjetas de esta sección.
            * Ejemplo: <AnnouncementBarCard />, <ThemeCard />, <LogoCard />
            */}
         </div>
       </section>
 
-      {/* ── Sección: Página de inicio ──────────────────────────────────── */}
+      {/* ── Sección: Página de inicio ─────────────────────────────── */}
       <section
         aria-labelledby="section-home"
         className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8"
@@ -220,6 +226,29 @@ export const AdminGeneralPage = () => (
           {/*
            * Aquí irán futuras tarjetas relacionadas con la página de inicio.
            * Ejemplo: <PromoSlidesCard />, <ServicesOrderCard />
+           */}
+        </div>
+      </section>
+
+      {/* ── Sección: Contenido social ─────────────────────────────── */}
+      <section
+        aria-labelledby="section-social-content"
+        className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8"
+      >
+        <div className="lg:sticky lg:top-[calc(var(--topbar-height)+2rem)] lg:self-start">
+          <SectionHeader
+            icon={Layout}
+            title="Contenido social"
+            description="Videos y contenido multimedia mostrado en la página principal."
+          />
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-5">
+          <SocialContentCard />
+
+          {/*
+           * Aquí irán futuras tarjetas relacionadas con contenido multimedia.
+           * Ejemplo: <InstagramFeedCard />, <TikTokFeedCard />
            */}
         </div>
       </section>

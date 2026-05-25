@@ -43,6 +43,7 @@ import {
 import { CatalogNavBar } from '@/features/home/components/catalog-nav-bar';
 import { FeaturedProductsSection } from '@/features/featured-products/components/featured-products-section';
 import GOLD_INVESTMENT_IMAGE from '@/assets/GOLD_INVESTMENT_IMAGE.jpg';
+import { SocialContentSection } from '../components/social-content-section';
 
 /**
  * Slides promocionales del carrusel (slides 1+).
@@ -203,6 +204,8 @@ export const HomePage = () => {
       <ServicesSection />
 
       <TestimonialsSection />
+
+      <SocialContentSection />
     </div>
   );
 };
