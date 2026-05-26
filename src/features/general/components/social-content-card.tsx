@@ -151,6 +151,15 @@ export const SocialContentCard = () => {
     setIsDeleting,
   ] = useState(false);
 
+  /**
+   * Controla si el panel de gestión está desplegado.
+   * Por defecto colapsado: el admin solo ve el encabezado con el contador
+   * y debe pulsar "Editar contenido" para mostrar la tabla y el formulario.
+   * Replica el patrón de comportamiento de `FeaturedProductsCard`.
+   */
+  const [isExpanded, setIsExpanded] =
+    useState(false);
+
   const fileInputRef =
     useRef<HTMLInputElement | null>(
       null,
@@ -230,6 +239,19 @@ export const SocialContentCard = () => {
       setPanelMode(null);
 
       resetFileInput();
+    };
+
+  /**
+   * Colapsa el panel completo. Si había un formulario abierto, lo cierra
+   * primero para descartar cualquier cambio sin guardar (sigue el patrón
+   * de `FeaturedProductsCard.handleCollapse`).
+   */
+  const handleCollapse =
+    (): void => {
+      if (isPanelOpen) {
+        closePanel();
+      }
+      setIsExpanded(false);
     };
 
   const openCreatePanel =
@@ -499,12 +521,12 @@ export const SocialContentCard = () => {
       >
         <div className="flex items-center gap-3 p-4 sm:p-6">
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-lg"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10"
             style={{
               backgroundColor:
                 'var(--accent-subtle)',
               color:
-                'var(--accent)',
+                'var(--accent-vivid, var(--accent))',
             }}
           >
             <Video size={20} />
@@ -512,7 +534,7 @@ export const SocialContentCard = () => {
 
           <div className="min-w-0 flex-1">
             <h3
-              className="text-base"
+              className="text-[0.98rem] sm:text-[var(--text-base)]"
               style={{
                 fontFamily:
                   'var(--font-heading)',
@@ -526,7 +548,7 @@ export const SocialContentCard = () => {
             </h3>
 
             <p
-              className="mt-1 text-sm"
+              className="mt-0.5 truncate text-[0.8rem] sm:text-[var(--text-sm)]"
               style={{
                 fontFamily:
                   'var(--font-ui)',
@@ -540,46 +562,74 @@ export const SocialContentCard = () => {
             </p>
           </div>
 
-          {!isPanelOpen ? (
-            <button
-              type="button"
-              disabled={isAtLimit}
-              onClick={
-                openCreatePanel
-              }
-              className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{
-                backgroundColor:
-                  'var(--accent)',
-                color:
-                  'var(--accent-text)',
-                fontFamily:
-                  'var(--font-ui)',
-                fontWeight:
-                  'var(--font-semibold)',
-              }}
-            >
-              <Plus size={14} />
-              Nuevo video
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={closePanel}
-              className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-opacity hover:opacity-85"
-              style={{
-                borderColor:
-                  'var(--border-color)',
-                color:
-                  'var(--text-primary)',
-              }}
-            >
-              <ChevronUp size={14} />
-              Cerrar
-            </button>
-          )}
+          {/*
+           * Toggle principal del panel. Replica el patrón de
+           * `HeroBannerCard` / `FeaturedProductsCard`:
+           * - Cerrado: botón sólido con acento — abre el panel.
+           * - Abierto: botón con borde neutro — colapsa todo el panel.
+           */}
+          <button
+            type="button"
+            onClick={() =>
+              isExpanded
+                ? handleCollapse()
+                : setIsExpanded(true)
+            }
+            aria-expanded={
+              isExpanded
+            }
+            aria-controls="social-content-panel"
+            className="flex flex-shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[0.78rem] sm:gap-2 sm:px-5 sm:py-2.5 sm:text-[var(--text-sm)] transition-opacity hover:opacity-85 active:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            style={{
+              fontFamily:
+                'var(--font-ui)',
+              fontWeight:
+                'var(--font-semibold)',
+              color: isExpanded
+                ? 'var(--text-muted)'
+                : 'var(--accent-text)',
+              backgroundColor:
+                isExpanded
+                  ? 'transparent'
+                  : 'var(--accent-vivid, var(--accent))',
+              border: isExpanded
+                ? '1px solid var(--border-color)'
+                : 'none',
+            }}
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp
+                  size={15}
+                  aria-hidden="true"
+                />
+                Cerrar
+              </>
+            ) : (
+              <>
+                <Pencil
+                  size={14}
+                  aria-hidden="true"
+                />
+                Editar contenido
+              </>
+            )}
+          </button>
         </div>
 
+        {/*
+         * Panel completo del módulo. Permanece desmontado mientras el card
+         * esté colapsado para que el formulario y la tabla no consuman
+         * espacio vertical ni hagan peticiones de imágenes inútiles.
+         */}
+        <div
+          id="social-content-panel"
+          style={{
+            display: isExpanded
+              ? 'block'
+              : 'none',
+          }}
+        >
         {isPanelOpen && (
           <>
             <Divider />
@@ -757,10 +807,10 @@ export const SocialContentCard = () => {
                       onClick={() =>
                         fileInputRef.current?.click()
                       }
-                      className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-opacity hover:opacity-85"
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-opacity duration-200 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
                       style={{
                         backgroundColor:
-                          'var(--accent)',
+                          'var(--accent-vivid, var(--accent))',
                         color:
                           'var(--accent-text)',
                       }}
@@ -778,10 +828,12 @@ export const SocialContentCard = () => {
                         onClick={
                           removeSelectedImage
                         }
-                        className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors duration-150 hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                         style={{
                           borderColor:
                             'var(--border-color)',
+                          color:
+                            'var(--text-primary)',
                         }}
                       >
                         <X size={14} />
@@ -820,10 +872,15 @@ export const SocialContentCard = () => {
                   onClick={
                     closePanel
                   }
-                  className="rounded-lg border px-4 py-2 text-sm"
+                  disabled={
+                    isSaving
+                  }
+                  className="cursor-pointer rounded-lg border px-4 py-2 text-sm transition-colors duration-150 hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   style={{
                     borderColor:
                       'var(--border-color)',
+                    color:
+                      'var(--text-primary)',
                   }}
                 >
                   Cancelar
@@ -834,10 +891,10 @@ export const SocialContentCard = () => {
                   disabled={
                     isSaving
                   }
-                  className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-opacity hover:opacity-85 disabled:opacity-50"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm transition-opacity duration-200 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
                   style={{
                     backgroundColor:
-                      'var(--accent)',
+                      'var(--accent-vivid, var(--accent))',
                     color:
                       'var(--accent-text)',
                   }}
@@ -869,6 +926,46 @@ export const SocialContentCard = () => {
         <Divider />
 
         <div className="p-4 sm:p-6">
+          {/*
+           * Barra de acción del panel. Solo se muestra cuando hay videos
+           * configurados y el formulario está cerrado; en el estado vacío
+           * el botón "Agregar" ya está embebido en `<EmptyState>` y en
+           * estado de formulario abierto el call-to-action principal son
+           * los botones del propio formulario.
+           */}
+          {!isPanelOpen &&
+            !isLoading &&
+            items.length > 0 && (
+              <div className="mb-4 flex items-center justify-end">
+                <button
+                  type="button"
+                  disabled={
+                    isAtLimit
+                  }
+                  onClick={
+                    openCreatePanel
+                  }
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{
+                    backgroundColor:
+                      'var(--accent-vivid, var(--accent))',
+                    color:
+                      'var(--accent-text)',
+                    fontFamily:
+                      'var(--font-ui)',
+                    fontWeight:
+                      'var(--font-semibold)',
+                  }}
+                >
+                  <Plus
+                    size={14}
+                    aria-hidden="true"
+                  />
+                  Nuevo video
+                </button>
+              </div>
+            )}
+
           {isLoading ? (
             <div className="py-8 text-center text-sm">
               Cargando videos...
@@ -954,6 +1051,7 @@ export const SocialContentCard = () => {
               </table>
             </div>
           )}
+        </div>
         </div>
       </div>
 
@@ -1098,7 +1196,12 @@ const IconButton = ({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center justify-center rounded-lg border p-2 transition-opacity hover:opacity-80"
+      aria-label={
+        danger
+          ? 'Eliminar'
+          : 'Editar'
+      }
+      className="flex cursor-pointer items-center justify-center rounded-lg border p-2 transition-colors duration-150 hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
       style={{
         borderColor:
           'var(--border-color)',
@@ -1144,10 +1247,10 @@ const EmptyState = ({
       <button
         type="button"
         onClick={onAdd}
-        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-opacity hover:opacity-85"
+        className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm transition-opacity duration-200 hover:opacity-80"
         style={{
           backgroundColor:
-            'var(--accent)',
+            'var(--accent-vivid, var(--accent))',
           color:
             'var(--accent-text)',
         }}

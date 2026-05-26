@@ -225,10 +225,10 @@ export const GoldPriceCard = () => {
         }}
       >
         {/* Encabezado de la tarjeta */}
-        <div className="mb-5 flex items-start gap-3">
+        <div className="mb-5 flex items-start gap-3 sm:gap-4">
           {/* Contenedor del ícono con el mismo fallback cromático del sidebar. */}
           <div
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10"
             style={{
               backgroundColor: 'var(--accent-subtle)',
               color: 'var(--accent-vivid, var(--accent))',
@@ -239,10 +239,9 @@ export const GoldPriceCard = () => {
 
           <div className="min-w-0">
             <h3
-              className="truncate"
+              className="truncate text-[0.98rem] sm:text-[var(--text-base)]"
               style={{
                 fontFamily: 'var(--font-heading)',
-                fontSize: 'var(--text-lg)',
                 fontWeight: 'var(--font-semibold)',
                 color: 'var(--text-primary)',
                 lineHeight: 'var(--leading-tight)',
@@ -251,10 +250,9 @@ export const GoldPriceCard = () => {
               Precio del oro por gramo
             </h3>
             <p
-              className="mt-0.5"
+              className="mt-0.5 text-[0.8rem] sm:text-[var(--text-sm)]"
               style={{
                 fontFamily: 'var(--font-ui)',
-                fontSize: 'var(--text-sm)',
                 color: 'var(--text-muted)',
               }}
             >
