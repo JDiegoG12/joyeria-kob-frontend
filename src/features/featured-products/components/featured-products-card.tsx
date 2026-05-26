@@ -260,11 +260,10 @@ export const FeaturedProductsCard = () => {
            * `--accent-vivid` toma el control para legibilidad.
            */}
           <div
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center sm:h-10 sm:w-10"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10"
             style={{
               backgroundColor: 'var(--accent-subtle)',
               color: 'var(--accent-vivid, var(--accent))',
-              borderRadius: 'var(--radius-sm)',
             }}
           >
             <Star size={20} aria-hidden="true" />
@@ -290,7 +289,7 @@ export const FeaturedProductsCard = () => {
             >
               {isFetching && totalActive === 0
                 ? 'Cargando destacados…'
-                : `${totalActive}/${MAX_FEATURED_PRODUCTS} configurados.`}
+                : `${totalActive} de ${MAX_FEATURED_PRODUCTS} configurados.`}
             </p>
           </div>
 
@@ -299,7 +298,7 @@ export const FeaturedProductsCard = () => {
             onClick={() => (isExpanded ? handleCollapse() : setIsExpanded(true))}
             aria-expanded={isExpanded}
             aria-controls="featured-products-panel"
-            className="flex flex-shrink-0 cursor-pointer items-center justify-center gap-1.5 px-3 py-2 text-[0.78rem] sm:gap-2 sm:px-5 sm:py-2.5 sm:text-[var(--text-sm)] transition-opacity hover:opacity-85 active:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            className="flex flex-shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[0.78rem] sm:gap-2 sm:px-5 sm:py-2.5 sm:text-[var(--text-sm)] transition-opacity hover:opacity-85 active:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
             style={{
               fontFamily: 'var(--font-ui)',
               fontWeight: 'var(--font-semibold)',
@@ -308,7 +307,6 @@ export const FeaturedProductsCard = () => {
                 ? 'transparent'
                 : 'var(--accent-vivid, var(--accent))',
               border: isExpanded ? '1px solid var(--border-color)' : 'none',
-              borderRadius: 'var(--radius-sm)',
             }}
           >
             {isExpanded ? (

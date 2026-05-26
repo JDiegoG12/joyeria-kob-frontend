@@ -3,7 +3,7 @@
  * @description Gráfica de línea para visualizar el histórico del precio del oro.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import {
   Area,
@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import type { TooltipContentProps } from 'recharts';
 import type { GoldPricePoint } from '@/features/metrics/types/metrics.types';
+import { useIsMobileChart } from '@/features/metrics/hooks/use-is-mobile-chart';
 
 interface GoldPriceChartProps {
   data: GoldPricePoint[];
@@ -60,29 +61,6 @@ const compactNumberFormatter = new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0,
   minimumFractionDigits: 0,
 });
-
-/**
- * Detecta si el viewport está en tamaño móvil para ajustar márgenes del chart.
- *
- * @returns `true` cuando el viewport es menor al breakpoint `sm`.
- */
-function useIsMobileChart(): boolean {
-  const [isMobile, setIsMobile] = useState(
-    () => window.matchMedia('(max-width: 639px)').matches,
-  );
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 639px)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsMobile(event.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  return isMobile;
-}
 
 /**
  * Obtiene una llave local de día para detectar fechas repetidas.
@@ -446,13 +424,13 @@ export function GoldPriceChart({ data }: GoldPriceChartProps) {
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
         }}
       >
-        <div className="h-[clamp(17rem,42vw,24rem)] min-h-[17rem] w-full min-w-0 overflow-visible">
+        <div className="h-[clamp(12rem,26vw,15rem)] min-h-48 w-full min-w-0 overflow-visible sm:min-h-56">
           <ResponsiveContainer
             width="100%"
             height="100%"
             minWidth={0}
-            minHeight="18rem"
-            initialDimension={{ width: 0, height: 320 }}
+            minHeight={192}
+            initialDimension={{ width: 400, height: 220 }}
           >
             <LineChart
               data={sortedData}

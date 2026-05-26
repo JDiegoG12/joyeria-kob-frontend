@@ -20,18 +20,17 @@ interface ServiceCardProps {
 /**
  * Presenta un servicio de taller/asesoría en una tarjeta compacta.
  *
- * ─── Padding responsive ─────────────────────────────────────────────────────
- * · Mobile (<sm): padding compacto (`px-5 pb-6 pt-7`, `min-h-40`) para que
- *   dos tarjetas quepan cómodamente en grids de 2 columnas en ~360px de
- *   ancho sin que el texto pierda respiro.
- * · sm+ (≥640px): padding original generoso, sensación luxury.
- *
- * El icono flotante en `-top-5 -left-5` se mantiene igual en todos los
- * breakpoints; con `pl-5` en el grid contenedor (ver `ServicesSection`)
- * no se corta en ninguna columna.
+ * ─── Layout responsive ──────────────────────────────────────────────────────
+ * · Mobile (<sm): tarjeta horizontal (ícono inline a la izquierda + texto
+ *   a la derecha) con padding compacto. El ícono flotante se oculta para
+ *   que el conjunto sea ancho pero corto y se pueda leer cada servicio
+ *   sin acumular altura.
+ * · sm+ (≥640px): layout vertical original con ícono flotante en
+ *   `-top-5 -left-5` y padding generoso. Requiere el `pl-5` del grid
+ *   contenedor para no recortar el ícono de la primera columna.
  *
  * @param props - Datos visuales y editoriales del servicio.
- * @returns Tarjeta responsive con icono, título y descripción.
+ * @returns Tarjeta responsive con ícono, título y descripción.
  */
 export const ServiceCard = ({
   icon: Icon,
@@ -40,21 +39,44 @@ export const ServiceCard = ({
 }: ServiceCardProps) => {
   return (
     <article
-      className="group relative flex h-full flex-col border px-5 pb-6 pt-7 shadow-[var(--shadow-xs)] transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-accent)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:px-9 sm:pb-8 sm:pt-9 lg:px-10"
+      className="group relative flex h-auto flex-row items-center gap-4 border px-4 py-4 shadow-[var(--shadow-xs)] transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-accent)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:h-full sm:flex-col sm:items-stretch sm:gap-0 sm:px-9 sm:pb-8 sm:pt-9 lg:px-10"
       style={{
         backgroundColor: 'var(--bg-primary)',
         borderColor: 'var(--border-accent)',
       }}
     >
+      {/*
+       * Ícono flotante — solo en sm+.
+       * Se "estampa" sobre la esquina superior izquierda con el ring del
+       * bg-primary que lo aísla del borde de la card.
+       */}
       <span
-        className="absolute -top-5 -left-5 z-10 flex h-10 w-10 items-center justify-center rounded-full transition-transform duration-300 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0"
+        className="absolute -top-5 -left-5 z-10 hidden h-10 w-10 items-center justify-center rounded-full transition-transform duration-300 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 sm:flex"
         style={{
           backgroundColor: 'var(--accent)',
           color: 'var(--accent-text)',
           boxShadow: '0 0 0 4px var(--bg-primary), var(--shadow-lg)',
         }}
+        aria-hidden="true"
       >
-        <Icon size={18} strokeWidth={1.65} aria-hidden="true" />
+        <Icon size={18} strokeWidth={1.65} />
+      </span>
+
+      {/*
+       * Ícono inline — solo en móvil.
+       * Vive dentro del flujo de la tarjeta para que el conjunto se vea
+       * como una fila compacta (ícono · texto), no como una columna alta.
+       */}
+      <span
+        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full sm:hidden"
+        style={{
+          backgroundColor: 'var(--accent)',
+          color: 'var(--accent-text)',
+          boxShadow: 'var(--shadow-sm)',
+        }}
+        aria-hidden="true"
+      >
+        <Icon size={18} strokeWidth={1.65} />
       </span>
 
       <span
@@ -63,34 +85,40 @@ export const ServiceCard = ({
         aria-hidden="true"
       />
 
-      <h3
-        className="uppercase"
-        style={{
-          fontFamily: 'var(--font-heading)',
-          fontSize: 'var(--text-sm)',
-          fontWeight: 'var(--font-bold)',
-          lineHeight: 'var(--leading-tight)',
-          letterSpacing: 'var(--tracking-wide)',
-          color: 'var(--text-primary)',
-        }}
-      >
-        {title}
-      </h3>
-
       {/*
-       * Descripción: en móvil usa texto un punto más pequeño (xs) para que
-       * fluya mejor en la columna estrecha de los grids 2×n; en sm+ vuelve
-       * al tamaño original (sm) que da el respiro luxury de desktop.
+       * Bloque de texto. En móvil ocupa el ancho restante junto al ícono
+       * inline; en sm+ vuelve al flujo vertical original.
        */}
-      <p
-        className="mt-4 w-full text-xs sm:mt-5 sm:text-sm"
-        style={{
-          lineHeight: 'var(--leading-normal)',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        {description}
-      </p>
+      <div className="min-w-0 flex-1 sm:flex-initial">
+        <h3
+          className="uppercase"
+          style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: 'var(--text-sm)',
+            fontWeight: 'var(--font-bold)',
+            lineHeight: 'var(--leading-tight)',
+            letterSpacing: 'var(--tracking-wide)',
+            color: 'var(--text-primary)',
+          }}
+        >
+          {title}
+        </h3>
+
+        {/*
+         * Descripción: en móvil mantiene tamaño `xs` y `mt-1` para que la
+         * tarjeta horizontal quede corta; en sm+ recupera el `mt-5 text-sm`
+         * del diseño luxury original.
+         */}
+        <p
+          className="mt-1 w-full text-xs sm:mt-5 sm:text-sm"
+          style={{
+            lineHeight: 'var(--leading-normal)',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          {description}
+        </p>
+      </div>
     </article>
   );
 };

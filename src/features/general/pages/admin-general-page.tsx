@@ -193,7 +193,7 @@ export const AdminGeneralPage = () => (
           <SectionHeader
             icon={Layout}
             title="Apariencia"
-            description="Personalización visual de la página principal de la tienda."
+            description="Personalización visual de la página de inicio de la tienda."
           />
         </div>
 
@@ -216,7 +216,7 @@ export const AdminGeneralPage = () => (
           <SectionHeader
             icon={Star}
             title="Página de inicio"
-            description="Productos que aparecen en la sección de destacados de la home."
+            description="Productos que aparecen en la sección de destacados de la página de inicio."
           />
         </div>
 
@@ -239,7 +239,7 @@ export const AdminGeneralPage = () => (
           <SectionHeader
             icon={Layout}
             title="Contenido social"
-            description="Videos y contenido multimedia mostrado en la página principal."
+            description="Videos y contenido multimedia mostrado en la página de inicio."
           />
         </div>
 

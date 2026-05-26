@@ -296,14 +296,16 @@ const GoldInvestmentSection = () => (
  * Servicios de taller y asesoría replicados como tarjetas reutilizables.
  *
  * ─── Layout responsive ───────────────────────────────────────────────────────
- * · Mobile (<sm): 2 columnas con gap reducido para que la sección no se haga
- *   "eterna" en scroll. Las tarjetas tienen padding interno más compacto
- *   (ver `ServiceCard`) para caber cómodas en ~360px de ancho.
- * · sm (≥640px): 2 columnas con gap mayor.
+ * · Mobile (<sm): 1 columna de tarjetas horizontales (ícono + texto en fila)
+ *   para que cada servicio se lea de un vistazo sin acumular altura. El
+ *   `ServiceCard` cambia su flujo interno a `flex-row` en este breakpoint.
+ * · sm (≥640px): 2 columnas con tarjetas verticales y el ícono flotante
+ *   característico del diseño original.
  * · lg (≥1024px): 3 columnas con gap aún mayor (layout original desktop).
  *
- * El `pl-5` del grid mantiene el icono flotante de la primera columna sin
- * que se corte contra el borde izquierdo de la sección.
+ * El `sm:pl-5` mantiene el ícono flotante de la primera columna sin que se
+ * corte contra el borde izquierdo de la sección. En móvil el ícono va
+ * inline dentro de la tarjeta y no necesita ese padding extra.
  *
  * @remarks
  * El `id="servicios"` permite el scroll suave desde `CatalogNavBar`
@@ -321,7 +323,7 @@ const ServicesSection = () => (
     >
       <SectionHeading title="Servicios" centered />
 
-      <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-12 pl-5 sm:gap-x-12 sm:gap-y-14 lg:grid-cols-3 lg:gap-x-14 lg:gap-y-16">
+      <div className="mt-10 grid grid-cols-1 gap-y-3 sm:mt-12 sm:grid-cols-2 sm:gap-x-12 sm:gap-y-14 sm:pl-5 lg:grid-cols-3 lg:gap-x-14 lg:gap-y-16">
         {SERVICES.map((service, index) => (
           <RevealBlock key={service.title} delay={index * 0.04} className="h-full">
             <ServiceCard {...service} />
