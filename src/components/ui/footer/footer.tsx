@@ -6,25 +6,18 @@
  * sociales para reforzar una lectura sobria y prestigiosa.
  */
 
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FacebookIcon,
   InstagramIcon,
   TikTokIcon,
   WhatsAppIcon,
 } from '@/components/ui/social-icons';
+import { useCategoryStore } from '@/store/category.store';
 
 const WHATSAPP_NUMBER = '3135007459';
 const WHATSAPP_URL = `https://wa.me/57${WHATSAPP_NUMBER}`;
-
-const CATEGORIES = [
-  { label: 'Pulseras tejidas', path: '/catalogo' },
-  { label: 'Cadenas', path: '/catalogo' },
-  { label: 'Pulsos & pulseras', path: '/catalogo' },
-  { label: 'Aretes', path: '/catalogo' },
-  { label: 'Anillos', path: '/catalogo' },
-  { label: 'Dijes', path: '/catalogo' },
-] as const;
 
 const INFO_LINKS = [
   'Términos y condiciones de uso - KOB Joyería',
@@ -36,23 +29,47 @@ const INFO_LINKS = [
 const SOCIAL_LINKS = [
   {
     label: 'Instagram',
-    href: 'https://www.instagram.com/joyeria_kob',
+    href: 'https://www.instagram.com/joyeria_kob?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==',
     icon: InstagramIcon,
   },
   {
     label: 'TikTok',
-    href: '#',
+    href: 'https://www.tiktok.com/@joyeria_kob?is_from_webapp=1&sender_device=pc',
     icon: TikTokIcon,
   },
   {
     label: 'Facebook',
-    href: '#',
+    href: 'https://www.facebook.com/share/1NVi5JihWb/',
     icon: FacebookIcon,
   },
 ] as const;
 
 /** Footer público con columnas de navegación, contacto, información y aliados. */
-export const Footer = () => (
+export const Footer = () => {
+  const {
+    categories,
+    loadCategories,
+    selectCatalogCategory,
+    selectCatalogSubCategory,
+  } = useCategoryStore();
+  const navigate = useNavigate();
+
+  // Carga las categorías una vez al montar; el store evita peticiones duplicadas.
+  useEffect(() => {
+    void loadCategories();
+  }, [loadCategories]);
+
+  // Solo categorías raíz — las subcategorías viven en category.children.
+  const rootCategories = categories.filter((cat) => cat.parentId === null);
+
+  /** Filtra el catálogo por la categoría elegida y navega hacia él. */
+  const handleSelectCategory = (categoryId: number) => {
+    selectCatalogCategory(categoryId);
+    selectCatalogSubCategory(null);
+    navigate('/catalogo');
+  };
+
+  return (
   <footer
     style={{
       backgroundColor: 'var(--announcement-bg)',
@@ -66,9 +83,13 @@ export const Footer = () => (
     >
       <FooterColumn title="Categorías">
         <ul className="space-y-2.5">
-          {CATEGORIES.map(({ label, path }) => (
-            <li key={label}>
-              <FooterLink to={path}>{label}</FooterLink>
+          {rootCategories.map((category) => (
+            <li key={category.id}>
+              <FooterCategoryButton
+                onClick={() => handleSelectCategory(category.id)}
+              >
+                {category.name}
+              </FooterCategoryButton>
             </li>
           ))}
         </ul>
@@ -178,7 +199,8 @@ export const Footer = () => (
       </nav>
     </div>
   </footer>
-);
+  );
+};
 
 interface FooterColumnProps {
   /** Título de columna. */
@@ -236,6 +258,31 @@ const FooterLink = ({
   >
     {children}
   </Link>
+);
+
+/** Botón de categoría del footer — filtra el catálogo y navega hacia él. */
+const FooterCategoryButton = ({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="cursor-pointer text-left transition-opacity duration-200 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
+    style={{
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      fontSize: 'var(--text-sm)',
+      color: 'var(--announcement-text)',
+      opacity: 0.82,
+    }}
+  >
+    {children}
+  </button>
 );
 
 /** Enlace externo o de contacto del footer. */

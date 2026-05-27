@@ -743,8 +743,19 @@ export const CatalogPage = () => {
 
               </motion.div>
 
-              {/* ── Grid de productos ── */}
-              <AnimatePresence mode="wait">
+              {/* ── Grid de productos ──
+               *
+               * `mode="popLayout"` (no `"wait"`): al cambiar de categoría
+               * varias veces seguidas, el hijo alterna skeleton↔grid más
+               * rápido que la animación de salida (0.2s). Con `mode="wait"`,
+               * AnimatePresence serializa las transiciones y, si una salida se
+               * interrumpe, su callback de fin no dispara → el hijo siguiente
+               * (el grid real) nunca se monta y el skeleton queda congelado
+               * pese a que `loadingProducts` ya es `false`. `popLayout` no
+               * serializa: saca al que sale del flujo y monta el nuevo de
+               * inmediato, eliminando ese deadlock sin perder las animaciones.
+               */}
+              <AnimatePresence mode="popLayout">
                 {loadingProducts ? (
                   <motion.div
                     key="skeleton"
