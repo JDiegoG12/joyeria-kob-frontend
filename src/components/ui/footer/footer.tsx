@@ -183,8 +183,8 @@ export const Footer = () => {
           <a
             key={label}
             href={href}
-            target={href === '#' ? undefined : '_blank'}
-            rel={href === '#' ? undefined : 'noopener noreferrer'}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex h-9 w-9 cursor-pointer items-center justify-center border transition-[transform,opacity] duration-200 hover:-translate-y-0.5 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
             style={{
               borderColor:
