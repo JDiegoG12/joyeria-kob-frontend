@@ -17,6 +17,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   User,
   Lock,
@@ -24,7 +25,7 @@ import {
   EyeOff,
   Check,
   X,
-  Camera,
+  ChevronRight,
   ShieldCheck,
 } from 'lucide-react';
 import { useToastStore } from '@/store/toast.store';
@@ -52,6 +53,45 @@ interface PasswordForm {
 type ActiveTab = 'info' | 'security';
 
 const blockClipboard = (e: React.ClipboardEvent) => e.preventDefault();
+
+/**
+ * Estilos locales de la página de perfil inyectados con `<style>`.
+ *
+ * 1. Inputs: el color de fondo y texto se aplican inline (`inputStyle`), pero
+ *    el borde y sus estados (hover/focus) viven aquí porque un `:focus`/`:hover`
+ *    de hoja de estilos no puede sobreescribir un `border-color` inline. El
+ *    ring de foco usa `--accent-subtle` (mismo patrón que el buscador del
+ *    catálogo).
+ * 2. Breadcrumb: animación de entrada (fade + leve descenso) equivalente a la
+ *    del breadcrumb del catálogo, pero en CSS puro para no añadir framer-motion
+ *    a esta página. Respeta `prefers-reduced-motion`.
+ *
+ * Todo con tokens — sin colores hardcodeados.
+ */
+const PROFILE_STYLES = `
+  .kob-profile-input {
+    border: 1px solid var(--border-color);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .kob-profile-input:hover {
+    border-color: var(--border-strong);
+  }
+  .kob-profile-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-subtle);
+  }
+
+  @keyframes kob-breadcrumb-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .kob-breadcrumb {
+    animation: kob-breadcrumb-in 0.3s ease-out both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .kob-breadcrumb { animation: none; }
+  }
+`;
 
 // ─────────────────────────────
 // COMPONENTE PRINCIPAL
@@ -230,10 +270,24 @@ export const ProfilePage = () => {
       className="relative min-h-[calc(100vh-64px)] px-4 py-8 sm:px-6 lg:px-10"
       style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
     >
-      {/* Fondo decorativo */}
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(212,175,55,0.08),_transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(212,175,55,0.05),_transparent_50%)]" />
+      <style>{PROFILE_STYLES}</style>
+
+      {/* Fondo decorativo — tinte de acento de marca (navy) muy sutil */}
+      <div
+        className="pointer-events-none fixed inset-0"
+        style={{
+          backgroundImage:
+            'radial-gradient(ellipse at top left, color-mix(in srgb, var(--accent) 8%, transparent), transparent 50%), radial-gradient(ellipse at bottom right, color-mix(in srgb, var(--accent) 5%, transparent), transparent 50%)',
+        }}
+      />
 
       <div className="relative z-10 mx-auto max-w-4xl">
+
+        {/*
+         * Breadcrumb de retorno al inicio — mismo patrón que el del catálogo.
+         * Único affordance explícito para volver a la home desde el perfil.
+         */}
+        <ProfileBreadcrumb />
 
         {/* ── Encabezado de página ── */}
         <div className="mb-8">
@@ -262,31 +316,24 @@ export const ProfilePage = () => {
 
           {/* ── Sidebar — avatar + badge de rol ── */}
           <aside
-            className="flex flex-col items-center rounded-2xl border p-6 text-center lg:items-start lg:text-left"
+            className="flex flex-col items-center border p-6 text-center lg:items-start lg:text-left"
             style={{
               backgroundColor: 'var(--bg-secondary)',
               borderColor: 'var(--border-color)',
               boxShadow: 'var(--shadow-lg)',
             }}
           >
-            {/* Avatar */}
-            <div className="relative mb-4 self-center">
+            {/* Avatar — circular, con las iniciales. Sin badge de cámara:
+                no existe cambio de foto de perfil y resultaba confuso. */}
+            <div className="mb-4 self-center">
               <div
-                className="flex h-20 w-20 items-center justify-center rounded-full text-2xl font-semibold text-white"
-                style={{ backgroundColor: 'var(--accent)' }}
-              >
-                {initials || <User size={32} />}
-              </div>
-              {/* Icono de cámara decorativo */}
-              <div
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2"
+                className="flex h-20 w-20 items-center justify-center rounded-full text-2xl font-semibold"
                 style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  borderColor: 'var(--border-color)',
-                  color: 'var(--text-secondary)',
+                  backgroundColor: 'var(--accent)',
+                  color: 'var(--accent-text)',
                 }}
               >
-                <Camera size={12} />
+                {initials || <User size={32} />}
               </div>
             </div>
 
@@ -307,13 +354,14 @@ export const ProfilePage = () => {
             {/* Badge rol */}
             <div className="mt-3 self-center lg:self-start">
               <span
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium uppercase tracking-widest"
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium uppercase tracking-widest"
                 style={
                   isAdmin
                     ? {
-                        backgroundColor: 'rgba(212,175,55,0.15)',
+                        backgroundColor: 'var(--accent-subtle)',
                         color: 'var(--accent)',
-                        border: '1px solid rgba(212,175,55,0.35)',
+                        border:
+                          '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
                       }
                     : {
                         backgroundColor: 'var(--bg-primary)',
@@ -366,7 +414,7 @@ export const ProfilePage = () => {
 
           {/* ── Panel de contenido ── */}
           <div
-            className="rounded-2xl border p-6 sm:p-8"
+            className="border p-6 sm:p-8"
             style={{
               backgroundColor: 'var(--bg-secondary)',
               borderColor: 'var(--border-color)',
@@ -396,7 +444,7 @@ export const ProfilePage = () => {
                         onChange={(e) => updateField('name', e.target.value)}
                         placeholder="Isabella"
                         autoComplete="given-name"
-                        className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
+                        className="kob-profile-input w-full px-3 py-2.5 text-sm outline-none"
                         style={inputStyle}
                       />
                     </Field>
@@ -410,7 +458,7 @@ export const ProfilePage = () => {
                         onChange={(e) => updateField('lastName', e.target.value)}
                         placeholder="Pérez"
                         autoComplete="family-name"
-                        className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
+                        className="kob-profile-input w-full px-3 py-2.5 text-sm outline-none"
                         style={inputStyle}
                       />
                     </Field>
@@ -430,7 +478,7 @@ export const ProfilePage = () => {
                       onPaste={blockClipboard}
                       placeholder="correo@ejemplo.com"
                       autoComplete="email"
-                      className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
+                      className="kob-profile-input w-full px-3 py-2.5 text-sm outline-none"
                       style={inputStyle}
                     />
                   </Field>
@@ -447,7 +495,7 @@ export const ProfilePage = () => {
                       onChange={(e) => updateField('phone', e.target.value)}
                       placeholder="+57 300 000 0000"
                       autoComplete="tel"
-                      className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
+                      className="kob-profile-input w-full px-3 py-2.5 text-sm outline-none"
                       style={inputStyle}
                     />
                   </Field>
@@ -464,7 +512,7 @@ export const ProfilePage = () => {
                       onChange={(e) => updateField('address', e.target.value)}
                       placeholder="Calle 10 # 5-20, Bogotá"
                       autoComplete="street-address"
-                      className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
+                      className="kob-profile-input w-full px-3 py-2.5 text-sm outline-none"
                       style={inputStyle}
                     />
                   </Field>
@@ -475,11 +523,20 @@ export const ProfilePage = () => {
                       type="button"
                       onClick={handleCancel}
                       disabled={!isDirty || profileLoading}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border px-5 py-2.5 text-sm font-medium transition-all hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex cursor-pointer items-center justify-center gap-1.5 border px-5 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                       style={{
                         borderColor: 'var(--border-color)',
                         backgroundColor: 'var(--bg-primary)',
                         color: 'var(--text-secondary)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!e.currentTarget.disabled)
+                          e.currentTarget.style.backgroundColor =
+                            'var(--bg-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          'var(--bg-primary)';
                       }}
                     >
                       <X size={14} />
@@ -489,8 +546,19 @@ export const ProfilePage = () => {
                       type="button"
                       onClick={handleSaveProfile}
                       disabled={!isDirty || profileLoading}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                      style={{ backgroundColor: 'var(--accent)' }}
+                      className="inline-flex cursor-pointer items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{
+                        backgroundColor: 'var(--accent)',
+                        color: 'var(--accent-text)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!e.currentTarget.disabled)
+                          e.currentTarget.style.backgroundColor =
+                            'var(--accent-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--accent)';
+                      }}
                     >
                       <Check size={14} />
                       {profileLoading ? 'Guardando...' : 'Guardar cambios'}
@@ -566,8 +634,19 @@ export const ProfilePage = () => {
                       type="button"
                       onClick={handleChangePassword}
                       disabled={pwLoading}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                      style={{ backgroundColor: 'var(--accent)' }}
+                      className="inline-flex cursor-pointer items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{
+                        backgroundColor: 'var(--accent)',
+                        color: 'var(--accent-text)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!e.currentTarget.disabled)
+                          e.currentTarget.style.backgroundColor =
+                            'var(--accent-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--accent)';
+                      }}
                     >
                       <Lock size={14} />
                       {pwLoading ? 'Actualizando...' : 'Actualizar contraseña'}
@@ -587,9 +666,71 @@ export const ProfilePage = () => {
 // SUB-COMPONENTES
 // ─────────────────────────────
 
-/** Estilo reutilizable para todos los inputs */
+/**
+ * Breadcrumb "Inicio › Mi perfil" — réplica del patrón del catálogo.
+ *
+ * Provee el camino de vuelta a la home y comunica la ubicación actual.
+ * Tipografía y comportamiento idénticos al breadcrumb del catálogo: `font-ui`,
+ * `text-xs`, uppercase, `tracking-widest`. "Inicio" es un `Link` que en hover
+ * sube de `--text-secondary` a `--text-accent` y se subraya; "Mi perfil" es la
+ * ubicación actual (`aria-current="page"`), no navegable.
+ */
+const ProfileBreadcrumb = () => (
+  <nav
+    aria-label="Ruta de navegación"
+    className="kob-breadcrumb mb-6 flex items-center gap-2"
+  >
+    <Link
+      to="/"
+      className="rounded-sm transition-colors duration-200 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+      style={{
+        fontFamily: 'var(--font-ui)',
+        fontSize: 'var(--text-xs)',
+        fontWeight: 'var(--font-medium)',
+        letterSpacing: 'var(--tracking-widest)',
+        textTransform: 'uppercase',
+        color: 'var(--text-secondary)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.color = 'var(--text-accent)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.color = 'var(--text-secondary)';
+      }}
+    >
+      Inicio
+    </Link>
+
+    <ChevronRight
+      size={13}
+      strokeWidth={1.8}
+      aria-hidden="true"
+      style={{ color: 'var(--text-muted)', flexShrink: 0 }}
+    />
+
+    <span
+      aria-current="page"
+      style={{
+        fontFamily: 'var(--font-ui)',
+        fontSize: 'var(--text-xs)',
+        fontWeight: 'var(--font-semibold)',
+        letterSpacing: 'var(--tracking-widest)',
+        textTransform: 'uppercase',
+        color: 'var(--text-accent)',
+      }}
+    >
+      Mi perfil
+    </span>
+  </nav>
+);
+
+/**
+ * Estilo inline reutilizable de los inputs: solo fondo y color de texto.
+ * El borde y sus estados (hover/focus) los gestiona la clase
+ * `.kob-profile-input` (ver {@link PROFILE_INPUT_STYLES}), porque un `:focus`
+ * de hoja de estilos no puede ganarle a un `border-color` inline.
+ */
 const inputStyle: React.CSSProperties = {
-  borderColor: 'var(--border-color)',
   backgroundColor: 'var(--bg-primary)',
   color: 'var(--text-primary)',
 };
@@ -605,11 +746,25 @@ const TabButton = ({ active, icon, label, onClick }: TabButtonProps) => (
   <button
     type="button"
     onClick={onClick}
-    className="flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-medium uppercase tracking-wider transition-all lg:justify-start lg:px-4"
+    className="flex flex-1 cursor-pointer items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium uppercase tracking-wider transition-all duration-200 lg:justify-start lg:px-4"
     style={{
-      backgroundColor: active ? 'rgba(212,175,55,0.12)' : 'transparent',
+      backgroundColor: active ? 'var(--accent-subtle)' : 'transparent',
       color: active ? 'var(--accent)' : 'var(--text-secondary)',
-      border: active ? '1px solid rgba(212,175,55,0.25)' : '1px solid transparent',
+      border: active
+        ? '1px solid color-mix(in srgb, var(--accent) 25%, transparent)'
+        : '1px solid transparent',
+    }}
+    onMouseEnter={(e) => {
+      if (!active) {
+        e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+        e.currentTarget.style.color = 'var(--text-primary)';
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (!active) {
+        e.currentTarget.style.backgroundColor = 'transparent';
+        e.currentTarget.style.color = 'var(--text-secondary)';
+      }
     }}
   >
     {icon}
@@ -673,7 +828,9 @@ const Field = ({ label, hint, error, children }: FieldProps) => (
     </div>
     {children}
     {error && (
-      <p className="mt-1 text-xs text-red-500">{error}</p>
+      <p className="mt-1 text-xs" style={{ color: 'var(--color-error)' }}>
+        {error}
+      </p>
     )}
   </div>
 );
@@ -705,13 +862,13 @@ const PasswordInput = ({
       onPaste={(e) => e.preventDefault()}
       placeholder={placeholder}
       autoComplete={autoComplete}
-      className="w-full rounded-xl border px-3 py-2.5 pr-10 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
+      className="kob-profile-input w-full px-3 py-2.5 pr-10 text-sm outline-none"
       style={inputStyle}
     />
     <button
       type="button"
       onClick={onToggle}
-      className="absolute right-3 top-1/2 -translate-y-1/2 transition hover:opacity-70"
+      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer transition-opacity duration-200 hover:opacity-70"
       style={{ color: 'var(--text-secondary)' }}
       aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
     >
@@ -724,7 +881,18 @@ const PasswordInput = ({
 const PasswordStrength = ({ password }: { password: string }) => {
   const score = getPasswordScore(password);
   const labels = ['Muy débil', 'Débil', 'Aceptable', 'Fuerte', 'Muy fuerte'];
-  const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a'];
+  /*
+   * Colores por nivel mapeados a tokens semánticos (sin hex hardcodeado).
+   * Con 3 tokens (error/warning/success) cubrimos los 5 niveles: débiles en
+   * error, aceptable en warning, fuertes en success.
+   */
+  const colors = [
+    'var(--color-error)',
+    'var(--color-error)',
+    'var(--color-warning)',
+    'var(--color-success)',
+    'var(--color-success)',
+  ];
 
   return (
     <div className="space-y-1.5">
@@ -732,7 +900,7 @@ const PasswordStrength = ({ password }: { password: string }) => {
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="h-1 flex-1 rounded-full transition-all duration-300"
+            className="h-1 flex-1 transition-all duration-300"
             style={{
               backgroundColor:
                 i < score ? colors[score - 1] : 'var(--border-color)',

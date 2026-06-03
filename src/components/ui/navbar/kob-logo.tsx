@@ -39,6 +39,15 @@ interface KobLogoProps {
   size?: number;
   /** Clases utilitarias para ajustar el contenedor SVG según el contexto. */
   className?: string;
+  /**
+   * `viewBox` del SVG. Por defecto usa el cuadro completo `0 0 375 375`, que
+   * deja amplio margen transparente alrededor del monograma.
+   *
+   * Para contextos donde el logo debe verse grande dentro de poco alto (p. ej.
+   * el navbar público compacto), se puede pasar un `viewBox` recortado al área
+   * real del dibujo para que el monograma llene su caja sin desbordar.
+   */
+  viewBox?: string;
 }
 
 /**
@@ -46,13 +55,17 @@ interface KobLogoProps {
  * Cambia automáticamente entre su versión clara y oscura
  * según el tema activo, sin lógica condicional.
  */
-export const KobLogo = ({ size = 80, className }: KobLogoProps) => (
+export const KobLogo = ({
+  size = 80,
+  className,
+  viewBox = '0 0 375 375',
+}: KobLogoProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
     height={size}
     className={className}
-    viewBox="0 0 375 375"
+    viewBox={viewBox}
     aria-label="Joyería KOB"
     role="img"
   >

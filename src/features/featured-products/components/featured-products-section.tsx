@@ -15,16 +15,19 @@
  *   existen en el panel admin para invitar a completar los 6.
  *
  * ## Grid responsive
- * - **Móvil**: 2 columnas (`grid-cols-2`).
- * - **Tablet (sm)**: 2 columnas.
+ * - **Móvil / Tablet (sm)**: 2 columnas (`grid-cols-2`) dentro de `max-w-2xl`.
  * - **Desktop (lg)**: 3 columnas — 6 destacados forman 2 filas perfectas.
  *
  * ## Dimensión de tarjetas en desktop
- * El título de sección usa el `--content-max-width` general (1280 px) pero
- * la grilla se constriñe a `max-w-5xl` (~1024 px) y se centra. Esto deja
- * tarjetas de ~325 px de ancho — un poco más amplias que las del catálogo
- * (~280 px), pero sin la sobrecarga visual que daban antes ocupando el
- * ancho completo del contenedor.
+ * El título usa el `--content-max-width` general (1280 px) pero la grilla se
+ * constriñe deliberadamente para reducir el tamaño de cada tarjeta:
+ * `lg:max-w-172` (43 rem ≈ 688 px) deja tarjetas de ~215 px de ancho, y solo
+ * en monitores grandes (`2xl`, ≥1536 px) crece a `max-w-200` (50 rem ≈ 800 px).
+ *
+ * El motivo es que en laptops de poco alto (p. ej. 1366×768 — que en Tailwind
+ * caen en el breakpoint `xl`, ≥1280 px) una tarjeta cuadrada de ~325 px no
+ * dejaba ver ni una fila completa por encima del pliegue. Al estrechar la
+ * grilla, la imagen cuadrada baja en alto y entra al menos una fila íntegra.
  *
  * ## Animaciones
  * Cada tarjeta entra con un fade-in/translate Y mediante `RevealBlock`
@@ -113,7 +116,7 @@ const SectionHeading = ({ title }: { title: string }) => (
  * @internal
  */
 const SkeletonGrid = () => (
-  <div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+  <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-4 sm:gap-5 lg:max-w-172 lg:grid-cols-3 lg:gap-5 2xl:max-w-200">
     {Array.from({ length: 6 }).map((_, index) => (
       <div
         key={index}
@@ -124,12 +127,10 @@ const SkeletonGrid = () => (
           animationDelay: `${index * 80}ms`,
         }}
       >
-        <div className="p-2 sm:p-3">
-          <div
-            className="aspect-square w-full"
-            style={{ backgroundColor: 'var(--bg-tertiary)' }}
-          />
-        </div>
+        <div
+          className="aspect-square w-full"
+          style={{ backgroundColor: 'var(--bg-tertiary)' }}
+        />
         <div
           className="h-px w-full"
           style={{ backgroundColor: 'var(--border-color)' }}
@@ -178,7 +179,7 @@ export const FeaturedProductsSection = () => {
 
   return (
     <section
-      className="py-14 sm:py-16 lg:py-20"
+      className="py-12 sm:py-14 lg:py-16"
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
       <div
@@ -190,7 +191,7 @@ export const FeaturedProductsSection = () => {
         {isFetching ? (
           <SkeletonGrid />
         ) : (
-          <div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+          <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-4 sm:gap-5 lg:max-w-172 lg:grid-cols-3 lg:gap-5 2xl:max-w-200">
             {items.map((featured, index) => (
               <RevealBlock
                 key={featured.id}

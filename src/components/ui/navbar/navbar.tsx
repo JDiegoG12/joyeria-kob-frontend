@@ -91,15 +91,26 @@ export const Navbar = () => {
               <Menu size={21} aria-hidden="true" />
             </button>
 
-            {/* Logo */}
+            {/* Logo — glifo de marca */}
             <Link
               to="/"
-              className="group flex h-12 flex-shrink-0 items-center px-1 transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:h-14"
+              className="group flex flex-shrink-0 items-center px-1 transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
               aria-label="Joyería KOB — Inicio"
             >
+              {/*
+               * Glifo con `viewBox` recortado al área real del monograma:
+               * el cuadro completo (0 0 375 375) deja ~63% de margen vertical
+               * transparente, lo que hacía verse diminuto el dibujo. Recortando
+               * a la zona del monograma, este llena su caja y se ve grande
+               * dentro de la barra compacta sin desbordarla.
+               *
+               * Dimensionado por altura (`w-auto`): el ancho se deriva de la
+               * proporción del viewBox recortado, evitando distorsión.
+               */}
               <KobLogo
-                size={66}
-                className="block h-[64px] w-[64px] sm:h-[70px] sm:w-[70px]"
+                size={64}
+                viewBox="50 120 275 170"
+                className="block h-11 w-auto sm:h-12 lg:h-10"
               />
             </Link>
 
@@ -118,17 +129,29 @@ export const Navbar = () => {
               rel="noopener noreferrer"
               className="hidden min-w-0 items-center gap-2 rounded-sm px-2 py-1 transition-opacity duration-200 hover:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:flex"
               style={{
-                color: 'var(--text-primary)',
+                /*
+                 * Tipografía alineada con la barra de catálogo (`NavBarEdgeButton`):
+                 * font-ui, text-xs, uppercase, tracking-widest, medium y color
+                 * de acento. Evita el contraste tipográfico que rompía la
+                 * estética entre el navbar y la barra inferior.
+                 */
+                color: 'var(--text-accent)',
                 fontFamily: 'var(--font-ui)',
-                fontSize: 'var(--text-lg)',
+                fontSize: 'var(--text-xs)',
                 fontWeight: 'var(--font-medium)',
-                letterSpacing: 'var(--tracking-normal)',
+                letterSpacing: 'var(--tracking-widest)',
+                textTransform: 'uppercase',
               }}
-              aria-label={`Contactar por WhatsApp al +57 ${WHATSAPP_NUMBER}`}
+              aria-label={`Contáctanos por WhatsApp al +57 ${WHATSAPP_NUMBER}`}
             >
-              <WhatsAppIcon size={21} aria-hidden="true" />
+              <WhatsAppIcon size={18} aria-hidden="true" />
 
-              <span className="truncate">+57 {WHATSAPP_NUMBER}</span>
+              {/*
+               * CTA amigable en lugar del número completo (más limpio y menos
+               * engorroso). El enlace sigue apuntando a `wa.me`; el número se
+               * conserva en el `aria-label` para lectores de pantalla.
+               */}
+              <span className="truncate">Contáctanos</span>
             </a>
           </div>
 
@@ -214,6 +237,8 @@ const UserMenu = ({ name, role }: UserMenuProps) => {
   const [open, setOpen] = useState(false);
 
   const firstName = name.trim().split(' ')[0] || 'usuario';
+  // Inicial del nombre para el avatar, igual que el topbar del panel admin.
+  const initial = firstName.charAt(0).toUpperCase();
 
   return (
     <div className="relative">
@@ -228,7 +253,23 @@ const UserMenu = ({ name, role }: UserMenuProps) => {
         aria-label={`Abrir menú de ${firstName}`}
         aria-expanded={open}
       >
-        <User size={21} aria-hidden="true" />
+        {/*
+         * Avatar con la inicial del usuario autenticado (móvil y PC), en
+         * lugar del ícono genérico de persona. Mismo patrón visual que el
+         * avatar del topbar admin para mantener coherencia.
+         */}
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs"
+          style={{
+            backgroundColor: 'var(--accent)',
+            color: 'var(--accent-text)',
+            fontFamily: 'var(--font-ui)',
+            fontWeight: 'var(--font-bold)',
+          }}
+          aria-hidden="true"
+        >
+          {initial}
+        </span>
       </button>
 
       {/* Backdrop */}
