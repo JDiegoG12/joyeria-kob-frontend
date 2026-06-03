@@ -4,7 +4,8 @@
  * de Joyería KOB.
  *
  * ## Estructura visual
- * - Imagen cuadrada con padding interno y borde `--border-accent`.
+ * - Imagen cuadrada **a sangre**: ocupa todo el ancho de la tarjeta sin
+ *   padding ni marco interno; la foto es el área completa de imagen.
  * - Si el producto tiene más de una imagen, un badge sutil en la esquina
  *   superior derecha indica el conteo total (ej. `+3`). El cliente verá
  *   todas las imágenes al entrar al detalle.
@@ -137,62 +138,65 @@ export const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
         backgroundColor: 'var(--bg-secondary)',
       }}
     >
-      {/* ── Zona de imagen ──────────────────────────────────────────────── */}
-      <div className="p-2 sm:p-3">
-        <div
-          className="relative aspect-square overflow-hidden"
-          style={{ backgroundColor: 'var(--bg-tertiary)' }}
-        >
-          <img
-            src={primaryImageUrl}
-            alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-            loading="lazy"
-            onError={(event) => {
-              (event.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
-            }}
-          />
+      {/*
+       * ── Zona de imagen (a sangre, sin marco) ──────────────────────────
+       * La foto ocupa el 100% del ancho de la tarjeta, sin padding ni borde
+       * interno. `aspect-square` mantiene la proporción cuadrada y
+       * `object-cover` rellena toda el área sin deformar el producto.
+       */}
+      <div
+        className="relative aspect-square overflow-hidden"
+        style={{ backgroundColor: 'var(--bg-tertiary)' }}
+      >
+        <img
+          src={primaryImageUrl}
+          alt={product.name}
+          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          loading="lazy"
+          onError={(event) => {
+            (event.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
+          }}
+        />
 
-          {/*
-           * Badge "+N fotos" — solo cuando el producto tiene más de una imagen.
-           * Aria-label completo para lectores de pantalla. La interacción real
-           * (navegar imágenes) ocurre en el modal de detalle.
-           */}
-          {hasMultipleImages && (
-            <div
-              className="absolute right-2 top-2 flex items-center gap-1 px-1.5 py-0.5 sm:gap-1.5 sm:px-2 sm:py-1"
+        {/*
+         * Badge "+N fotos" — solo cuando el producto tiene más de una imagen.
+         * Aria-label completo para lectores de pantalla. La interacción real
+         * (navegar imágenes) ocurre en el modal de detalle.
+         */}
+        {hasMultipleImages && (
+          <div
+            className="absolute right-2 top-2 flex items-center gap-1 px-1.5 py-0.5 sm:gap-1.5 sm:px-2 sm:py-1"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-accent)',
+              color: 'var(--text-accent)',
+            }}
+            aria-label={`${imageCount} imágenes disponibles`}
+          >
+            <Images
+              size={11}
+              strokeWidth={1.8}
+              aria-hidden="true"
+              className="sm:hidden"
+            />
+            <Images
+              size={13}
+              strokeWidth={1.8}
+              aria-hidden="true"
+              className="hidden sm:block"
+            />
+            <span
               style={{
-                backgroundColor: 'var(--bg-secondary)',
-                border: '1px solid var(--border-accent)',
-                color: 'var(--text-accent)',
+                fontFamily: 'var(--font-ui)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-semibold)',
+                lineHeight: 1,
               }}
-              aria-label={`${imageCount} imágenes disponibles`}
             >
-              <Images
-                size={11}
-                strokeWidth={1.8}
-                aria-hidden="true"
-                className="sm:hidden"
-              />
-              <Images
-                size={13}
-                strokeWidth={1.8}
-                aria-hidden="true"
-                className="hidden sm:block"
-              />
-              <span
-                style={{
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--text-xs)',
-                  fontWeight: 'var(--font-semibold)',
-                  lineHeight: 1,
-                }}
-              >
-                +{imageCount - 1}
-              </span>
-            </div>
-          )}
-        </div>
+              +{imageCount - 1}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Separador entre imagen e info ──────────────────────────────── */}

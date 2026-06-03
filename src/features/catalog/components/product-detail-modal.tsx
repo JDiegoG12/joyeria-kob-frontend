@@ -14,10 +14,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { X, Heart, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
+import { useCategoryStore } from '@/store/category.store';
 import { SERVER_URL } from '@/api/server-url';
 import type { Product } from '@/features/catalog/types/product.types';
 import FALLBACK_IMAGE from '@/assets/HERO_IMAGE.jpg';
@@ -129,6 +131,10 @@ export const ProductDetailModal = ({
   const [direction, setDirection] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  const navigate = useNavigate();
+  const { selectCatalogCategory, selectCatalogSubCategory } =
+    useCategoryStore();
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -196,6 +202,48 @@ export const ProductDetailModal = ({
   const subCategoryName = product?.category?.parent
     ? product.category.name
     : null;
+
+  /*
+   * IDs para que el breadcrumb pueda filtrar el catálogo al hacer click.
+   * Regla de negocio (ver product.types): si la categoría del producto no
+   * tiene padre, ella misma es la raíz; si lo tiene, el padre es la raíz y
+   * ella es la subcategoría.
+   */
+  const category = product?.category ?? null;
+  const rootCategoryId = category
+    ? (category.parentId ?? category.id)
+    : null;
+  const subCategoryId =
+    category && category.parentId !== null ? category.id : null;
+
+  /*
+   * Handlers del breadcrumb. Todos cierran el modal vía `onClose` (que además
+   * limpia el query param `?product`). El catálogo subyacente reacciona a los
+   * cambios de categoría del store y se refiltra solo.
+   */
+  const handleCrumbHome = () => {
+    onClose();
+    navigate('/');
+  };
+  const handleCrumbCatalog = () => {
+    selectCatalogCategory(null);
+    selectCatalogSubCategory(null);
+    onClose();
+  };
+  const handleCrumbRoot = () => {
+    if (rootCategoryId === null) return;
+    selectCatalogCategory(rootCategoryId);
+    selectCatalogSubCategory(null);
+    onClose();
+  };
+  const handleCrumbSub = () => {
+    if (rootCategoryId === null || subCategoryId === null) return;
+    // El padre primero: selectCatalogCategory resetea la subcategoría, así que
+    // debe ir antes de fijar la subcategoría concreta.
+    selectCatalogCategory(rootCategoryId);
+    selectCatalogSubCategory(subCategoryId);
+    onClose();
+  };
 
   return createPortal(
     <>
@@ -382,6 +430,7 @@ export const ProductDetailModal = ({
                   {/* SECCIÓN SUPERIOR: Título y Descripción (No hace scroll) */}
                   <div className="shrink-0">
                     <nav
+                      aria-label="Ruta de navegación"
                       className="mb-4 flex flex-wrap items-center gap-1 uppercase"
                       style={{
                         fontFamily: 'var(--font-ui)',
@@ -390,25 +439,26 @@ export const ProductDetailModal = ({
                         color: 'var(--text-muted)',
                       }}
                     >
-                      <span>Inicio</span> <ChevronRight size={10} />{' '}
-                      <span>Catálogo</span>
+                      <Crumb label="Inicio" onClick={handleCrumbHome} />
+                      <ChevronRight size={10} aria-hidden="true" />
+                      <Crumb label="Catálogo" onClick={handleCrumbCatalog} />
                       {rootCategoryName && (
                         <>
-                          <ChevronRight size={10} />{' '}
-                          <span>{rootCategoryName}</span>
+                          <ChevronRight size={10} aria-hidden="true" />
+                          <Crumb
+                            label={rootCategoryName}
+                            onClick={handleCrumbRoot}
+                          />
                         </>
                       )}
                       {subCategoryName && (
                         <>
-                          <ChevronRight size={10} />{' '}
-                          <span
-                            style={{
-                              color: 'var(--text-accent)',
-                              fontWeight: 'var(--font-bold)',
-                            }}
-                          >
-                            {subCategoryName}
-                          </span>
+                          <ChevronRight size={10} aria-hidden="true" />
+                          <Crumb
+                            label={subCategoryName}
+                            onClick={handleCrumbSub}
+                            accent
+                          />
                         </>
                       )}
                     </nav>
@@ -600,5 +650,59 @@ export const ProductDetailModal = ({
       </AnimatePresence>
     </>,
     document.body,
+  );
+};
+
+// ─── Breadcrumb ──────────────────────────────────────────────────────────────
+
+interface CrumbProps {
+  /** Texto visible del ítem. */
+  label: string;
+  /** Acción al hacer click (navegar y/o filtrar el catálogo). */
+  onClick: () => void;
+  /**
+   * Resalta el ítem (color de acento + bold). Reservado para la subcategoría,
+   * el nivel más específico de la ruta.
+   */
+  accent?: boolean;
+}
+
+/**
+ * Ítem clickeable del breadcrumb del modal de detalle.
+ *
+ * Hereda la tipografía del `<nav>` contenedor (uppercase, `font-ui`, `text-xs`,
+ * tracking-wide) para integrarse sin estilos duplicados. En reposo usa
+ * `--text-muted` (o `--text-accent` si `accent`); en hover sube a
+ * `--text-accent` y se subraya, señalando que es navegable — mismo patrón de
+ * manipulación directa de estilo usado en el resto del catálogo.
+ */
+const Crumb = ({ label, onClick, accent = false }: CrumbProps) => {
+  const restColor = accent ? 'var(--text-accent)' : 'var(--text-muted)';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="cursor-pointer rounded-sm transition-colors duration-200 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+      style={{
+        fontFamily: 'inherit',
+        fontSize: 'inherit',
+        letterSpacing: 'inherit',
+        textTransform: 'inherit',
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        color: restColor,
+        fontWeight: accent ? 'var(--font-bold)' : 'inherit',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.color = 'var(--text-accent)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.color = restColor;
+      }}
+    >
+      {label}
+    </button>
   );
 };

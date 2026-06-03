@@ -94,8 +94,14 @@ import type { Category } from '@/features/categories/types/category.types';
 
 // ─── Constantes de layout ─────────────────────────────────────────────────────
 
-/** Altura de la barra en px. Debe coincidir con `CatalogNavBarSpacer`. */
-const NAV_BAR_HEIGHT = 48;
+/**
+ * Altura de la barra en px. Debe coincidir con `CatalogNavBarSpacer`.
+ *
+ * La barra es exclusiva de desktop (`hidden lg:block`), por lo que esta altura
+ * compacta solo afecta a PC; en móvil la barra no se renderiza. Se redujo de
+ * 48 a 40px para aligerar el alto fijo acumulado bajo el navbar.
+ */
+const NAV_BAR_HEIGHT = 40;
 
 /**
  * Ancho mínimo del panel de subcategorías en px.

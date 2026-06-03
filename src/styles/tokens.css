@@ -360,6 +360,26 @@
       --text-3xl: 1.7rem;
     }
   }
+
+  /*
+   * Compactación de las barras fijas en PC (≥1024px).
+   *
+   * Entre la barra de anuncios, el navbar y la barra de catálogo se acumulaba
+   * demasiado alto fijo en pantallas de escritorio, restando viewport útil.
+   * En móvil/tablet las alturas originales se conservan (estas variables solo
+   * se sobrescriben a partir del breakpoint `lg`), porque allí el espaciado
+   * ya se percibía correcto.
+   *
+   * Como el resto del layout (spacer del navbar, `top` de la barra de catálogo,
+   * offsets de scroll) se calcula a partir de estas variables, todo se
+   * reajusta automáticamente al cambiarlas aquí.
+   */
+  @media (min-width: 1024px) {
+    :root {
+      --announcement-height: 30px;
+      --navbar-height: 52px;
+    }
+  }
 }
 
 @layer components {
