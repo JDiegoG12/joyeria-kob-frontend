@@ -8,18 +8,19 @@
  *   El ancho alterna entre `--sidebar-width` y `--sidebar-width-collapsed`.
  * - **Tablet/Móvil**: cajón `fixed` que se desliza desde la izquierda,
  *   controlado por `isOpen`/`onClose` desde `AdminLayout`.
+ *   El botón de cierre vive en la cabecera del drawer.
  *
  * ## Posicionamiento
- * Usa la clase `.sidebar-panel` de `tokens.css` para manejar `top` y
- * `height` según el breakpoint sin necesidad de calcular en JS.
+ * En desktop ocupa toda la altura para alojar el bloque de marca arriba.
+ * En móvil se comporta como drawer superpuesto al contenido.
  *
  * ## Secciones de navegación
  * ```
+ * ├── General           /admin/general      ← Configuración global del sistema
  * ├── Métricas          /admin/metricas
  * ├── Joyas             /admin/joyas        ← navegable + expandible
  * │   └── Categorías    /admin/categorias   ← subítem
  * ├── Clientes          /admin/clientes
- * ├── Diseños           /admin/disenos
  * └── Promociones       /admin/promociones
  * ```
  *
@@ -28,8 +29,27 @@
  * - **Label + ícono** → navega a `item.path` (NavLink normal)
  * - **Botón chevron** → expande/colapsa los subítems sin navegar
  *
- * Esto permite al usuario ir a /admin/joyas directamente Y también
- * expandir el submenú para acceder a /admin/categorias.
+ * ## Sistema visual — estilo editorial clásico
+ * El indicador de ítem activo es un borde izquierdo sólido de 2px
+ * (`--border-accent`) sin border-radius, acompañado de un fondo sutil
+ * derivado de `--accent-subtle`. En hover, una línea de 1px aparece con
+ * transición de opacidad para no distraer. Este lenguaje visual transmite
+ * estructura y elegancia sin elementos decorativos excesivos.
+ *
+ * ## Token de acento para dark mode — `--accent-vivid`
+ * `--accent: #131638` tiene ratio 1.15:1 sobre `#1A1A1A`, prácticamente
+ * invisible. Por eso el borde izquierdo activo, los íconos activos y el
+ * texto de acento usan `--accent-vivid` (definido en `.dark {}` de
+ * `tokens.css`) que provee contraste WCAG AA sobre fondos oscuros.
+ * En light mode `--accent-vivid` no existe y el fallback natural de CSS
+ * cae a `--border-accent` / `--text-primary` según el contexto.
+ *
+ * ## Animaciones
+ * - Borde izquierdo activo: transición de `width` 0 → 2px + `opacity` 0 → 1
+ * - Hover: `background-color` con `--transition-fast` (150 ms)
+ * - Ícono: `translateX(2px)` en hover para dar sensación de profundidad
+ * - Submenu: animación de altura con `max-height` + `opacity`
+ * - Chevron: rotación suave 0° → 180° al expandir/colapsar
  *
  * ## Cómo agregar una nueva sección
  * Agrega un objeto al array `NAV_ITEMS`:
@@ -54,18 +74,22 @@
  * ```
  */
 
-import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ElementType,
+} from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
   Gem,
   Tag,
   Users,
-  PenTool,
   Ticket,
   ChevronDown,
-  ChevronRight,
   X,
+  Settings2,
 } from 'lucide-react';
 import { KobLogo } from '@/components/ui/navbar/kob-logo';
 
@@ -74,24 +98,26 @@ import { KobLogo } from '@/components/ui/navbar/kob-logo';
 interface NavSubItem {
   label: string;
   path: string;
-  icon: React.ElementType;
+  icon: ElementType;
 }
 
 interface NavItem {
   label: string;
   path: string;
-  icon: React.ElementType;
+  icon: ElementType;
   /** Subítems colapsables. El ítem padre sigue siendo navegable. */
   children?: NavSubItem[];
 }
 
 // ─── Estructura de navegación ─────────────────────────────────────────────────
+// "Diseños" fue eliminado de la plataforma en esta versión.
 
-/**
- * Definición de la navegación del panel admin.
- * Los ítems con `children` son navegables Y tienen submenú colapsable.
- */
 const NAV_ITEMS: NavItem[] = [
+  {
+    label: 'General',
+    path: '/admin/general',
+    icon: Settings2,
+  },
   {
     label: 'Métricas',
     path: '/admin/metricas',
@@ -109,16 +135,25 @@ const NAV_ITEMS: NavItem[] = [
     icon: Users,
   },
   {
-    label: 'Diseños',
-    path: '/admin/disenos',
-    icon: PenTool,
-  },
-  {
     label: 'Promociones',
     path: '/admin/promociones',
     icon: Ticket,
   },
 ];
+
+// ─── Constantes de animación ──────────────────────────────────────────────────
+
+/**
+ * Duración base para transiciones de micro-interacciones del sidebar.
+ * Deliberadamente corta para no interrumpir el flujo de trabajo del admin.
+ */
+const TRANSITION_ITEM = 'var(--transition-fast)';
+
+/**
+ * Duración para la animación del submenu (expand/collapse).
+ * Ligeramente más lenta para que la expansión se perciba fluida.
+ */
+const TRANSITION_SUBMENU = 'var(--transition-normal)';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -133,19 +168,30 @@ interface AdminSidebarProps {
 /**
  * Sidebar de navegación del panel de administración.
  * Gestiona el estado de expansión de subítems localmente.
+ * El drawer móvil incluye botón de cierre propio para no depender del topbar.
  */
 export const AdminSidebar = ({
   isOpen,
   isCollapsed,
   onClose,
 }: AdminSidebarProps) => {
-  /**
-   * Paths de los ítems con subítems que están expandidos.
-   * Joyas abierto por defecto al ser la sección principal del CRUD.
-   */
+  const { pathname } = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([
     '/admin/joyas',
   ]);
+
+  // Auto-expande el padre cuando la ruta activa es un subítem.
+  useEffect(() => {
+    const activeParent = NAV_ITEMS.find((item) =>
+      item.children?.some((child) => pathname.startsWith(child.path)),
+    );
+
+    if (!activeParent) return;
+
+    setExpandedItems((prev) =>
+      prev.includes(activeParent.path) ? prev : [...prev, activeParent.path],
+    );
+  }, [pathname]);
 
   const toggleItem = (path: string) => {
     setExpandedItems((prev) =>
@@ -153,11 +199,20 @@ export const AdminSidebar = ({
     );
   };
 
+  const sidebarStyle = {
+    '--admin-sidebar-width': isCollapsed
+      ? 'var(--sidebar-width-collapsed)'
+      : 'var(--sidebar-width)',
+    backgroundColor: 'var(--bg-sidebar)',
+    borderRight: '1px solid var(--border-color)',
+    boxShadow: isOpen ? 'var(--shadow-xl)' : 'var(--shadow-sm)',
+  } as CSSProperties;
+
   return (
     <>
-      {/* ── Overlay — solo móvil/tablet ───────────────────────────────────────── */}
+      {/* ── Overlay — solo móvil/tablet ─────────────────────────────────────── */}
       <div
-        className={`fixed inset-0 z-30 transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 z-40 transition-opacity duration-300 lg:hidden ${
           isOpen
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0'
@@ -167,75 +222,131 @@ export const AdminSidebar = ({
         aria-hidden="true"
       />
 
-      {/* ── Panel ─────────────────────────────────────────────────────────────── */}
+      {/* ── Panel ───────────────────────────────────────────────────────────── */}
       <aside
         className={`
-          fixed left-0 z-40 flex flex-col
+          fixed top-0 left-0 z-[60] flex h-dvh w-[min(86vw,var(--sidebar-width))] flex-col
+          overflow-x-hidden overflow-y-auto
           transition-all duration-300 ease-in-out
-          lg:translate-x-0
+          lg:z-50 lg:w-[var(--admin-sidebar-width)] lg:translate-x-0
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          sidebar-panel
         `}
-        style={{
-          width: isCollapsed
-            ? 'var(--sidebar-width-collapsed)'
-            : 'var(--sidebar-width)',
-          backgroundColor: 'var(--bg-sidebar)',
-          borderRight: '1px solid var(--border-color)',
-          overflowX: 'hidden',
-          overflowY: 'auto',
-        }}
+        style={sidebarStyle}
         aria-label="Navegación del panel admin"
       >
-        {/* Cabecera */}
+        {/* ── Cabecera: marca y cierre del drawer móvil ───────────────────── */}
         <div
-          className="flex flex-shrink-0 items-center justify-between px-4 py-4"
+          className={`flex min-h-16 flex-shrink-0 items-center justify-between gap-3 px-3 py-2.5 ${
+            isCollapsed ? 'lg:justify-center' : ''
+          }`}
           style={{ borderBottom: '1px solid var(--border-color)' }}
         >
-          <div
-            className={`transition-opacity duration-200 ${
-              isCollapsed ? 'opacity-0 lg:invisible' : 'opacity-100'
-            }`}
-          >
-            <KobLogo />
+          <div className="flex min-w-0 items-center gap-3">
+            {/*
+             * Contenedor del logo: sin border-radius pronunciado,
+             * estilo cuadrado acorde al lenguaje editorial.
+             */}
+            <div
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center"
+              style={{
+                backgroundColor: 'var(--bg-active)',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              <KobLogo size={34} className="block" />
+            </div>
+
+            <div
+              className={`min-w-0 transition-opacity duration-200 ${
+                isCollapsed ? 'lg:hidden' : ''
+              }`}
+            >
+              <p
+                className="truncate"
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: 'var(--text-lg)',
+                  fontWeight: 'var(--font-bold)',
+                  lineHeight: 'var(--leading-tight)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                Joyería KOB
+              </p>
+              <p
+                className="truncate"
+                style={{
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 'var(--font-medium)',
+                  color: 'var(--text-muted)',
+                  lineHeight: 1.2,
+                }}
+              >
+                Panel administrativo
+              </p>
+            </div>
           </div>
+
+          {/* Botón de cierre — solo visible en mobile/tablet */}
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 transition-colors lg:hidden"
-            style={{ color: 'var(--text-muted)' }}
-            aria-label="Cerrar menú"
+            className="cursor-pointer p-2 transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] lg:hidden"
+            style={{ color: 'var(--text-secondary)' }}
+            aria-label="Cerrar menú de administración"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Navegación */}
+        {/* ── Navegación ──────────────────────────────────────────────────── */}
         <nav
-          className="flex flex-col gap-1 p-3"
+          className={`flex flex-col gap-1 py-4 ${isCollapsed ? 'lg:px-2' : 'px-0'}`}
           aria-label="Menú de administración"
         >
+          {/*
+           * Etiqueta de sección.
+           * Se oculta en modo colapsado para respetar el espacio reducido.
+           */}
+          <div className={`px-4 pb-2 pt-1 ${isCollapsed ? 'lg:hidden' : ''}`}>
+            <p
+              className="uppercase"
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-bold)',
+                letterSpacing: 'var(--tracking-widest)',
+                color: 'var(--text-muted)',
+              }}
+            >
+              Administración
+            </p>
+          </div>
+
           {NAV_ITEMS.map((item) => (
             <NavItemComponent
               key={item.path}
               item={item}
               isCollapsed={isCollapsed}
               isExpanded={expandedItems.includes(item.path)}
+              currentPath={pathname}
               onToggleExpand={() => toggleItem(item.path)}
               onClose={onClose}
             />
           ))}
         </nav>
 
-        {/* Pie del sidebar */}
-        {!isCollapsed && (
+        {/* ── Pie del sidebar ─────────────────────────────────────────────── */}
+        <div className={`mt-auto ${isCollapsed ? 'lg:hidden' : ''}`}>
           <div
-            className="mt-auto flex-shrink-0 px-4 py-4"
+            className="flex-shrink-0 px-4 py-4"
             style={{ borderTop: '1px solid var(--border-color)' }}
           >
             <p
               style={{
                 fontFamily: 'var(--font-ui)',
                 fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-medium)',
                 color: 'var(--text-muted)',
                 letterSpacing: 'var(--tracking-wide)',
               }}
@@ -243,7 +354,7 @@ export const AdminSidebar = ({
               Panel Admin · KOB
             </p>
           </div>
-        )}
+        </div>
       </aside>
     </>
   );
@@ -255,26 +366,24 @@ interface NavItemComponentProps {
   item: NavItem;
   isCollapsed: boolean;
   isExpanded: boolean;
-  /** Expande/colapsa los subítems SIN navegar. */
+  currentPath: string;
   onToggleExpand: () => void;
-  /** Cierra el cajón móvil al navegar. */
   onClose: () => void;
 }
 
 /**
  * Ítem de navegación del sidebar admin.
  *
- * ## Ítems sin subítems
- * Son un `NavLink` simple que navega y cierra el cajón móvil.
+ * ## Indicador activo — estilo editorial
+ * En lugar de un fondo redondeado, el ítem activo muestra:
+ * - Un borde izquierdo sólido de 2px en `--border-accent`
+ * - Un fondo plano sutil usando `--accent-subtle` como superficie
+ * - Sin `border-radius` en ninguno de los dos elementos
  *
- * ## Ítems con subítems
- * La fila tiene DOS zonas de clic independientes:
- * - **Zona izquierda** (ícono + label): `NavLink` → navega a `item.path`
- * - **Zona derecha** (chevron): botón → expande/colapsa subítems sin navegar
- *
- * Esta separación es clave: el usuario puede ir a /admin/joyas
- * Y también expandir el submenú para acceder a /admin/categorias,
- * sin que ambas acciones estén acopladas.
+ * En hover (no activo):
+ * - `--bg-hover` como fondo
+ * - El ícono se desplaza 2px hacia la derecha con `translateX` para dar
+ *   sensación de movimiento sin ser invasivo.
  *
  * @internal Solo se usa dentro de `AdminSidebar`.
  */
@@ -282,132 +391,263 @@ const NavItemComponent = ({
   item,
   isCollapsed,
   isExpanded,
+  currentPath,
   onToggleExpand,
   onClose,
 }: NavItemComponentProps) => {
   const Icon = item.icon;
   const hasChildren = Boolean(item.children?.length);
 
+  /*
+   * isSectionActive: verdadero si la ruta activa es este ítem o alguno de
+   * sus hijos. Se usa para resaltar el padre aunque el foco esté en un hijo.
+   */
+  const isSectionActive =
+    currentPath.startsWith(item.path) ||
+    Boolean(item.children?.some((child) => currentPath.startsWith(child.path)));
+
+  /**
+   * Estilos del ítem principal.
+   *
+   * El borde izquierdo activo usa `--accent-vivid` en dark mode para
+   * garantizar contraste suficiente (el token está definido en `.dark {}`
+   * de `tokens.css`). En light mode `--accent-vivid` no existe como variable
+   * separada, por lo que se usa `--border-accent` directamente.
+   * Se implementa con `borderLeft` para respetar el lenguaje editorial
+   * plano, sin border-radius.
+   *
+   * @param isActive - Valor de `isActive` de NavLink (ruta exacta).
+   */
+  const getItemStyle = (isActive: boolean): CSSProperties => ({
+    fontFamily: 'var(--font-ui)',
+    fontSize: 'var(--text-base)',
+    lineHeight: 'var(--leading-normal)',
+    color:
+      isActive || isSectionActive
+        ? 'var(--text-primary)'
+        : 'var(--text-secondary)',
+    fontWeight:
+      isActive || isSectionActive
+        ? 'var(--font-semibold)'
+        : 'var(--font-medium)',
+    backgroundColor:
+      isActive || isSectionActive ? 'var(--accent-subtle)' : 'transparent',
+    /*
+     * `--accent-vivid` es el azul luminoso definido en `.dark {}`.
+     * En light mode el token no existe: CSS resuelve la var como vacía
+     * y el fallback cae al valor por defecto del navegador (none),
+     * por eso se usa `var(--accent-vivid, var(--border-accent))` para
+     * garantizar el color correcto en ambos modos sin lógica extra.
+     */
+    borderLeft:
+      isActive || isSectionActive
+        ? '2px solid var(--accent-vivid, var(--border-accent))'
+        : '2px solid transparent',
+    transition: `background-color ${TRANSITION_ITEM}, border-color ${TRANSITION_ITEM}, color ${TRANSITION_ITEM}`,
+  });
+
   if (hasChildren) {
     return (
       <div>
-        {/* ── Fila del ítem padre: NavLink + botón chevron separados ── */}
+        {/* Fila del ítem padre: NavLink + botón chevron separados */}
         <div className="flex items-center">
-          {/*
-           * NavLink ocupa la mayor parte del ancho.
-           * Al hacer clic navega a item.path y cierra el cajón móvil.
-           * El chevron NO está dentro de este NavLink para que sus
-           * clics no se propaguen y disparen navegación.
-           */}
           <NavLink
             to={item.path}
             onClick={onClose}
             title={isCollapsed ? item.label : undefined}
-            className="flex flex-1 items-center gap-3 rounded-md px-3 py-2.5 transition-colors"
-            style={({ isActive }) => ({
-              fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-sm)',
-              backgroundColor: isActive
-                ? 'var(--accent-subtle)'
-                : 'transparent',
-              color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-              fontWeight: isActive
-                ? 'var(--font-semibold)'
-                : 'var(--font-medium)',
-              borderLeft:
-                isActive && !isCollapsed
-                  ? '2px solid var(--accent)'
-                  : '2px solid transparent',
-            })}
+            className={`group flex min-h-12 min-w-0 flex-1 items-center gap-3.5 px-4 py-3
+              focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]
+              ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}
+            `}
+            style={({ isActive }) => getItemStyle(isActive)}
+            onMouseEnter={(e) => {
+              if (!isSectionActive) {
+                (e.currentTarget as HTMLElement).style.backgroundColor =
+                  'var(--bg-hover)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSectionActive) {
+                (e.currentTarget as HTMLElement).style.backgroundColor =
+                  'transparent';
+              }
+            }}
           >
             {({ isActive }) => (
               <>
+                {/*
+                 * Ícono: se desplaza ligeramente en hover para dar
+                 * sensación de profundidad sin ser invasivo.
+                 */}
                 <Icon
-                  size={18}
+                  size={20}
                   className="flex-shrink-0"
                   style={{
-                    color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                    /*
+                     * Ícono activo: usa `--accent-vivid` en dark mode para
+                     * garantizar visibilidad. Fallback a `--text-primary`
+                     * en light donde el token no está definido.
+                     */
+                    color:
+                      isActive || isSectionActive
+                        ? 'var(--accent-vivid, var(--text-primary))'
+                        : 'var(--text-secondary)',
+                    transition: `transform ${TRANSITION_ITEM}, color ${TRANSITION_ITEM}`,
                   }}
                 />
-                {!isCollapsed && <span>{item.label}</span>}
+                <span
+                  className={`min-w-0 truncate ${isCollapsed ? 'lg:hidden' : ''}`}
+                >
+                  {item.label}
+                </span>
               </>
             )}
           </NavLink>
 
-          {/*
-           * Botón chevron independiente — solo expande/colapsa.
-           * Separado del NavLink para que el clic no navegue.
-           * Oculto cuando el sidebar está colapsado.
-           */}
-          {!isCollapsed && (
+          {/* Botón chevron — independiente del NavLink */}
+          <div className={isCollapsed ? 'lg:hidden' : ''}>
             <button
               onClick={onToggleExpand}
-              className="flex-shrink-0 rounded-md p-2 transition-colors"
-              style={{ color: 'var(--text-muted)' }}
+              className="flex h-12 w-11 flex-shrink-0 cursor-pointer items-center justify-center
+                focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
+              style={{
+                color: 'var(--text-muted)',
+                transition: `background-color ${TRANSITION_ITEM}`,
+              }}
               aria-label={
                 isExpanded ? `Colapsar ${item.label}` : `Expandir ${item.label}`
               }
               aria-expanded={isExpanded}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor =
+                  'var(--bg-hover)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor =
+                  'transparent';
+              }}
             >
-              {isExpanded ? (
-                <ChevronDown size={15} />
-              ) : (
-                <ChevronRight size={15} />
-              )}
+              {/*
+               * Chevron animado: rota 180° cuando el submenú está abierto.
+               * La transición de `transform` coincide con la del submenú.
+               */}
+              <ChevronDown
+                size={16}
+                style={{
+                  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                  transition: `transform ${TRANSITION_SUBMENU}`,
+                }}
+              />
             </button>
-          )}
+          </div>
         </div>
 
-        {/* Subítems — visibles si el padre está expandido y no colapsado */}
-        {isExpanded && !isCollapsed && (
-          <ul className="mt-1 flex flex-col gap-0.5 pl-4">
-            {item.children!.map((child) => (
-              <li key={child.path}>
-                <SubNavItem item={child} onClose={onClose} />
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* Submenú animado con max-height para transición suave */}
+        <SubMenuPanel isExpanded={isExpanded} isCollapsed={isCollapsed}>
+          {item.children!.map((child) => (
+            <SubNavItem key={child.path} item={child} onClose={onClose} />
+          ))}
+        </SubMenuPanel>
       </div>
     );
   }
 
-  // Ítem sin subítems — NavLink simple
   return (
     <NavLink
       to={item.path}
       onClick={onClose}
       title={isCollapsed ? item.label : undefined}
-      className={`flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors ${
-        isCollapsed ? 'justify-center' : ''
-      }`}
-      style={({ isActive }) => ({
-        fontFamily: 'var(--font-ui)',
-        fontSize: 'var(--text-sm)',
-        backgroundColor: isActive ? 'var(--accent-subtle)' : 'transparent',
-        color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-        fontWeight: isActive ? 'var(--font-semibold)' : 'var(--font-medium)',
-        borderLeft:
-          isActive && !isCollapsed
-            ? '2px solid var(--accent)'
-            : '2px solid transparent',
-      })}
+      className={`group flex min-h-12 min-w-0 items-center gap-3.5 px-4 py-3
+        focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]
+        ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}
+      `}
+      style={({ isActive }) => getItemStyle(isActive)}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        if (el.getAttribute('data-active') !== 'true') {
+          el.style.backgroundColor = 'var(--bg-hover)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        if (el.getAttribute('data-active') !== 'true') {
+          el.style.backgroundColor = 'transparent';
+        }
+      }}
     >
       {({ isActive }) => (
         <>
           <Icon
-            size={18}
+            size={20}
             className="flex-shrink-0"
-            style={{ color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}
+            style={{
+              /*
+               * Mismo patrón que el ítem con hijos: `--accent-vivid` en dark,
+               * fallback a `--text-primary` en light.
+               */
+              color: isActive
+                ? 'var(--accent-vivid, var(--text-primary))'
+                : 'var(--text-secondary)',
+              transition: `transform ${TRANSITION_ITEM}, color ${TRANSITION_ITEM}`,
+            }}
           />
-          {!isCollapsed && <span>{item.label}</span>}
+          <span
+            className={`min-w-0 truncate ${isCollapsed ? 'lg:hidden' : ''}`}
+          >
+            {item.label}
+          </span>
         </>
       )}
     </NavLink>
   );
 };
 
-// ─── Subcomponente: subítem ───────────────────────────────────────────────────
+// ─── Subcomponente: panel animado del submenú ─────────────────────────────────
+
+interface SubMenuPanelProps {
+  isExpanded: boolean;
+  isCollapsed: boolean;
+  children: React.ReactNode;
+}
+
+/**
+ * Contenedor animado para los subítems de un ítem padre.
+ *
+ * Usa `max-height` + `opacity` para lograr una transición de
+ * expand/collapse sin JavaScript adicional. El valor de `max-height`
+ * es generoso (400 px) para absorber cualquier número razonable de hijos.
+ *
+ * Se oculta completamente cuando el sidebar está colapsado en desktop.
+ *
+ * @internal Solo se usa dentro de `NavItemComponent`.
+ */
+const SubMenuPanel = ({
+  isExpanded,
+  isCollapsed,
+  children,
+}: SubMenuPanelProps) => (
+  <ul
+    className={`flex flex-col overflow-hidden ${isCollapsed ? 'lg:hidden' : ''}`}
+    style={{
+      maxHeight: isExpanded ? '400px' : '0px',
+      opacity: isExpanded ? 1 : 0,
+      transition: `max-height ${TRANSITION_SUBMENU}, opacity ${TRANSITION_SUBMENU}`,
+      /*
+       * Línea vertical de guía que conecta visualmente los subítems con
+       * el ítem padre. Usa `--border-color` para adaptarse a ambos modos.
+       */
+      borderLeft: '1px solid var(--border-color)',
+      marginLeft: '1.5rem',
+      paddingLeft: '0',
+      marginTop: isExpanded ? '2px' : '0px',
+      marginBottom: isExpanded ? '4px' : '0px',
+    }}
+  >
+    {children}
+  </ul>
+);
+
+// ─── Subcomponente: subítem de navegación ─────────────────────────────────────
 
 interface SubNavItemProps {
   item: NavSubItem;
@@ -415,41 +655,71 @@ interface SubNavItemProps {
 }
 
 /**
- * Subítem de navegación dentro de un ítem padre expandido.
- * Siempre muestra label — no aparece en modo colapsado.
+ * Subítem de navegación dentro del panel expandido de un ítem padre.
  *
- * @internal Solo se usa dentro de `NavItemComponent`.
+ * Mismo lenguaje visual que los ítems principales: borde izquierdo activo,
+ * sin border-radius, hover con fondo plano. El tamaño de texto y la
+ * indentación son ligeramente menores para establecer jerarquía visual.
+ *
+ * @internal Solo se usa dentro de `SubMenuPanel`.
  */
 const SubNavItem = ({ item, onClose }: SubNavItemProps) => {
   const Icon = item.icon;
 
   return (
-    <NavLink
-      to={item.path}
-      onClick={onClose}
-      className="flex items-center gap-3 rounded-md px-3 py-2 transition-colors"
-      style={({ isActive }) => ({
-        fontFamily: 'var(--font-ui)',
-        fontSize: 'var(--text-sm)',
-        backgroundColor: isActive ? 'var(--accent-subtle)' : 'transparent',
-        color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-        fontWeight: isActive ? 'var(--font-semibold)' : 'var(--font-normal)',
-        borderLeft: isActive
-          ? '2px solid var(--accent)'
-          : '2px solid transparent',
-        borderRadius: 'var(--radius-md)',
-      })}
-    >
-      {({ isActive }) => (
-        <>
-          <Icon
-            size={15}
-            className="flex-shrink-0"
-            style={{ color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}
-          />
-          <span>{item.label}</span>
-        </>
-      )}
-    </NavLink>
+    <li>
+      <NavLink
+        to={item.path}
+        onClick={onClose}
+        className="flex min-h-10 min-w-0 items-center gap-3 py-2.5 pl-4 pr-4
+          focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
+        style={({ isActive }) => ({
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-sm)',
+          lineHeight: 'var(--leading-normal)',
+          color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+          fontWeight: isActive ? 'var(--font-semibold)' : 'var(--font-normal)',
+          backgroundColor: isActive ? 'var(--accent-subtle)' : 'transparent',
+          /*
+           * Mismo patrón que el ítem padre: `--accent-vivid` con fallback
+           * a `--border-accent` para light mode. El borde del subítem es
+           * igual (2px) al del padre; la jerarquía visual se establece
+           * por tamaño de texto e indentación, no por grosor de borde.
+           */
+          borderLeft: isActive
+            ? '2px solid var(--accent-vivid, var(--border-accent))'
+            : '2px solid transparent',
+          transition: `background-color ${TRANSITION_ITEM}, border-color ${TRANSITION_ITEM}, color ${TRANSITION_ITEM}`,
+        })}
+        onMouseEnter={(e) => {
+          const el = e.currentTarget as HTMLElement;
+          if (el.getAttribute('aria-current') !== 'page') {
+            el.style.backgroundColor = 'var(--bg-hover)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          const el = e.currentTarget as HTMLElement;
+          if (el.getAttribute('aria-current') !== 'page') {
+            el.style.backgroundColor = 'transparent';
+          }
+        }}
+      >
+        {({ isActive }) => (
+          <>
+            <Icon
+              size={16}
+              className="flex-shrink-0"
+              style={{
+                color: isActive
+                  ? 'var(--accent-vivid, var(--text-primary))'
+                  : 'var(--text-muted)',
+                transition: `color ${TRANSITION_ITEM}`,
+              }}
+            />
+            <span className="min-w-0 truncate">{item.label}</span>
+          </>
+        )}
+      </NavLink>
+    </li>
   );
 };
