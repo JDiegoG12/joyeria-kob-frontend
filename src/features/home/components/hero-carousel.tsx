@@ -34,6 +34,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHeroBannerStore } from '@/store/hero-banner.store';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
+import { WHATSAPP_URL } from '@/config/contact';
 import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.jpg';
 
 /** Duración en ms entre cambios automáticos de slide. */
@@ -420,7 +421,7 @@ const MainBannerSlide = ({
 
           {/* CTA secundario — WhatsApp con ícono */}
           <a
-            href="https://wa.me/573135007459"
+            href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex cursor-pointer items-center justify-center gap-2 border px-5 py-2.5 transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"

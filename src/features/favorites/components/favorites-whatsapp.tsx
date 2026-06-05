@@ -9,9 +9,8 @@
 import { motion } from 'framer-motion';
 import { MessageCircle } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
+import { buildWhatsAppUrl } from '@/config/contact';
 import { useFavoriteStore } from '../store/favorite.store';
-
-const WHATSAPP_NUMBER = '573135007459';
 
 // ─── Helper: formatear precio ────────────────────────────────────────────────
 
@@ -50,7 +49,7 @@ export const FavoritesWhatsAppButton = () => {
       `${productLines}\n\n` +
       `Me gustaría recibir asesoría personalizada. ¡Gracias!`;
 
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    const url = buildWhatsAppUrl(message);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 

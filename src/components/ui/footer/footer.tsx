@@ -15,9 +15,11 @@ import {
   WhatsAppIcon,
 } from '@/components/ui/social-icons';
 import { useCategoryStore } from '@/store/category.store';
-
-const WHATSAPP_NUMBER = '3135007459';
-const WHATSAPP_URL = `https://wa.me/57${WHATSAPP_NUMBER}`;
+import {
+  WHATSAPP_URL,
+  PHONE_TEL_HREF,
+  PHONE_DISPLAY_NATIONAL,
+} from '@/config/contact';
 
 const INFO_LINKS = [
   'Términos y condiciones de uso - KOB Joyería',
@@ -106,8 +108,8 @@ export const Footer = () => {
             </FooterAnchor>
           </li>
           <li>
-            <FooterAnchor href={`tel:+57${WHATSAPP_NUMBER}`}>
-              313 500 7459
+            <FooterAnchor href={PHONE_TEL_HREF}>
+              {PHONE_DISPLAY_NATIONAL}
             </FooterAnchor>
           </li>
           <li>

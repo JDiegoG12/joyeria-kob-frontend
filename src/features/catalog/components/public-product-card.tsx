@@ -105,13 +105,16 @@ export const PublicProductCard = ({
         backgroundColor: 'var(--bg-secondary)',
       }}
     >
-      {/* Zona de imagen con padding */}
-      <div className="p-3">
-        {/* Imagen cuadrada con flechas encima */}
-        <div
-          className="relative aspect-square overflow-hidden"
-          style={{ backgroundColor: 'var(--bg-tertiary)' }}
-        >
+      {/*
+       * Zona de imagen a sangre — sin padding ni marco interno.
+       * La foto ocupa el 100% del ancho de la card, igual que en
+       * featured-product-card. `aspect-square` mantiene la proporción y
+       * `object-cover` rellena toda el área sin deformar el producto.
+       */}
+      <div
+        className="relative aspect-square overflow-hidden"
+        style={{ backgroundColor: 'var(--bg-tertiary)' }}
+      >
           {/* ─── FAVORITOS ───────────────────────────── */}
           <div className="absolute top-2 right-2 z-10">
             <FavoriteButton
@@ -188,7 +191,6 @@ export const PublicProductCard = ({
           </>
         )}
       </div>
-        </div>
       {/* Separador */}
       <div
         style={{ height: '1px', backgroundColor: 'var(--border-accent)' }}

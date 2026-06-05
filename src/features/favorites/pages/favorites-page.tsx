@@ -6,8 +6,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ShoppingBag, Trash2 } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2 } from 'lucide-react';
 
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { useAuthStore } from '@/store/auth.store';
 import { useFavoriteStore } from '../store/favorite.store';
 
@@ -75,7 +76,7 @@ export const FavoritesPage = () => {
             color: 'var(--text-muted)',
           }}
         >
-          ❤️
+          <Heart size={28} strokeWidth={1.5} aria-hidden="true" />
         </div>
 
         <h1
@@ -134,6 +135,11 @@ export const FavoritesPage = () => {
           className="mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8"
           style={{ maxWidth: 'var(--content-max-width)' }}
         >
+          <Breadcrumb
+            items={[{ label: 'Inicio', to: '/' }, { label: 'Favoritos' }]}
+            className="mb-5"
+          />
+
           <PageHeader count={0} loading />
 
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -176,6 +182,12 @@ export const FavoritesPage = () => {
         className="mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8"
         style={{ maxWidth: 'var(--content-max-width)' }}
       >
+        {/* Breadcrumb — ubicación actual + regreso al inicio */}
+        <Breadcrumb
+          items={[{ label: 'Inicio', to: '/' }, { label: 'Favoritos' }]}
+          className="mb-5"
+        />
+
         {/* Header */}
         <PageHeader count={favorites.length} />
 
@@ -197,7 +209,7 @@ export const FavoritesPage = () => {
                   color: 'var(--text-muted)',
                 }}
               >
-                ❤️
+                <Heart size={24} strokeWidth={1.5} aria-hidden="true" />
               </div>
 
               <p

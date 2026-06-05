@@ -42,6 +42,7 @@ import {
 } from '@/features/home/components/hero-carousel';
 import { CatalogNavBar } from '@/features/home/components/catalog-nav-bar';
 import { FeaturedProductsSection } from '@/features/featured-products/components/featured-products-section';
+import { buildWhatsAppUrl } from '@/config/contact';
 import GOLD_INVESTMENT_IMAGE from '@/assets/GOLD_INVESTMENT_IMAGE.jpg';
 import { SocialContentSection } from '../components/social-content-section';
 
@@ -77,36 +78,48 @@ const SERVICES = [
     title: 'Diseño',
     description:
       'Personalizamos piezas de orfebrería y construimos detalles que recuerdan momentos para siempre.',
+    message:
+      'Hola, me interesa el servicio de Diseño de joyas personalizadas. ¿Podrían darme más información?',
   },
   {
     icon: Hammer,
     title: 'Elaboración',
     description:
       'Recreamos piezas de joyería a medida: medallas, anillos, pulseras y otros encargos especiales.',
+    message:
+      'Hola, me interesa el servicio de Elaboración de una pieza a medida. ¿Podrían ayudarme?',
   },
   {
     icon: Wrench,
     title: 'Reparación',
     description:
       'Contamos con taller especializado para reparar con cuidado las joyas que tienen valor sentimental.',
+    message:
+      'Hola, quisiera información sobre el servicio de Reparación de una joya.',
   },
   {
     icon: ShieldCheck,
     title: 'Mantenimiento',
     description:
       'Extendemos la vida de tus joyas con limpieza, ajuste y revisión técnica de cada pieza.',
+    message:
+      'Hola, me interesa el servicio de Mantenimiento (limpieza y revisión) de mis joyas.',
   },
   {
     icon: MessageSquareText,
     title: 'Asesoría',
     description:
       'Te acompañamos en cada ocasión para elegir una pieza especial para alguien especial.',
+    message:
+      'Hola, me gustaría recibir Asesoría para elegir una joya. ¿Podrían orientarme?',
   },
   {
     icon: Handshake,
     title: 'SÉ MAYORISTA',
     description:
       'Trabaja con nosotros para obtener mejores precios y condiciones especiales.',
+    message:
+      'Hola, estoy interesado en ser mayorista de Joyería KOB. ¿Podrían contarme las condiciones?',
   },
 ] as const;
 
@@ -326,7 +339,12 @@ const ServicesSection = () => (
       <div className="mt-10 grid grid-cols-1 gap-y-3 sm:mt-12 sm:grid-cols-2 sm:gap-x-12 sm:gap-y-14 sm:pl-5 lg:grid-cols-3 lg:gap-x-14 lg:gap-y-16">
         {SERVICES.map((service, index) => (
           <RevealBlock key={service.title} delay={index * 0.04} className="h-full">
-            <ServiceCard {...service} />
+            <ServiceCard
+              icon={service.icon}
+              title={service.title}
+              description={service.description}
+              href={buildWhatsAppUrl(service.message)}
+            />
           </RevealBlock>
         ))}
       </div>
