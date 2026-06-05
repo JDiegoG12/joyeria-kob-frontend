@@ -76,6 +76,12 @@ const CatalogPage = lazy(() =>
   })),
 );
 
+
+const FavoritesPage = lazy(() =>
+  import('@/features/favorites/pages/favorites-page').then((m) => ({
+    default: m.FavoritesPage,
+  })),
+);
 // ─── Páginas de autenticación ─────────────────────────────────────────────────
 // Se agrupan en el mismo chunk porque se usan en flujos consecutivos
 // (el usuario pasa de login a registro en la misma sesión).
@@ -176,7 +182,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/favoritos',
-        element: withSuspense(<PlaceholderPage title="Favoritos" />),
+        element: withSuspense(<FavoritesPage />),
       },
       {
         path: '/perfil',

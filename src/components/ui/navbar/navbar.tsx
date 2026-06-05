@@ -4,7 +4,7 @@
  *
  * ## Layout (mockup v3)
  * - Izquierda : hamburguesa (móvil), logo y WhatsApp
- * - Derecha   : perfil, favoritos (placeholder) y toggle de tema
+ * - Derecha   : perfil, favoritos y toggle de tema
  *
  * ## IMPORTANTE
  * El logout NO usa navegación (`/logout`) porque cerrar sesión
@@ -16,7 +16,7 @@
  * - Móvil/Tablet : acciones compactas y menú lateral
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Heart, Menu, Moon, Sun, User } from 'lucide-react';
 
@@ -24,6 +24,11 @@ import { useThemeStore } from '@/store/theme.store';
 import { useAuthStore } from '@/store/auth.store';
 
 import { AuthService } from '@/features/auth/services/auth.service';
+
+import {
+  FavoriteCounterBadge,
+  useFavoriteStore,
+} from '@/features/favorites';
 
 import { MobileMenu } from '@/components/ui/navbar/mobile-menu';
 import { KobLogo } from '@/components/ui/navbar/kob-logo';
@@ -54,6 +59,23 @@ export const Navbar = () => {
   const { theme, toggleTheme } = useThemeStore();
 
   const { isAuthenticated, user } = useAuthStore();
+
+  /**
+   * Favoritos
+   */
+  const loadFavorites = useFavoriteStore(
+    (state) => state.loadFavorites,
+  );
+
+  const favoriteCount = useFavoriteStore(
+    (state) => state.favorites.length,
+  );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      void loadFavorites();
+    }
+  }, [isAuthenticated, loadFavorites]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -138,7 +160,10 @@ export const Navbar = () => {
           <div className="flex items-center justify-end gap-1 sm:gap-2">
             {/* Usuario autenticado */}
             {isAuthenticated ? (
-              <UserMenu name={user?.name ?? ''} role={user?.role ?? 'CLIENT'} />
+              <UserMenu
+                name={user?.name ?? ''}
+                role={user?.role ?? 'CLIENT'}
+              />
             ) : (
               <Link
                 to="/login"
@@ -155,15 +180,19 @@ export const Navbar = () => {
             {/* Favoritos */}
             <Link
               to={FAVORITES_PATH}
-              className={ICON_BUTTON_CLASSNAME}
+              className={`${ICON_BUTTON_CLASSNAME} relative`}
               style={{
                 color: pathname.startsWith(FAVORITES_PATH)
                   ? 'var(--text-primary)'
                   : 'var(--text-secondary)',
               }}
-              aria-label="Ir a favoritos"
+              aria-label={`Ir a favoritos${
+                favoriteCount > 0 ? ` (${favoriteCount})` : ''
+              }`}
             >
               <Heart size={21} aria-hidden="true" />
+
+              <FavoriteCounterBadge />
             </Link>
 
             {/* Tema */}
@@ -174,7 +203,9 @@ export const Navbar = () => {
                 color: 'var(--text-secondary)',
               }}
               aria-label={
-                theme === 'light' ? 'Activar modo oscuro' : 'Activar modo claro'
+                theme === 'light'
+                  ? 'Activar modo oscuro'
+                  : 'Activar modo claro'
               }
             >
               {theme === 'light' ? (
@@ -269,7 +300,10 @@ const UserMenu = ({ name, role }: UserMenuProps) => {
 
         {/* Admin */}
         {role === 'ADMIN' && (
-          <DropdownItem to="/admin/general" label="Panel admin" />
+          <DropdownItem
+            to="/admin/general"
+            label="Panel admin"
+          />
         )}
 
         <div
@@ -279,7 +313,7 @@ const UserMenu = ({ name, role }: UserMenuProps) => {
           }}
         />
 
-        {/* Logout CORRECTO */}
+        {/* Logout */}
         <button
           onClick={() => AuthService.logout()}
           role="menuitem"
@@ -314,7 +348,11 @@ interface DropdownItemProps {
 /**
  * Ítem normal de navegación del dropdown.
  */
-const DropdownItem = ({ to, label, danger = false }: DropdownItemProps) => (
+const DropdownItem = ({
+  to,
+  label,
+  danger = false,
+}: DropdownItemProps) => (
   <Link
     to={to}
     role="menuitem"
@@ -322,7 +360,9 @@ const DropdownItem = ({ to, label, danger = false }: DropdownItemProps) => (
     style={{
       fontFamily: 'var(--font-ui)',
       fontSize: 'var(--text-xs)',
-      fontWeight: danger ? 'var(--font-medium)' : 'var(--font-semibold)',
+      fontWeight: danger
+        ? 'var(--font-medium)'
+        : 'var(--font-semibold)',
       letterSpacing: 'var(--tracking-wide)',
       textTransform: 'uppercase',
       color: danger

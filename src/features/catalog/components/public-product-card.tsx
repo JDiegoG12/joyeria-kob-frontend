@@ -21,6 +21,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SERVER_URL } from '@/api/server-url';
 import type { Product } from '@/features/catalog/types/product.types';
 
+import { FavoriteButton } from '@/features/favorites';
+
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const FALLBACK_IMAGE =
@@ -110,9 +112,22 @@ export const PublicProductCard = ({
           className="relative aspect-square overflow-hidden"
           style={{ backgroundColor: 'var(--bg-tertiary)' }}
         >
+          {/* ─── FAVORITOS ───────────────────────────── */}
+          <div className="absolute top-2 right-2 z-10">
+            <FavoriteButton
+              productId={product.id}
+              productStatus={product.status}
+              variant="card"
+            />
+          </div>
+
           <img
             src={imageUrl}
-            alt={`${product.name}${hasMultipleImages ? ` — imagen ${activeIndex + 1} de ${images.length}` : ''}`}
+            alt={`${product.name}${
+              hasMultipleImages
+                ? ` — imagen ${activeIndex + 1} de ${images.length}`
+                : ''
+            }`}
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             loading="lazy"
             onError={(e) => {

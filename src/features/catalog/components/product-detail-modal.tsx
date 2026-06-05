@@ -16,10 +16,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
-import { X, Heart, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
 import { SERVER_URL } from '@/api/server-url';
 import type { Product } from '@/features/catalog/types/product.types';
+import { FavoriteButton } from '@/features/favorites';
 import FALLBACK_IMAGE from '@/assets/HERO_IMAGE.jpg';
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -549,17 +550,11 @@ export const ProductDetailModal = ({
                       >
                         <WhatsAppIcon size={17} /> Comprar por WhatsApp
                       </a>
-                      <button
-                        type="button"
-                        className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center border transition-colors duration-200 hover:bg-[var(--bg-hover)]"
-                        style={{
-                          borderColor: 'var(--border-strong)',
-                          color: 'var(--text-accent)',
-                        }}
-                        aria-label="Añadir a favoritos"
-                      >
-                        <Heart size={18} strokeWidth={1.5} />
-                      </button>
+                      <FavoriteButton
+                        productId={product.id}
+                        productStatus={product.status}
+                        variant="detail"
+                      />
                     </div>
                   </div>
                 </div>
