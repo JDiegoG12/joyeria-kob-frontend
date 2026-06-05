@@ -112,7 +112,7 @@ export const ProductCard = ({
 
   return (
     <article
-      className="group overflow-hidden rounded-[24px] transition-all duration-300 ease-out hover:-translate-y-1 sm:rounded-[28px]"
+      className="group flex h-full flex-col overflow-hidden rounded-[24px] transition-all duration-300 ease-out hover:-translate-y-1 sm:rounded-[28px]"
       style={{
         border: '1px solid var(--border-color)',
         backgroundColor: 'var(--bg-secondary)',
@@ -245,7 +245,7 @@ export const ProductCard = ({
         </div>
       </div>
 
-      <div className="p-4 sm:p-6">
+      <div className="flex flex-1 flex-col p-4 sm:p-6">
         {categoryLabel && (
           <p
             className="mb-2 sm:mb-3"
@@ -262,82 +262,74 @@ export const ProductCard = ({
           </p>
         )}
 
-        <div className="flex items-start justify-between gap-3 sm:gap-4">
-          <div className="min-w-0">
-            <h3
-              className="line-clamp-2"
-              style={{
-                fontFamily: 'var(--font-heading)',
-                fontSize: '1.125rem',
-                fontWeight: 'var(--font-semibold)',
-                color: 'var(--text-primary)',
-                lineHeight: '1.2',
-              }}
-            >
-              {product.name}
-            </h3>
-            <p
-              className="mt-1 line-clamp-2"
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.8125rem',
-                color: 'var(--text-secondary)',
-              }}
-            >
-              {product.description}
-            </p>
-          </div>
-
-          <div className="flex-shrink-0 text-right">
-            <p
-              style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: '0.6875rem',
-                fontWeight: 'var(--font-medium)',
-                color: 'var(--text-muted)',
-                letterSpacing: 'var(--tracking-wide)',
-                textTransform: 'uppercase',
-              }}
-            >
-              Precio
-            </p>
-            <p
-              className="mt-1"
-              style={{
-                fontFamily: 'var(--font-heading)',
-                fontSize: '1rem',
-                fontWeight: 'var(--font-semibold)',
-                color: 'var(--accent-vivid, var(--accent))',
-                lineHeight: '1.2',
-              }}
-            >
-              {formatPrice(product.calculatedPrice)}
-            </p>
-          </div>
+        <div className="min-h-[3.25rem]">
+          <h3
+            className="line-clamp-2"
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: '1.125rem',
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--text-primary)',
+              lineHeight: '1.2',
+            }}
+          >
+            {product.name}
+          </h3>
+          <p
+            className="mt-1 line-clamp-2"
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.8125rem',
+              color: 'var(--text-secondary)',
+              lineHeight: '1.35',
+            }}
+          >
+            {product.description}
+          </p>
         </div>
 
-        <div
-          className="mt-4 grid grid-cols-2 gap-2 rounded-2xl p-2.5 sm:mt-5 sm:gap-3 sm:p-3"
-          style={{
-            backgroundColor: 'var(--bg-primary)',
-            border: '1px solid var(--border-color)',
-          }}
-        >
-          <MetricTile
-            icon={<Ruler size={14} style={{ color: 'var(--text-muted)' }} />}
+        <div className="mt-3 flex items-baseline justify-between gap-3 sm:mt-4">
+          <span
+            style={{
+              fontFamily: 'var(--font-ui)',
+              fontSize: '0.6875rem',
+              fontWeight: 'var(--font-medium)',
+              color: 'var(--text-muted)',
+              letterSpacing: 'var(--tracking-wide)',
+              textTransform: 'uppercase',
+            }}
+          >
+            Precio
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: '1.25rem',
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--accent-vivid, var(--accent))',
+              lineHeight: '1.2',
+            }}
+          >
+            {formatPrice(product.calculatedPrice)}
+          </span>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-4">
+          <MetricChip
+            icon={<Ruler size={13} style={{ color: 'var(--text-muted)' }} />}
             label="Peso base"
             value={`${product.baseWeight} g`}
           />
-          <MetricTile
+          <MetricChip
             icon={
-              <SquareStack size={14} style={{ color: 'var(--text-muted)' }} />
+              <SquareStack size={13} style={{ color: 'var(--text-muted)' }} />
             }
             label="Stock"
             value={`${product.stock}`}
           />
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 sm:mt-5">
+        <div className="mt-auto flex flex-col gap-2 pt-4 sm:pt-5">
           <button
             type="button"
             onClick={() => onEdit(product)}
@@ -423,39 +415,42 @@ export const ProductCard = ({
   );
 };
 
-interface MetricTileProps {
+interface MetricChipProps {
   icon: React.ReactNode;
   label: string;
   value: string;
 }
 
-const MetricTile = ({ icon, label, value }: MetricTileProps) => (
-  <div className="rounded-xl p-2">
-    <div className="flex items-center gap-2">
-      {icon}
-      <p
-        style={{
-          fontFamily: 'var(--font-ui)',
-          fontSize: '0.6875rem',
-          fontWeight: 'var(--font-medium)',
-          color: 'var(--text-muted)',
-          letterSpacing: 'var(--tracking-wide)',
-          textTransform: 'uppercase',
-        }}
-      >
-        {label}
-      </p>
-    </div>
-    <p
-      className="mt-2"
+const MetricChip = ({ icon, label, value }: MetricChipProps) => (
+  <span
+    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5"
+    style={{
+      backgroundColor: 'var(--bg-primary)',
+      border: '1px solid var(--border-color)',
+    }}
+  >
+    {icon}
+    <span
       style={{
         fontFamily: 'var(--font-heading)',
-        fontSize: '0.9375rem',
+        fontSize: '0.8125rem',
         fontWeight: 'var(--font-semibold)',
         color: 'var(--text-primary)',
+        lineHeight: '1',
       }}
     >
       {value}
-    </p>
-  </div>
+    </span>
+    <span
+      style={{
+        fontFamily: 'var(--font-ui)',
+        fontSize: '0.6875rem',
+        fontWeight: 'var(--font-medium)',
+        color: 'var(--text-muted)',
+        lineHeight: '1',
+      }}
+    >
+      {label}
+    </span>
+  </span>
 );

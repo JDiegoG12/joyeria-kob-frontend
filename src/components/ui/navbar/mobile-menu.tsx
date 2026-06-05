@@ -352,9 +352,11 @@ export const MobileMenu = ({
             <div className="flex flex-1 flex-col px-5 py-6">
               {/*
                * Botón de contacto WhatsApp.
-               * `whitespace-nowrap` evita fragmentar el número en viewports
-               * estrechos (~320px). El layout usa `flex` con `min-w-0` para
-               * contener correctamente ícono y texto en una fila.
+               * Muestra un CTA amigable ("Contáctanos") en lugar del número
+               * completo, coherente con el navbar de desktop. El enlace sigue
+               * apuntando a `wa.me` y el número se conserva en el `aria-label`
+               * para lectores de pantalla. `whitespace-nowrap` mantiene el
+               * texto en una sola línea en viewports estrechos (~320px).
                */}
               <motion.a
                 variants={resolvedItemVariants}
@@ -370,14 +372,14 @@ export const MobileMenu = ({
                   fontWeight: 'var(--font-medium)',
                   letterSpacing: 'var(--tracking-wide)',
                 }}
-                aria-label={`Contactar por WhatsApp al +57 ${WHATSAPP_NUMBER}`}
+                aria-label={`Contáctanos por WhatsApp al +57 ${WHATSAPP_NUMBER}`}
               >
                 <WhatsAppIcon
                   size={18}
                   className="shrink-0"
                   aria-hidden="true"
                 />
-                <span className="whitespace-nowrap">+57 {WHATSAPP_NUMBER}</span>
+                <span className="whitespace-nowrap">Contáctanos</span>
               </motion.a>
 
               {/* ── Navegación principal ─────────────────────────────────── */}

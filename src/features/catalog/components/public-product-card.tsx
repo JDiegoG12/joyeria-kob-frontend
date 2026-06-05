@@ -4,7 +4,7 @@
  *
  * ## Estructura visual (fiel al mockup)
  * - Borde exterior en toda la card
- * - Imagen con padding interno — no toca los bordes de la card
+ * - Imagen a sangre — ocupa todo el ancho de la card, sin marco interno
  * - Flechas de navegación izquierda/derecha sobre la imagen (solo si hay más de 1 imagen)
  * - Nombre y precio centrados debajo de la imagen
  * - Color azul de marca (--text-accent) para nombre y precio
@@ -135,59 +135,58 @@ export const PublicProductCard = ({
             }}
           />
 
-          {/* Flechas de navegación — solo si hay más de 1 imagen */}
-          {hasMultipleImages && (
-            <>
-              {/* Flecha izquierda */}
-              <button
-                type="button"
-                onClick={handlePrev}
-                aria-label="Imagen anterior"
-                className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-accent)',
-                  color: 'var(--text-accent)',
-                }}
-              >
-                <ChevronLeft size={14} />
-              </button>
+        {/* Flechas de navegación — solo si hay más de 1 imagen */}
+        {hasMultipleImages && (
+          <>
+            {/* Flecha izquierda */}
+            <button
+              type="button"
+              onClick={handlePrev}
+              aria-label="Imagen anterior"
+              className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+              style={{
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-accent)',
+                color: 'var(--text-accent)',
+              }}
+            >
+              <ChevronLeft size={14} />
+            </button>
 
-              {/* Flecha derecha */}
-              <button
-                type="button"
-                onClick={handleNext}
-                aria-label="Siguiente imagen"
-                className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-accent)',
-                  color: 'var(--text-accent)',
-                }}
-              >
-                <ChevronRight size={14} />
-              </button>
+            {/* Flecha derecha */}
+            <button
+              type="button"
+              onClick={handleNext}
+              aria-label="Siguiente imagen"
+              className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+              style={{
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-accent)',
+                color: 'var(--text-accent)',
+              }}
+            >
+              <ChevronRight size={14} />
+            </button>
 
-              {/* Indicador de puntos */}
-              <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
-                {images.map((_, idx) => (
-                  <span
-                    key={idx}
-                    className="block h-1.5 w-1.5 rounded-full transition-colors duration-200"
-                    style={{
-                      backgroundColor:
-                        idx === activeIndex
-                          ? 'var(--bg-secondary)'
-                          : 'rgba(255,255,255,0.5)',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                    }}
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+            {/* Indicador de puntos */}
+            <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
+              {images.map((_, idx) => (
+                <span
+                  key={idx}
+                  className="block h-1.5 w-1.5 rounded-full transition-colors duration-200"
+                  style={{
+                    backgroundColor:
+                      idx === activeIndex
+                        ? 'var(--bg-secondary)'
+                        : 'rgba(255,255,255,0.5)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                  }}
+                  aria-hidden="true"
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Separador */}

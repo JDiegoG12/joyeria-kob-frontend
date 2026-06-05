@@ -45,7 +45,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Filter, Search } from 'lucide-react';
@@ -456,7 +456,15 @@ export const CatalogPage = () => {
           className="mx-auto px-4 sm:px-6 lg:px-8"
           style={{ maxWidth: 'var(--content-max-width)' }}
         >
-          <div className="flex gap-0 py-8 sm:py-12 lg:gap-0">
+          {/*
+           * Breadcrumb de retorno al inicio. Único affordance explícito para
+           * volver a la home desde el catálogo (antes solo el logo del navbar
+           * o el botón "atrás" del navegador). Se sitúa arriba de todo el
+           * layout para servir por igual a desktop y móvil.
+           */}
+          <CatalogBreadcrumb />
+
+          <div className="flex gap-0 pt-5 pb-8 sm:pt-6 sm:pb-12 lg:gap-0">
             {/* ── Sidebar 1/4 — solo desktop ── */}
             <div
               className="hidden lg:block lg:w-1/4 flex-shrink-0 border-r pr-8"
@@ -743,8 +751,19 @@ export const CatalogPage = () => {
 
               </motion.div>
 
-              {/* ── Grid de productos ── */}
-              <AnimatePresence mode="wait">
+              {/* ── Grid de productos ──
+               *
+               * `mode="popLayout"` (no `"wait"`): al cambiar de categoría
+               * varias veces seguidas, el hijo alterna skeleton↔grid más
+               * rápido que la animación de salida (0.2s). Con `mode="wait"`,
+               * AnimatePresence serializa las transiciones y, si una salida se
+               * interrumpe, su callback de fin no dispara → el hijo siguiente
+               * (el grid real) nunca se monta y el skeleton queda congelado
+               * pese a que `loadingProducts` ya es `false`. `popLayout` no
+               * serializa: saca al que sale del flujo y monta el nuevo de
+               * inmediato, eliminando ese deadlock sin perder las animaciones.
+               */}
+              <AnimatePresence mode="popLayout">
                 {loadingProducts ? (
                   <motion.div
                     key="skeleton"
@@ -849,6 +868,71 @@ export const CatalogPage = () => {
 
 // ─── Componentes auxiliares ───────────────────────────────────────────────────
 
+/**
+ * Breadcrumb "Inicio › Catálogo".
+ *
+ * Provee el camino de vuelta a la home y, a la vez, comunica la ubicación
+ * actual. Tipografía alineada con la barra de catálogo (`font-ui`, `text-xs`,
+ * uppercase, `tracking-widest`) para no romper la estética editorial.
+ *
+ * - **Inicio**: `Link` a `/`. En hover sube de `--text-secondary` a
+ *   `--text-accent` y se subraya, señalando claramente que es navegable. El
+ *   cambio de color se hace manipulando el estilo del nodo en
+ *   `onMouseEnter/Leave`, mismo patrón que el foco del buscador del catálogo.
+ * - **Catálogo**: ubicación actual (`aria-current="page"`), no navegable.
+ */
+const CatalogBreadcrumb = () => (
+  <motion.nav
+    aria-label="Ruta de navegación"
+    initial={{ opacity: 0, y: -6 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3, ease: 'easeOut' }}
+    className="flex items-center gap-2 pt-6 sm:pt-10"
+  >
+    <Link
+      to="/"
+      className="rounded-sm transition-colors duration-200 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+      style={{
+        fontFamily: 'var(--font-ui)',
+        fontSize: 'var(--text-xs)',
+        fontWeight: 'var(--font-medium)',
+        letterSpacing: 'var(--tracking-widest)',
+        textTransform: 'uppercase',
+        color: 'var(--text-secondary)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.color = 'var(--text-accent)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.color = 'var(--text-secondary)';
+      }}
+    >
+      Inicio
+    </Link>
+
+    <ChevronRight
+      size={13}
+      strokeWidth={1.8}
+      aria-hidden="true"
+      style={{ color: 'var(--text-muted)', flexShrink: 0 }}
+    />
+
+    <span
+      aria-current="page"
+      style={{
+        fontFamily: 'var(--font-ui)',
+        fontSize: 'var(--text-xs)',
+        fontWeight: 'var(--font-semibold)',
+        letterSpacing: 'var(--tracking-widest)',
+        textTransform: 'uppercase',
+        color: 'var(--text-accent)',
+      }}
+    >
+      Catálogo
+    </span>
+  </motion.nav>
+);
+
 const ProductSkeletonGrid = () => (
   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
     {Array.from({ length: 6 }).map((_, i) => (
@@ -861,12 +945,10 @@ const ProductSkeletonGrid = () => (
           animationDelay: `${i * 80}ms`,
         }}
       >
-        <div className="p-3">
-          <div
-            className="aspect-square w-full"
-            style={{ backgroundColor: 'var(--bg-tertiary)' }}
-          />
-        </div>
+        <div
+          className="aspect-square w-full"
+          style={{ backgroundColor: 'var(--bg-tertiary)' }}
+        />
         <div
           className="h-px w-full"
           style={{ backgroundColor: 'var(--border-color)' }}
