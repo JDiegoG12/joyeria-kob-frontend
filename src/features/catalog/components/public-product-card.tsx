@@ -188,7 +188,7 @@ export const PublicProductCard = ({
           </>
         )}
       </div>
-
+        </div>
       {/* Separador */}
       <div
         style={{ height: '1px', backgroundColor: 'var(--border-accent)' }}
