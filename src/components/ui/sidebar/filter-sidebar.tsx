@@ -1,12 +1,12 @@
 /**
  * @file filter-sidebar.tsx
- * @description Drawer de filtros del catálogo de Joyería KOB.
+ * @description Sidebar de filtros del catálogo de Joyería KOB.
  *
  * ## Estrategia de posicionamiento
- * El panel ya no ocupa una columna fija del catálogo. Se renderiza como
- * drawer superpuesto desde la derecha:
- * - Móvil: 100% del ancho para foco total.
- * - Desktop: ancho controlado para mantener el catálogo visible detrás.
+ * El sidebar es `fixed` en ambos contextos, con `top` y `height` distintos
+ * controlados por la clase `.sidebar-panel` en `tokens.css`:
+ * - Móvil: `top=0`, `height=100vh`, `paddingTop=navbar-height`
+ * - Desktop: `top=navbar-height`, `height=calc(100vh - navbar-height)`, `paddingTop=0`
  *
  * ## Interacción con categorías
  *
@@ -23,7 +23,7 @@
  *
  * ## Conexión con el store
  * Consume `useFilterStore` directamente. No recibe props de datos —
- * solo `isOpen` y `onClose` para el drawer.
+ * solo `isOpen` y `onClose` para el cajón móvil.
  *
  * ## Uso
  * ```tsx
@@ -40,14 +40,14 @@ import { useFilterStore } from '@/store/filter.store';
 import type { JewelryCategory } from '@/features/catalog/types/filter.types';
 
 interface FilterSidebarProps {
-  /** Si el drawer está abierto. */
+  /** Si el cajón está abierto en móvil/tablet. */
   isOpen: boolean;
-  /** Callback para cerrar el drawer. */
+  /** Callback para cerrar el cajón en móvil/tablet. */
   onClose: () => void;
 }
 
 /**
- * Drawer de filtros del catálogo.
+ * Sidebar de filtros del catálogo.
  * Carga las categorías al montarse y reacciona al store de filtros.
  */
 export const FilterSidebar = ({ isOpen, onClose }: FilterSidebarProps) => {
@@ -69,9 +69,9 @@ export const FilterSidebar = ({ isOpen, onClose }: FilterSidebarProps) => {
 
   return (
     <>
-      {/* ── Overlay oscuro ───────────────────────────────────────────────────── */}
+      {/* ── Overlay oscuro — solo móvil/tablet ───────────────────────────────── */}
       <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-30 transition-opacity duration-300 lg:hidden ${
           isOpen
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0'
@@ -81,73 +81,49 @@ export const FilterSidebar = ({ isOpen, onClose }: FilterSidebarProps) => {
         aria-hidden="true"
       />
 
-      {/* ── Panel principal del drawer ────────────────────────────────────────── */}
+      {/* ── Panel principal del sidebar ───────────────────────────────────────── */}
       <aside
         className={`
-          fixed top-0 right-0 z-[60] flex h-dvh w-full flex-col
-          overflow-hidden border-l border-[var(--border-color)] dark:border-white/5
-          backdrop-blur-2xl
+          fixed left-0 z-40 flex flex-col
           transition-transform duration-300 ease-in-out
-          sm:max-w-[420px]
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+          lg:translate-x-0 lg:transition-none
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          sidebar-panel
         `}
         style={{
-          backgroundColor:
-            'color-mix(in srgb, var(--bg-secondary) 86%, transparent)',
-          boxShadow: '0 34px 120px rgba(0, 0, 0, 0.22)',
-          backdropFilter: 'blur(28px) saturate(170%)',
-          WebkitBackdropFilter: 'blur(28px) saturate(170%)',
+          width: 'var(--sidebar-width)',
+          backgroundColor: 'var(--bg-sidebar)',
+          borderRight: '1px solid var(--border-color)',
+          overflowY: 'auto',
         }}
-        role="dialog"
-        aria-modal="true"
         aria-label="Filtros del catálogo"
       >
         {/* ── Cabecera: título + botones de acción ─────────────────────────────── */}
-        <div className="flex flex-shrink-0 items-start justify-between gap-4 border-b border-[var(--border-color)] px-6 py-6 dark:border-white/5">
-          <div className="min-w-0">
+        <div
+          className="flex flex-shrink-0 items-center justify-between px-5 py-4"
+          style={{ borderBottom: '1px solid var(--border-color)' }}
+        >
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={16} style={{ color: 'var(--accent)' }} />
             <span
-              className="mb-2 inline-flex items-center gap-2"
               style={{
                 fontFamily: 'var(--font-ui)',
-                fontSize: 'var(--text-xs)',
-                fontWeight: 'var(--font-bold)',
-                color: 'var(--accent)',
+                fontSize: 'var(--text-sm)',
+                fontWeight: 'var(--font-semibold)',
+                color: 'var(--text-primary)',
                 letterSpacing: 'var(--tracking-wide)',
                 textTransform: 'uppercase',
               }}
             >
-              <SlidersHorizontal size={15} />
-              Selección privada
-            </span>
-            <h2
-              style={{
-                fontFamily: 'var(--font-heading)',
-                fontSize: 'var(--text-2xl)',
-                fontWeight: 'var(--font-bold)',
-                lineHeight: 'var(--leading-tight)',
-                color: 'var(--text-primary)',
-              }}
-            >
               Filtros
-            </h2>
-            <p
-              className="mt-2"
-              style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: 'var(--text-sm)',
-                color: 'var(--text-secondary)',
-              }}
-            >
-              Refina el catálogo por categoría y colección.
-            </p>
+            </span>
           </div>
 
-          <div className="flex flex-shrink-0 items-center gap-2">
+          <div className="flex items-center gap-2">
             {/* Botón limpiar — solo cuando hay filtros activos */}
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="cursor-pointer rounded-md px-3 py-2 transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                 style={{
                   fontFamily: 'var(--font-ui)',
                   fontSize: 'var(--text-xs)',
@@ -159,19 +135,20 @@ export const FilterSidebar = ({ isOpen, onClose }: FilterSidebarProps) => {
               </button>
             )}
 
+            {/* Botón cerrar — solo en móvil/tablet */}
             <button
               onClick={onClose}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-              style={{ color: 'var(--text-secondary)' }}
+              className="rounded-md p-1 lg:hidden"
+              style={{ color: 'var(--text-muted)' }}
               aria-label="Cerrar filtros"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
 
         {/* ── Cuerpo: lista de categorías con scroll propio ────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-4 py-5">
+        <div className="flex-1 overflow-y-auto py-4">
           {/* Estado: cargando */}
           {isLoading && (
             <div className="flex flex-col gap-3 px-5">
@@ -213,7 +190,7 @@ export const FilterSidebar = ({ isOpen, onClose }: FilterSidebarProps) => {
 
           {/* Estado: datos listos */}
           {!isLoading && !error && (
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col">
               {categories.map((category) => (
                 <CategoryItem
                   key={category.id}
@@ -289,24 +266,24 @@ const CategoryItem = ({ category }: CategoryItemProps) => {
       {/* ── Cabecera de la categoría: expande/colapsa visualmente ── */}
       <button
         onClick={() => toggleExpanded(category.id)}
-        className="flex w-full cursor-pointer items-center justify-between rounded-md px-4 py-3.5 transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+        className="flex w-full items-center justify-between px-5 py-3 transition-colors"
         style={{
           backgroundColor: hasActiveFilter
             ? 'var(--accent-subtle)'
             : 'transparent',
-          boxShadow: hasActiveFilter
-            ? 'inset 3px 0 0 var(--accent), inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent)'
-            : 'inset 3px 0 0 transparent',
+          borderLeft: hasActiveFilter
+            ? '3px solid var(--accent)'
+            : '3px solid transparent',
         }}
       >
         <span className="flex items-center gap-2">
           <span
             style={{
               fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-base)',
+              fontSize: 'var(--text-sm)',
               fontWeight: hasActiveFilter
                 ? 'var(--font-semibold)'
-                : 'var(--font-medium)',
+                : 'var(--font-normal)',
               color: hasActiveFilter ? 'var(--accent)' : 'var(--text-primary)',
             }}
           >
@@ -353,7 +330,7 @@ const CategoryItem = ({ category }: CategoryItemProps) => {
           <li>
             <button
               onClick={() => selectAllInCategory(category.id)}
-              className="flex w-full cursor-pointer items-center gap-3 rounded-md py-2.5 pl-8 pr-5 transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+              className="flex w-full items-center gap-3 py-2 pl-8 pr-5 transition-colors"
               style={{
                 backgroundColor: isAllSelected
                   ? 'var(--bg-active)'
@@ -409,7 +386,7 @@ const CategoryItem = ({ category }: CategoryItemProps) => {
               <li key={sub.id}>
                 <button
                   onClick={() => toggleSubCategory(sub.id, category.id)}
-                  className="flex w-full cursor-pointer items-center gap-3 rounded-md py-2.5 pl-8 pr-5 transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                  className="flex w-full items-center gap-3 py-2 pl-8 pr-5 transition-colors"
                   style={{
                     backgroundColor: isSubActive
                       ? 'var(--bg-active)'
