@@ -21,12 +21,10 @@ import { X, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
 import { useCategoryStore } from '@/store/category.store';
 import { SERVER_URL } from '@/api/server-url';
+import { buildWhatsAppUrl } from '@/config/contact';
 import type { Product } from '@/features/catalog/types/product.types';
 import { FavoriteButton } from '@/features/favorites';
 import FALLBACK_IMAGE from '@/assets/HERO_IMAGE.jpg';
-// ─── Constantes ──────────────────────────────────────────────────────────────
-
-const WHATSAPP_NUMBER = '573135007459';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -38,12 +36,11 @@ const resolveImageUrl = (filename: string): string =>
     ? filename
     : `${SERVER_URL}/uploads/products/${filename}`;
 
-const buildWhatsAppUrl = (productName: string): string => {
-  const message = encodeURIComponent(
+/** URL de WhatsApp con un mensaje pre-redactado sobre la joya consultada. */
+const buildProductWhatsAppUrl = (productName: string): string =>
+  buildWhatsAppUrl(
     `Hola, me interesa la joya "${productName}" que vi en el catálogo. ¿Podrían darme más información?`,
   );
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
-};
 
 const parseSpecifications = (
   specs: Record<string, unknown>,
@@ -584,12 +581,18 @@ export const ProductDetailModal = ({
                       fabricación estimado de 10–20 días hábiles.
                     </p>
 
-                    <div className="mt-5 flex items-center gap-3">
+                    {/*
+                     * items-stretch: ambos botones igualan la altura de la fila.
+                     * El CTA de compra (flex-1) domina; el favorito es un cuadrado
+                     * de icono (aspect-square) que deriva su ancho de esa altura
+                     * → cuadrado perfecto, misma altura, jerarquía correcta.
+                     */}
+                    <div className="mt-5 flex items-stretch gap-3">
                       <a
-                        href={buildWhatsAppUrl(product.name || 'Joya')}
+                        href={buildProductWhatsAppUrl(product.name || 'Joya')}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex flex-1 cursor-pointer items-center justify-center gap-2.5 border px-5 py-3.5 text-center transition-colors duration-200 hover:bg-[var(--bg-hover)]"
+                        className="flex flex-1 cursor-pointer items-center justify-center gap-2.5 whitespace-nowrap border px-5 py-3.5 text-center transition-colors duration-200 hover:bg-[var(--bg-hover)]"
                         style={{
                           fontFamily: 'var(--font-ui)',
                           fontSize: 'var(--text-sm)',
@@ -603,7 +606,7 @@ export const ProductDetailModal = ({
                       <FavoriteButton
                         productId={product.id}
                         productStatus={product.status}
-                        variant="detail"
+                        variant="detail-icon"
                       />
                     </div>
                   </div>

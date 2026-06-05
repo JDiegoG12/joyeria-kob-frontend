@@ -33,9 +33,7 @@ import {
 import { MobileMenu } from '@/components/ui/navbar/mobile-menu';
 import { KobLogo } from '@/components/ui/navbar/kob-logo';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
-
-const WHATSAPP_NUMBER = '313 5007459';
-const WHATSAPP_URL = 'https://wa.me/573135007459';
+import { WHATSAPP_URL, PHONE_DISPLAY } from '@/config/contact';
 
 const FAVORITES_PATH = '/favoritos';
 
@@ -164,7 +162,7 @@ export const Navbar = () => {
                 letterSpacing: 'var(--tracking-widest)',
                 textTransform: 'uppercase',
               }}
-              aria-label={`Contáctanos por WhatsApp al +57 ${WHATSAPP_NUMBER}`}
+              aria-label={`Contáctanos por WhatsApp al ${PHONE_DISPLAY}`}
             >
               <WhatsAppIcon size={18} aria-hidden="true" />
 

@@ -91,6 +91,21 @@
     --accent-active: #0b0d22;
     --accent-text: #ffffff;
     --accent-subtle: rgba(19, 22, 56, 0.08);
+    /* Acento "vivo" para marcadores finos (barras, puntos, rieles, pulgares)
+       que se dibujan SOBRE el fondo de página, no como botón relleno. En light
+       el azul marino contrasta de sobra (12.6:1); su par en dark sube a un azul
+       más luminoso para no desaparecer sobre #1A1A1A. Mismo token, ambos temas. */
+    --accent-vivid: #131638;
+
+    /* Favoritos — rojo semántico del corazón "me gusta".
+       Independiente del azul de marca para que el estado activo se lea sobre
+       cualquier foto. Contraste de #D6294F sobre chip claro (#F3F3F3) ≈ 4.6:1.
+         --favorite        → trazo y relleno del corazón marcado
+         --favorite-hover  → hover / pressed
+         --favorite-subtle → tinte translúcido para fondos (chips, botón detalle) */
+    --favorite: #d6294f;
+    --favorite-hover: #b71f40;
+    --favorite-subtle: rgba(214, 41, 79, 0.1);
 
     /* Announcement bar */
     --announcement-bg: #131638;
@@ -230,6 +245,12 @@
     --accent-text: #ffffff;
     --accent-subtle: rgba(19, 22, 56, 0.18);
     --accent-vivid: #4a50c4;
+
+    /* Favoritos — rojo más luminoso para destacar sobre fondos/fotos oscuras.
+       Contraste de #FF5277 sobre chip oscuro (#1A1A1A) ≈ 5.6:1. */
+    --favorite: #ff5277;
+    --favorite-hover: #ff6e8c;
+    --favorite-subtle: rgba(255, 82, 119, 0.16);
 
     /* Announcement bar */
     --announcement-bg: #0b0d22;

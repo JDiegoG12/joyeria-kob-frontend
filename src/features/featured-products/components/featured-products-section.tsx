@@ -21,8 +21,8 @@
  * ## Dimensión de tarjetas en desktop
  * El título usa el `--content-max-width` general (1280 px) pero la grilla se
  * constriñe deliberadamente para reducir el tamaño de cada tarjeta:
- * `lg:max-w-172` (43 rem ≈ 688 px) deja tarjetas de ~215 px de ancho, y solo
- * en monitores grandes (`2xl`, ≥1536 px) crece a `max-w-200` (50 rem ≈ 800 px).
+ * `lg:max-w-148` (37 rem ≈ 592 px) deja tarjetas de ~184 px de ancho, y solo
+ * en monitores grandes (`2xl`, ≥1536 px) crece a `max-w-170` (42.5 rem ≈ 680 px).
  *
  * El motivo es que en laptops de poco alto (p. ej. 1366×768 — que en Tailwind
  * caen en el breakpoint `xl`, ≥1280 px) una tarjeta cuadrada de ~325 px no
@@ -116,7 +116,7 @@ const SectionHeading = ({ title }: { title: string }) => (
  * @internal
  */
 const SkeletonGrid = () => (
-  <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-4 sm:gap-5 lg:max-w-172 lg:grid-cols-3 lg:gap-5 2xl:max-w-200">
+  <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-4 sm:gap-5 lg:max-w-148 lg:grid-cols-3 lg:gap-5 2xl:max-w-170">
     {Array.from({ length: 6 }).map((_, index) => (
       <div
         key={index}
@@ -165,6 +165,7 @@ const SkeletonGrid = () => (
  */
 export const FeaturedProductsSection = () => {
   const { items, isFetching, fetchFeatured } = useFeaturedProductStore();
+  const shouldReduceMotion = useReducedMotion();
 
   // Carga inicial al montar — el store evita peticiones duplicadas internamente.
   useEffect(() => {
@@ -191,13 +192,26 @@ export const FeaturedProductsSection = () => {
         {isFetching ? (
           <SkeletonGrid />
         ) : (
-          <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-4 sm:gap-5 lg:max-w-172 lg:grid-cols-3 lg:gap-5 2xl:max-w-200">
+          <div className="mx-auto mt-8 grid max-w-2xl grid-cols-2 gap-4 sm:gap-5 lg:max-w-148 lg:grid-cols-3 lg:gap-5 2xl:max-w-170">
             {items.map((featured, index) => (
               <RevealBlock
                 key={featured.id}
                 delay={Math.min(index * 0.05, 0.25)}
               >
-                <FeaturedProductCard product={featured.product} />
+                {/*
+                 * Feedback de "press" idéntico al del catálogo: hundimiento
+                 * sutil (scale 0.98) al hacer click o mantener el dedo. `whileTap`
+                 * se activa en pointer/touch-down y se libera al soltar, así que
+                 * cubre el caso móvil de mantener presionado. El lift de hover
+                 * vive en el <article> (CSS) → sin conflicto de transforms.
+                 */}
+                <motion.div
+                  className="h-full"
+                  whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <FeaturedProductCard product={featured.product} />
+                </motion.div>
               </RevealBlock>
             ))}
           </div>

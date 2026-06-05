@@ -122,7 +122,7 @@ export const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
 
   return (
     <article
-      className="group h-full cursor-pointer transition-shadow duration-300 hover:shadow-[var(--shadow-md)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+      className="group h-full cursor-pointer transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[var(--shadow-lg)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
       onClick={handleOpenDetail}
       role="button"
       tabIndex={0}

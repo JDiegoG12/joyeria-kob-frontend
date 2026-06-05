@@ -774,15 +774,36 @@ export const SocialContentCard = () => {
                     Imagen
                   </FormLabel>
 
+                  {/*
+                   * Nota de encuadre: el carrusel público muestra las tarjetas
+                   * en vertical 9:16 (estilo Reel/TikTok). El preview de abajo
+                   * usa la MISMA relación para que el recorte sea fiel (WYSIWYG).
+                   */}
+                  <p
+                    className="mt-1 text-xs"
+                    style={{
+                      fontFamily:
+                        'var(--font-ui)',
+                      color:
+                        'var(--text-muted)',
+                    }}
+                  >
+                    Sube imágenes
+                    verticales (9:16),
+                    tipo Reel/TikTok,
+                    para el mejor
+                    encuadre.
+                  </p>
+
                   {(form.preview ||
                     editingItem?.imageUrl) && (
                     <div
-                      className="mt-2 overflow-hidden rounded-lg border"
+                      className="mt-2 max-w-[150px] overflow-hidden rounded-lg border"
                       style={{
                         borderColor:
                           'var(--border-color)',
                         aspectRatio:
-                          '16 / 9',
+                          '9 / 16',
                       }}
                     >
                       <img
@@ -1105,11 +1126,12 @@ const VideoRow = ({
       }}
     >
       <td className="py-3">
+        {/* Miniatura vertical 9:16, igual que el carrusel público. */}
         <div
           className="overflow-hidden rounded-lg border"
           style={{
-            width: 70,
-            height: 42,
+            width: 40,
+            height: 71,
             borderColor:
               'var(--border-color)',
           }}
