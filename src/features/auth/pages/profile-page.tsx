@@ -249,8 +249,8 @@ export const ProfilePage = () => {
       });
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       showToast('success', 'Contraseña actualizada exitosamente');
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || error.message || 'Error al cambiar contraseña';
+    } catch (error: unknown) {
+      const msg = getApiErrorMessage(error, 'Error al cambiar contraseña');
       if (msg.toLowerCase().includes('incorrecta') || msg.toLowerCase().includes('actual')) {
         setPwErrors({ currentPassword: 'Contraseña actual incorrecta' });
       } else {

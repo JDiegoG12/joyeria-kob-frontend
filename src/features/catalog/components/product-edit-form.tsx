@@ -200,7 +200,12 @@ export const ProductEditForm = ({
         initializeWith(product.category.parentId, product.category.id);
       }
     }
-  }, [isOpen, product]); // initializeWith es estable, no necesita estar en deps
+    // `initializeWith` se omite a propósito: no está memoizado, así que
+    // incluirlo dispararía este efecto en cada render y reinicializaría el
+    // formulario, descartando lo que el usuario va editando. Solo debe correr
+    // al abrir el modal o cambiar de producto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, product]);
 
   // Cargar precio del oro al abrir
   useEffect(() => {

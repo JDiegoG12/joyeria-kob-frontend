@@ -87,7 +87,9 @@ export const FavoritesPage = () => {
     if (isAuthenticated) {
       void loadFavorites(true);
     }
-  }, [isAuthenticated]);
+    // `loadFavorites` es una acción de Zustand (referencia estable): incluirla
+    // satisface la regla sin provocar re-ejecuciones extra del efecto.
+  }, [isAuthenticated, loadFavorites]);
 
   // ── NO AUTENTICADO ────────────────────────────────────────────────────────
 

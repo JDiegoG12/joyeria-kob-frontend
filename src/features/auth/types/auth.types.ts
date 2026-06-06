@@ -15,6 +15,8 @@ export interface AuthUser {
   name: string;
   lastName: string;
   phone: string | null;
+  /** Dirección del usuario. Opcional: no todos los endpoints la devuelven. */
+  address?: string | null;
   email: string;
   role: UserRole;
   createdAt: string;
