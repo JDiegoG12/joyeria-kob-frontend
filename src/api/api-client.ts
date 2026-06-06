@@ -65,12 +65,30 @@ apiClient.interceptors.response.use(
       error.response?.status === 401;
 
     /**
-     * Si el backend responde 401:
+     * Endpoints de autenticación que devuelven 401 como parte de su flujo
+     * NORMAL (p. ej. credenciales incorrectas en el login), NO por una sesión
+     * expirada. Su 401 debe propagarse al componente (LoginPage /
+     * AdminLoginPage) para mostrar el error inline.
+     *
+     * Antes, forzar `logout()` aquí disparaba un `window.location.replace('/')`
+     * que redirigía a home y ocultaba el mensaje de error, haciendo que un
+     * login fallido pareciera (erróneamente) un login exitoso.
+     */
+    const requestUrl = error.config?.url ?? '';
+    const isAuthEndpoint =
+      requestUrl.includes('/auth/login') ||
+      requestUrl.includes('/auth/register');
+
+    /**
+     * Solo forzamos logout ante un 401 de una sesión YA iniciada (token
+     * expirado o revocado en una petición protegida):
      * - limpiar sesión
      * - redirigir al login
      * - evitar sesiones zombie
+     *
+     * Los 401 de los endpoints de auth quedan excluidos.
      */
-    if (is401) {
+    if (is401 && !isAuthEndpoint) {
       AuthService.logout();
     }
 

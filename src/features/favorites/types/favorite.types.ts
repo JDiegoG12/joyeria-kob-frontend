@@ -11,7 +11,7 @@ import type { Product } from '@/features/catalog/types/product.types';
 // ─── Entidades ────────────────────────────────────────────────────────────────
 
 /**
- * Entrada de favorito tal como la devuelve el backend.
+ * Entrada de favorito tal como la devuelve `GET /api/favorites`.
  * El backend solo retorna productos con status AVAILABLE.
  */
 export interface FavoriteItem {
@@ -27,6 +27,16 @@ export interface FavoriteItem {
   product: Product;
 }
 
+/**
+ * Favorito "pelado" tal como lo devuelve `POST /api/favorites`.
+ *
+ * A diferencia del `GET`, el endpoint de creación NO incluye el `product`
+ * anidado: solo confirma el registro recién creado. Por eso este tipo omite
+ * `product` — el consumidor (store) reconcilia estos datos sobre su item
+ * optimista y obtiene el producto completo más tarde vía `GET`.
+ */
+export type FavoriteRecord = Omit<FavoriteItem, 'product'>;
+
 // ─── Respuestas del backend ───────────────────────────────────────────────────
 
 export interface FavoritesListResponse {
@@ -37,7 +47,8 @@ export interface FavoritesListResponse {
 
 export interface FavoriteAddResponse {
   success: boolean;
-  data: FavoriteItem;
+  /** El `POST` devuelve el favorito sin el `product` anidado. */
+  data: FavoriteRecord;
   message: string;
 }
 

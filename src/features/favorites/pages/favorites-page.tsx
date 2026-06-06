@@ -5,14 +5,16 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Heart, ShoppingBag, Trash2 } from 'lucide-react';
 
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { useAuthStore } from '@/store/auth.store';
 import { useFavoriteStore } from '../store/favorite.store';
 
-import { FavoriteCard } from '../components/favorite-card';
+// Reutilizamos la tarjeta del catálogo público en lugar de una tarjeta
+// dedicada: una sola fuente de verdad visual para "tarjeta de producto".
+import { PublicProductCard } from '@/features/catalog/components/public-product-card';
 import { FavoritesWhatsAppButton } from '../components/favorites-whatsapp';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -28,6 +30,33 @@ const pageVariants = {
       duration: 0.4,
       ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
     },
+  },
+};
+
+/**
+ * Variantes de cada tarjeta dentro del grid de favoritos.
+ *
+ * Replican el feel de entrada/salida que antes vivía en `FavoriteCard` (ya
+ * eliminada): entrada escalonada según el índice (`custom`) y salida con fade +
+ * leve scale, que `AnimatePresence mode="popLayout"` reproduce al quitar un
+ * favorito desde el corazón. Viven aquí (en el wrapper) porque la tarjeta del
+ * catálogo (`PublicProductCard`) es un `<article>` plano, sin motion propio.
+ */
+const favoriteCardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.06,
+      duration: 0.4,
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    },
+  }),
+  exit: {
+    opacity: 0,
+    scale: 0.96,
+    transition: { duration: 0.22, ease: 'easeIn' as const },
   },
 };
 
@@ -47,6 +76,7 @@ export const FavoritesPage = () => {
   } = useFavoriteStore();
 
   const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotion();
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -348,12 +378,36 @@ export const FavoritesPage = () => {
                         Array.isArray(item.product.images),
                     )
                     .map((item, i) => (
-                      <FavoriteCard
-                        key={item.id}
-                        item={item}
-                        index={i}
-                        onViewDetail={handleViewDetail}
-                      />
+                      // Wrapper con la animación de entrada/salida + hover; la
+                      // tarjeta reutilizada del catálogo va dentro. El click
+                      // navega al catálogo con el modal de detalle abierto vía
+                      // deep-link `?product=<id>` (ver `handleViewDetail`).
+                      // `key` por `productId` (estable) en vez de `id`, que
+                      // puede mutar al reconciliar un alta optimista.
+                      <motion.div
+                        key={item.productId}
+                        layout
+                        custom={i}
+                        variants={favoriteCardVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        whileHover={
+                          shouldReduceMotion
+                            ? undefined
+                            : {
+                                y: -4,
+                                boxShadow: 'var(--shadow-md)',
+                                transition: { duration: 0.22, ease: 'easeOut' },
+                              }
+                        }
+                        className="h-full"
+                      >
+                        <PublicProductCard
+                          product={item.product}
+                          onClick={() => handleViewDetail(item.product.id)}
+                        />
+                      </motion.div>
                     ))}
                 </AnimatePresence>
               </motion.div>
