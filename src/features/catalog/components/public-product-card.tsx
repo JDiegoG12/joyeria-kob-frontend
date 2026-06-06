@@ -21,7 +21,10 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SERVER_URL } from '@/api/server-url';
 import type { Product } from '@/features/catalog/types/product.types';
 
-import { FavoriteButton } from '@/features/favorites';
+// Import por ruta profunda (no por el barrel `@/features/favorites`) para
+// evitar una dependencia circular: el barrel re-exporta `FavoritesPage`, que a
+// su vez reutiliza esta misma tarjeta del catálogo.
+import { FavoriteButton } from '@/features/favorites/components/favorite-button';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 

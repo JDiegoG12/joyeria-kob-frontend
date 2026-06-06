@@ -15,6 +15,7 @@
 import { apiClient } from '@/api/api-client';
 import type {
   FavoriteItem,
+  FavoriteRecord,
   FavoritesListResponse,
   FavoriteAddResponse,
   FavoriteRemoveResponse,
@@ -35,11 +36,16 @@ export const favoriteService = {
   /**
    * Agrega un producto a la lista de favoritos del usuario.
    *
+   * ⚠️ El backend devuelve el favorito "pelado" (`FavoriteRecord`), es decir
+   * SIN el `product` anidado. No asumas que la respuesta trae el producto: el
+   * store reconcilia estos datos sobre su item optimista y obtiene el producto
+   * completo más tarde con `getAll()`.
+   *
    * @param productId - UUID del producto a agregar.
-   * @returns El favorito recién creado con el producto anidado.
+   * @returns El favorito recién creado, sin el producto anidado.
    * @throws 409 si el producto ya está en favoritos.
    */
-  async add(productId: string): Promise<FavoriteItem> {
+  async add(productId: string): Promise<FavoriteRecord> {
     const response = await apiClient.post<FavoriteAddResponse>('/favorites', {
       productId,
     });

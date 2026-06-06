@@ -2,15 +2,28 @@
  * @file favorite.store.ts
  * @description Store de Zustand para la gestión global de favoritos.
  *
- * FIX doble-click: el optimistic update de addFavorite ahora actualiza TANTO
- * favoriteIds (Set) COMO favorites[] con un item temporal (id: -1).
- * Antes solo se actualizaba el Set, lo que en algunos renders de React
- * StrictMode/dev no disparaba el re-render del selector booleano del hook.
- * Al tener también favorites[] actualizado, el estado es consistente desde
- * el primer click y el corazón se activa inmediatamente.
+ * ## Contrato asimétrico del backend (clave para entender este store)
+ * - `GET  /api/favorites`  → devuelve cada favorito CON el `product` anidado.
+ * - `POST /api/favorites`  → devuelve el favorito "pelado" (`FavoriteRecord`:
+ *   id, userId, productId, createdAt) SIN el `product`.
  *
- * Cuando llega la respuesta real del backend, el item optimista (id: -1)
- * se filtra y se reemplaza por el item real con todos sus datos completos.
+ * Por eso `addFavorite` NO puede depender de que la respuesta del POST traiga
+ * el producto. El producto completo se hidrata vía `loadFavorites(true)`
+ * (p. ej. al entrar a la página de favoritos).
+ *
+ * ## FIX del "doble click + 409"
+ * Antes, el camino de éxito de `addFavorite` exigía `newItem.product` y
+ * lanzaba si faltaba. Como el POST nunca trae el producto, TODA alta válida
+ * (201) se trataba como error: se revertía el optimistic update y el favorito
+ * quedaba creado en la BD pero ausente en la UI (favorito "fantasma"). El
+ * usuario debía pulsar de nuevo, y ese segundo POST devolvía 409 "ya existe".
+ *
+ * ## Optimistic update (Set + favorites[])
+ * `addFavorite` actualiza TANTO `favoriteIds` (Set) COMO `favorites[]` con un
+ * item temporal (`id: -1`), de modo que el corazón se active en el primer
+ * click y el contador sea consistente. Cuando el POST responde (201), el item
+ * optimista se confirma reconciliando los datos reales que sí llegan (`id`,
+ * `createdAt`), conservando el placeholder del producto hasta la próxima carga.
  */
 
 import { create } from 'zustand';
@@ -150,18 +163,30 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => ({
     try {
       const newItem = await favoriteService.add(productId);
 
-      if (!newItem || !newItem.product || !newItem.product.id) {
-        throw new Error('Favorite inválido');
-      }
+      /**
+       * El POST confirma el alta pero devuelve el favorito SIN el `product`
+       * (ver contrato asimétrico en la cabecera del archivo). Por eso aquí NO
+       * validamos `newItem.product`: solo reconciliamos los datos reales que sí
+       * llegan —`id` y `createdAt`— sobre el item optimista, conservando el
+       * placeholder del producto. La hidratación completa ocurre en
+       * `loadFavorites(true)`.
+       *
+       * `confirmedId` usa un fallback defensivo por si el backend devolviera un
+       * id no válido en runtime; basta con que sea distinto de -1 para que deje
+       * de considerarse "optimista pendiente".
+       */
+      const confirmedId = newItem.id > 0 ? newItem.id : Date.now();
 
       set((state) => {
-        // Filtrar el item optimista (id: -1) para este productId
-        // y reemplazarlo con el item real del backend.
-        const withoutOptimistic = state.favorites.filter(
-          (f) => !(f.productId === newItem.productId && f.id === -1),
+        // Confirmar el item optimista (id: -1) de este productId con los datos
+        // reales del backend, sin descartarlo por falta de `product`.
+        const merged = state.favorites.map((f) =>
+          f.productId === productId && f.id === -1
+            ? { ...f, id: confirmedId, createdAt: newItem.createdAt }
+            : f,
         );
 
-        const updated = sanitizeFavorites([...withoutOptimistic, newItem]);
+        const updated = sanitizeFavorites(merged);
 
         return {
           favorites: updated,
