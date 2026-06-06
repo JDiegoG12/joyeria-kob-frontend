@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useToastStore } from '@/store/toast.store';
 import { AuthService } from '@/features/auth/services/auth.service';
+import { getApiErrorMessage } from '@/api/get-error-message';
 
 interface FormState {
   email: string;
@@ -50,8 +51,8 @@ export const LoginPage = () => {
       await AuthService.login({ email: form.email, password: form.password });
       showToast('success', '¡Hola de nuevo!');
       navigate('/');
-    } catch (error: any) {
-      showToast('error', error?.message || 'Error al iniciar sesión');
+    } catch (error: unknown) {
+      showToast('error', getApiErrorMessage(error, 'Error al iniciar sesión'));
     } finally {
       setLoading(false);
     }

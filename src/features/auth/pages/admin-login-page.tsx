@@ -8,6 +8,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { AuthService } from '@/features/auth/services/auth.service';
+import { getApiErrorMessage } from '@/api/get-error-message';
 import { useAuthStore } from '@/store/auth.store';
 
 interface FormState {
@@ -52,8 +53,8 @@ export const AdminLoginPage = () => {
       }
       toast.success('Bienvenido al panel admin');
       navigate('/admin/joyas');
-    } catch (error: any) {
-      toast.error(error?.message || 'Error al iniciar sesión');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Error al iniciar sesión'));
     } finally {
       setLoading(false);
     }
