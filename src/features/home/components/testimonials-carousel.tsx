@@ -92,7 +92,7 @@ export const TestimonialsCarousel = ({
       track.scrollTo({ left: track.clientWidth, behavior: 'auto' });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   /*
    * IntersectionObserver: mantiene `activeIndex` sincronizado con el slide

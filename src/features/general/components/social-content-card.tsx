@@ -192,6 +192,10 @@ export const SocialContentCard = () => {
         );
       }
     };
+    // Solo al montar: carga la lista una vez. Incluir `loadItems`/`form.preview`
+    // recargaría la lista en cada cambio de la preview; no es el comportamiento
+    // deseado. El cleanup revoca la URL de objeto al desmontar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadItems =
