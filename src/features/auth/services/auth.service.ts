@@ -13,6 +13,7 @@
  */
 
 import { apiClient } from '@/api/api-client';
+import { getApiErrorMessage } from '@/api/get-error-message';
 import { useAuthStore } from '@/store/auth.store';
 
 import type {
@@ -47,13 +48,10 @@ export const AuthService = {
             }
 
             persistSession(authData);
-        } catch (error: any) {
-            const message =
-                error?.response?.data?.message ||
-                error.message ||
-                'Error al iniciar sesión';
-
-            throw new Error(message);
+        } catch (error: unknown) {
+            throw new Error(
+                getApiErrorMessage(error, 'Error al iniciar sesión'),
+            );
         }
     },
 
@@ -76,13 +74,10 @@ export const AuthService = {
     }): Promise<void> => {
         try {
             await apiClient.post('/auth/register', data);
-        } catch (error: any) {
-            const message =
-                error?.response?.data?.message ||
-                error.message ||
-                'Error al registrar usuario';
-
-            throw new Error(message);
+        } catch (error: unknown) {
+            throw new Error(
+                getApiErrorMessage(error, 'Error al registrar usuario'),
+            );
         }
     },
 

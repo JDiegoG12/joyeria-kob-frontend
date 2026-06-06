@@ -5,56 +5,52 @@
  *
  * ## Funcionalidades
  * - Selector de categoría en dos pasos: principal → subcategoría opcional.
- * - Editor de especificaciones dinámico con pares clave-valor.
+ * - Editor de especificaciones dinámico (`SpecEditor`) con pares detalle-valor.
  * - Preview del precio estimado en tiempo real con el precio real del oro.
- * - Campo "valor adicional" con formato visual de miles (10000 → 10.000).
- * - Uploader de imágenes con preview y deselección individual (1–5 archivos).
- * - Validaciones inline por campo (sin `window.alert`).
+ * - Campo "valor adicional" (`AdditionalValueField`) con prefijo COP y formateo
+ *   de miles EN TIEMPO REAL. Su valor por defecto es `0`.
+ * - Carga de imágenes con clic o drag & drop real (`ImageDropzone`), preview y
+ *   deselección individual (1–5 archivos).
+ * - Validaciones inline por campo + barra de acciones sticky con resumen de
+ *   errores (`ProductFormActions`) y scroll automático al primer error.
  * - `ConfirmModal` para cancelación con datos ingresados.
- * - Toast de éxito o error al completar la operación.
- * - Hover y `active:scale-95` en todos los botones interactivos.
  *
  * ## Regla de categoryId
  * Si el usuario selecciona subcategoría → se envía el ID de la subcategoría.
  * Si no → se envía el ID de la categoría principal.
  *
- * ## Formato del campo "valor adicional"
- * El campo usa un input de tipo `text` controlado. Se almacena el valor numérico
- * en el estado y se muestra formateado con `toLocaleString('es-CO')`. Al hacer
- * foco se muestra el número limpio para edición; al perder el foco se vuelve
- * a formatear.
+ * ## Piezas compartidas
+ * La lógica común con `product-edit-form` vive en `./product-form/*` y en el
+ * hook `useScrollToFirstError`, para no duplicarla ni desincronizarla.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ConfirmModal } from '@/components/ui/modal/confirm-modal';
 import { useCategorySelector } from '../hooks/use-category-selector';
+import { useScrollToFirstError } from '../hooks/use-scroll-to-first-error';
 import { useGoldPriceStore } from '@/store/gold-price.store';
 import { useToastStore } from '@/store/toast.store';
 import { productService } from '../services/product.service';
-import type { ProductSpecifications } from '../types/product.types';
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
-
-const MAX_IMAGES = 5;
-const MAX_NAME_LENGTH = 120;
-const MAX_DESCRIPTION_LENGTH = 800;
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_IMAGE_SIZE_MB = 25;
-const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
-
-// ─── Clases reutilizables ─────────────────────────────────────────────────────
-
-/** Clases base para inputs de texto y selects del formulario. */
-const INPUT_BASE =
-  'w-full rounded-xl border border-[var(--border-color)] bg-transparent px-4 py-3 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]';
-
-/** Clases para el botón primario de acción. */
-const BTN_PRIMARY =
-  'rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-[var(--accent-text)] shadow-[var(--shadow-accent)] transition hover:opacity-90 active:scale-95 active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
-
-/** Clases para botones secundarios con borde. */
-const BTN_SECONDARY =
-  'rounded-xl border border-[var(--border-color)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
+import {
+  INPUT_BASE,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_IMAGES,
+  MAX_IMAGE_SIZE_MB,
+  MAX_NAME_LENGTH,
+} from './product-form/constants';
+import {
+  buildSpecifications,
+  generateId,
+  validateImageFiles,
+  type ProductFormErrors,
+  type SpecEntry,
+} from './product-form/utils';
+import { Field } from './product-form/field';
+import { AdditionalValueField } from './product-form/additional-value-field';
+import { SpecEditor } from './product-form/spec-editor';
+import { ImageDropzone } from './product-form/image-dropzone';
+import { ProductFormActions } from './product-form/form-actions';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -67,64 +63,28 @@ interface ProductFormState {
   stock: string;
 }
 
-interface SpecEntry {
-  id: string;
-  key: string;
-  value: string;
-}
-
 interface ImagePreview {
   file: File;
   previewUrl: string;
 }
 
-type FormErrors = Partial<
-  Record<
-    | 'name'
-    | 'description'
-    | 'baseWeight'
-    | 'additionalValue'
-    | 'stock'
-    | 'categoryId'
-    | 'images'
-    | 'specs',
-    string
-  >
->;
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Estado inicial del formulario.
+ * `additionalValue: '0'` cumple el requisito de que el valor adicional arranque
+ * en 0 (en lugar de vacío) en el formulario de creación.
+ */
 const EMPTY_FORM: ProductFormState = {
   name: '',
   description: '',
   baseWeight: '',
-  additionalValue: '',
+  additionalValue: '0',
   stock: '',
 };
 
-const generateId = () => Math.random().toString(36).substring(2, 9);
-
-/**
- * Formatea un string numérico con separadores de miles en locale colombiano.
- * Devuelve string vacío si el valor no es un número válido.
- *
- * @param raw - String de dígitos sin formato (ej: "1200000").
- * @returns String formateado (ej: "1.200.000") o vacío si no es válido.
- */
-const formatThousands = (raw: string): string => {
-  const num = parseFloat(raw.replace(/[^0-9]/g, ''));
-  if (Number.isNaN(num)) return '';
-  return num.toLocaleString('es-CO');
-};
-
-/**
- * Extrae solo los dígitos de un string formateado para almacenarlo en el estado.
- *
- * @param formatted - String con separadores (ej: "1.200.000").
- * @returns String de solo dígitos (ej: "1200000").
- */
-const stripFormatting = (formatted: string): string =>
-  formatted.replace(/[^0-9]/g, '');
+/** Prefijo de los `id` de los campos, usado por el scroll-a-error. */
+const ID_PREFIX = 'create';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -133,47 +93,6 @@ interface ProductCreateFormProps {
   onClose: () => void;
   onSuccess: () => void;
 }
-
-// ─── Subcomponente Field ──────────────────────────────────────────────────────
-
-interface FieldProps {
-  label: string;
-  error?: string;
-  required?: boolean;
-  hint?: string;
-  children: React.ReactNode;
-}
-
-/**
- * Envuelve un campo con etiqueta, hint opcional y mensaje de error inline.
- */
-const Field = ({
-  label,
-  error,
-  required = false,
-  hint,
-  children,
-}: FieldProps) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-sm font-medium text-[var(--text-primary)]">
-      {label}
-      {required && (
-        <span className="ml-1 text-red-500" aria-hidden="true">
-          *
-        </span>
-      )}
-    </label>
-    {children}
-    {hint && !error && (
-      <p className="text-xs text-[var(--text-muted)]">{hint}</p>
-    )}
-    {error && (
-      <p className="text-xs text-red-500" role="alert">
-        {error}
-      </p>
-    )}
-  </div>
-);
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
@@ -188,26 +107,24 @@ export const ProductCreateForm = ({
 }: ProductCreateFormProps) => {
   // ── Estado del formulario ──────────────────────────────────────────────────
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [errors, setErrors] = useState<ProductFormErrors>({});
   const [saving, setSaving] = useState(false);
-  const [isAdditionalValueFocused, setIsAdditionalValueFocused] =
-    useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // ── Imágenes ───────────────────────────────────────────────────────────────
   const [images, setImages] = useState<ImagePreview[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Especificaciones ───────────────────────────────────────────────────────
   const [specEntries, setSpecEntries] = useState<SpecEntry[]>([]);
 
-  // ── Stores ─────────────────────────────────────────────────────────────────
+  // ── Stores y utilidades ────────────────────────────────────────────────────
   const {
     goldPricePerGram,
     isLoading: isLoadingGold,
     loadGoldPrice,
   } = useGoldPriceStore();
   const { showToast } = useToastStore();
+  const scrollToFirstError = useScrollToFirstError();
 
   // ── Selector de categoría ──────────────────────────────────────────────────
   const {
@@ -272,12 +189,15 @@ export const ProductCreateForm = ({
   }, [parsedValues, goldPricePerGram]);
 
   // ── Detección de cambios ───────────────────────────────────────────────────
+  // El valor adicional se compara contra su default ('0'), no contra '': de lo
+  // contrario el formulario recién abierto se marcaría siempre como "con cambios"
+  // y pediría confirmación al cerrar sin que el usuario haya tocado nada.
   const hasChanges = useMemo(() => {
     return (
       form.name.trim() !== '' ||
       form.description.trim() !== '' ||
       form.baseWeight !== '' ||
-      form.additionalValue !== '' ||
+      form.additionalValue !== EMPTY_FORM.additionalValue ||
       form.stock !== '' ||
       resolvedCategoryId !== null ||
       images.length > 0 ||
@@ -295,7 +215,6 @@ export const ProductCreateForm = ({
     setImages([]);
     setSpecEntries([]);
     resetCategories();
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // ── Manejo del cierre ──────────────────────────────────────────────────────
@@ -324,77 +243,30 @@ export const ProductCreateForm = ({
 
   const updateField = (field: keyof ProductFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field as keyof FormErrors]) {
+    if (errors[field as keyof ProductFormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
-  // ── Gestión del campo valor adicional con formato ──────────────────────────
-
-  /**
-   * Maneja el cambio del input de valor adicional.
-   * Almacena solo los dígitos en el estado para mantener el valor numérico limpio.
-   */
-  const handleAdditionalValueChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const digits = stripFormatting(e.target.value);
-    updateField('additionalValue', digits);
-  };
-
-  /**
-   * Valor a mostrar en el input de valor adicional según si tiene foco o no.
-   * - Con foco: muestra los dígitos crudos para edición libre.
-   * - Sin foco: muestra el valor formateado con separadores de miles.
-   */
-  const additionalValueDisplay = isAdditionalValueFocused
-    ? form.additionalValue
-    : formatThousands(form.additionalValue);
-
   // ── Gestión de imágenes ────────────────────────────────────────────────────
 
   /**
-   * Procesa los archivos del input, valida tipo/tamaño/límite y genera previews.
+   * Procesa los archivos recibidos del `ImageDropzone` (clic o drop): valida
+   * tipo/tamaño/cupo con la utilidad compartida y genera previews.
    */
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
-
+  const handleFilesSelected = (files: File[]) => {
     const availableSlots = MAX_IMAGES - images.length;
-
-    if (availableSlots <= 0) {
-      setErrors((prev) => ({
-        ...prev,
-        images: `Ya tienes el máximo de ${MAX_IMAGES} imágenes permitidas.`,
-      }));
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    const invalidType = files.find(
-      (f) => !ACCEPTED_IMAGE_TYPES.includes(f.type),
+    const { accepted, error, overflow } = validateImageFiles(
+      files,
+      availableSlots,
     );
-    if (invalidType) {
-      setErrors((prev) => ({
-        ...prev,
-        images: 'Solo se permiten imágenes en formato JPG, PNG o WEBP.',
-      }));
-      if (fileInputRef.current) fileInputRef.current.value = '';
+
+    if (error) {
+      setErrors((prev) => ({ ...prev, images: error }));
       return;
     }
 
-    const oversized = files.find((f) => f.size > MAX_IMAGE_SIZE_BYTES);
-    if (oversized) {
-      setErrors((prev) => ({
-        ...prev,
-        images: `Cada imagen debe pesar menos de ${MAX_IMAGE_SIZE_MB} MB.`,
-      }));
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    const filesToAdd = files.slice(0, availableSlots);
-    const newPreviews: ImagePreview[] = filesToAdd.map((file) => ({
+    const newPreviews: ImagePreview[] = accepted.map((file) => ({
       file,
       previewUrl: URL.createObjectURL(file),
     }));
@@ -402,21 +274,15 @@ export const ProductCreateForm = ({
     setImages((prev) => [...prev, ...newPreviews]);
     setErrors((prev) => ({ ...prev, images: undefined }));
 
-    if (files.length > availableSlots) {
+    if (overflow > 0) {
       showToast(
         'info',
-        `Solo se agregaron ${availableSlots} imagen(es). Límite de ${MAX_IMAGES} alcanzado.`,
+        `Solo se agregaron ${accepted.length} imagen(es). Límite de ${MAX_IMAGES} alcanzado.`,
       );
     }
-
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  /**
-   * Elimina una imagen de la lista y revoca su URL de objeto.
-   *
-   * @param previewUrl - URL de objeto de la imagen a eliminar.
-   */
+  /** Elimina una imagen de la lista y revoca su URL de objeto. */
   const handleRemoveImage = (previewUrl: string) => {
     setImages((prev) => {
       const toRemove = prev.find((img) => img.previewUrl === previewUrl);
@@ -450,40 +316,15 @@ export const ProductCreateForm = ({
     setSpecEntries((prev) => prev.filter((e) => e.id !== id));
   };
 
-  /**
-   * Convierte las filas del editor en el objeto de especificaciones del backend.
-   * - "true"/"false" → boolean
-   * - Valores con coma → string[]
-   * - Resto → string
-   * Las filas con key o value vacío se descartan.
-   */
-  const buildSpecifications = (): ProductSpecifications => {
-    const specs: ProductSpecifications = {};
-    specEntries.forEach(({ key, value }) => {
-      const k = key.trim();
-      const v = value.trim();
-      if (!k || !v) return;
-      if (v.toLowerCase() === 'true') specs[k] = true;
-      else if (v.toLowerCase() === 'false') specs[k] = false;
-      else if (v.includes(','))
-        specs[k] = v
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
-      else specs[k] = v;
-    });
-    return specs;
-  };
-
   // ── Validación ─────────────────────────────────────────────────────────────
 
   /**
-   * Valida todos los campos y acumula errores en `FormErrors`.
-   *
-   * @returns `true` si el formulario es válido.
+   * Valida todos los campos, guarda los errores en estado y los devuelve.
+   * Devolver el objeto permite al `handleSubmit` desplazarse al primer error
+   * sin esperar a que el `setState` se aplique.
    */
-  const validateForm = (): boolean => {
-    const next: FormErrors = {};
+  const validateForm = (): ProductFormErrors => {
+    const next: ProductFormErrors = {};
 
     if (!form.name.trim()) {
       next.name = 'El nombre es obligatorio.';
@@ -539,22 +380,29 @@ export const ProductCreateForm = ({
       .map((e) => e.key.trim());
 
     if (keys.length !== new Set(keys).size) {
-      next.specs = 'Hay claves de especificación duplicadas.';
+      next.specs = 'Hay detalles de especificación duplicados.';
     } else if (specEntries.some((e) => e.key.trim() && !e.value.trim())) {
-      next.specs = 'Todas las claves deben tener un valor.';
+      next.specs = 'Cada detalle debe tener un valor.';
     } else if (specEntries.some((e) => !e.key.trim() && e.value.trim())) {
-      next.specs = 'Todos los valores deben tener una clave.';
+      next.specs = 'Cada valor debe tener un detalle.';
     }
 
     setErrors(next);
-    return Object.keys(next).length === 0;
+    return next;
   };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!validateForm() || resolvedCategoryId === null) return;
+
+    const next = validateForm();
+    if (Object.keys(next).length > 0) {
+      // Lleva la vista (y el foco) al primer campo con problema.
+      scrollToFirstError(next, ID_PREFIX);
+      return;
+    }
+    if (resolvedCategoryId === null) return; // estrechamiento de tipo defensivo
 
     try {
       setSaving(true);
@@ -565,7 +413,7 @@ export const ProductCreateForm = ({
         baseWeight: parsedValues.baseWeight,
         additionalValue: parsedValues.additionalValue,
         stock: parsedValues.stock,
-        specifications: buildSpecifications(),
+        specifications: buildSpecifications(specEntries),
         imageFiles: images.map((img) => img.file),
       });
       showToast('success', 'Joya creada correctamente.');
@@ -592,6 +440,17 @@ export const ProductCreateForm = ({
   if (!isOpen) return null;
 
   const totalImages = images.length;
+
+  /**
+   * Nº de campos con error. Se cuentan solo los errores con MENSAJE definido,
+   * no las claves del objeto: al resolver un error lo marcamos como `undefined`
+   * (sin borrar la clave), por lo que `Object.keys(errors).length` seguiría
+   * contándolo. Filtrar por valor logra que:
+   * - El resumen no aparezca antes de pulsar "Crear" (p. ej. al subir una
+   *   imagen, que limpia `errors.images` a `undefined`).
+   * - El conteo disminuya a medida que se completan los campos.
+   */
+  const errorCount = Object.values(errors).filter(Boolean).length;
 
   return (
     <>
@@ -620,7 +479,7 @@ export const ProductCreateForm = ({
               type="button"
               onClick={handleRequestClose}
               aria-label="Cerrar formulario"
-              className={BTN_SECONDARY}
+              className="rounded-xl border border-[var(--border-color)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-tertiary)] active:scale-95 cursor-pointer"
             >
               Cerrar
             </button>
@@ -645,8 +504,14 @@ export const ProductCreateForm = ({
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Nombre */}
                 <div className="md:col-span-2">
-                  <Field label="Nombre" required error={errors.name}>
+                  <Field
+                    label="Nombre"
+                    required
+                    htmlFor={`${ID_PREFIX}-name`}
+                    error={errors.name}
+                  >
                     <input
+                      id={`${ID_PREFIX}-name`}
                       type="text"
                       value={form.name}
                       maxLength={MAX_NAME_LENGTH}
@@ -665,9 +530,11 @@ export const ProductCreateForm = ({
                   <Field
                     label="Descripción"
                     required
+                    htmlFor={`${ID_PREFIX}-description`}
                     error={errors.description}
                   >
                     <textarea
+                      id={`${ID_PREFIX}-description`}
                       value={form.description}
                       maxLength={MAX_DESCRIPTION_LENGTH}
                       rows={4}
@@ -687,10 +554,12 @@ export const ProductCreateForm = ({
                 <Field
                   label="Peso (gramos)"
                   required
+                  htmlFor={`${ID_PREFIX}-baseWeight`}
                   error={errors.baseWeight}
                   hint="Admite decimales. Ej: 4.5"
                 >
                   <input
+                    id={`${ID_PREFIX}-baseWeight`}
                     type="number"
                     step="0.01"
                     min="0.01"
@@ -702,22 +571,20 @@ export const ProductCreateForm = ({
                   />
                 </Field>
 
-                {/* Valor adicional con formato de miles */}
+                {/* Valor adicional con prefijo COP y formato en tiempo real */}
                 <Field
                   label="Valor adicional (COP)"
                   required
+                  htmlFor={`${ID_PREFIX}-additionalValue`}
                   error={errors.additionalValue}
-                  hint="Ingresa el monto. Se formatea automáticamente."
+                  hint="Se formatea automáticamente mientras escribes."
                 >
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={additionalValueDisplay}
-                    onFocus={() => setIsAdditionalValueFocused(true)}
-                    onBlur={() => setIsAdditionalValueFocused(false)}
-                    onChange={handleAdditionalValueChange}
-                    placeholder="1.200.000"
-                    className={INPUT_BASE}
+                  <AdditionalValueField
+                    id={`${ID_PREFIX}-additionalValue`}
+                    value={form.additionalValue}
+                    onChange={(digits) =>
+                      updateField('additionalValue', digits)
+                    }
                   />
                 </Field>
 
@@ -726,10 +593,12 @@ export const ProductCreateForm = ({
                   <Field
                     label="Stock inicial"
                     required
+                    htmlFor={`${ID_PREFIX}-stock`}
                     error={errors.stock}
                     hint="Número entero de unidades disponibles."
                   >
                     <input
+                      id={`${ID_PREFIX}-stock`}
                       type="number"
                       step="1"
                       min="0"
@@ -811,10 +680,14 @@ export const ProductCreateForm = ({
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {/* Paso 1 */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-[var(--text-primary)]">
+                    <label
+                      htmlFor={`${ID_PREFIX}-categoryId`}
+                      className="text-sm font-medium text-[var(--text-primary)]"
+                    >
                       Categoría principal
                     </label>
                     <select
+                      id={`${ID_PREFIX}-categoryId`}
                       value={selectedParentId ?? ''}
                       onChange={(e) => {
                         selectParent(
@@ -826,7 +699,7 @@ export const ProductCreateForm = ({
                             categoryId: undefined,
                           }));
                       }}
-                      className={`${INPUT_BASE} bg-[var(--bg-secondary)] cursor-pointer`}
+                      className={`${INPUT_BASE} cursor-pointer bg-[var(--bg-secondary)]`}
                     >
                       <option
                         value=""
@@ -877,7 +750,7 @@ export const ProductCreateForm = ({
                               : Number(e.target.value),
                           )
                         }
-                        className={`${INPUT_BASE} bg-[var(--bg-secondary)] cursor-pointer`}
+                        className={`${INPUT_BASE} cursor-pointer bg-[var(--bg-secondary)]`}
                       >
                         <option
                           value=""
@@ -908,83 +781,14 @@ export const ProductCreateForm = ({
             </section>
 
             {/* ── Sección 4: Especificaciones ──────────────────────── */}
-            <section aria-labelledby="section-specs">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <h3
-                    id="section-specs"
-                    className="text-base font-semibold text-[var(--text-primary)]"
-                  >
-                    Especificaciones técnicas{' '}
-                    <span className="font-normal text-[var(--text-muted)]">
-                      (opcional)
-                    </span>
-                  </h3>
-                  <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                    Agrega detalles como talla, material o piedras. Si es un
-                    sí/no, escribe "true" o "false". Para varios valores,
-                    sepáralos con comas.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={addSpecEntry}
-                  className="shrink-0 rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm font-medium transition hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] active:scale-95 cursor-pointer"
-                >
-                  + Agregar
-                </button>
-              </div>
-
-              {specEntries.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[var(--border-color)] px-4 py-6 text-center">
-                  <p className="text-sm text-[var(--text-muted)]">
-                    Sin especificaciones. Haz clic en "+ Agregar" para añadir.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {specEntries.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-center"
-                    >
-                      <input
-                        type="text"
-                        value={entry.key}
-                        onChange={(e) =>
-                          updateSpecEntry(entry.id, 'key', e.target.value)
-                        }
-                        placeholder="Detalle (ej: talla)"
-                        className="w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]"
-                      />
-                      <input
-                        type="text"
-                        value={entry.value}
-                        onChange={(e) =>
-                          updateSpecEntry(entry.id, 'value', e.target.value)
-                        }
-                        placeholder="Valor (ej: 6, 7, 8 o true)"
-                        className="w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeSpecEntry(entry.id)}
-                        aria-label="Eliminar especificación"
-                        className="rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm text-red-500 transition hover:bg-red-500/10 hover:border-red-500/30 active:scale-95 sm:justify-self-start"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {errors.specs && (
-                <p className="mt-2 text-xs text-red-500" role="alert">
-                  {errors.specs}
-                </p>
-              )}
-            </section>
+            <SpecEditor
+              id={`${ID_PREFIX}-specs`}
+              entries={specEntries}
+              error={errors.specs}
+              onAdd={addSpecEntry}
+              onUpdate={updateSpecEntry}
+              onRemove={removeSpecEntry}
+            />
 
             {/* ── Sección 5: Imágenes ──────────────────────────────── */}
             <section aria-labelledby="section-images">
@@ -1004,27 +808,15 @@ export const ProductCreateForm = ({
                 </p>
               </div>
 
-              {/* Zona de carga */}
+              {/* Zona de carga (clic o drag & drop) */}
               {totalImages < MAX_IMAGES && (
-                <label className="group mb-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border-color)] bg-[var(--bg-primary)] px-6 py-10 text-center transition hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)]">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    onChange={handleImageChange}
-                    className="hidden"
+                <div className="mb-4">
+                  <ImageDropzone
+                    id={`${ID_PREFIX}-images`}
+                    remaining={MAX_IMAGES - totalImages}
+                    onFiles={handleFilesSelected}
                   />
-                  <div className="mb-3 text-3xl opacity-60 transition group-hover:scale-110 group-hover:opacity-80">
-                    📤
-                  </div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">
-                    Haz clic o arrastra imágenes aquí
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--text-muted)]">
-                    Puedes agregar {MAX_IMAGES - totalImages} imagen(es) más
-                  </p>
-                </label>
+                </div>
               )}
 
               {/* Contador */}
@@ -1085,19 +877,14 @@ export const ProductCreateForm = ({
               )}
             </section>
 
-            {/* ── Acciones ─────────────────────────────────────────── */}
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={handleRequestClose}
-                className={BTN_SECONDARY}
-              >
-                Cancelar
-              </button>
-              <button type="submit" disabled={saving} className={BTN_PRIMARY}>
-                {saving ? 'Creando joya...' : 'Crear joya'}
-              </button>
-            </div>
+            {/* ── Acciones (sticky con resumen de errores) ─────────── */}
+            <ProductFormActions
+              saving={saving}
+              submitLabel="Crear joya"
+              savingLabel="Creando joya..."
+              errorCount={errorCount}
+              onCancel={handleRequestClose}
+            />
           </form>
         </div>
       </div>

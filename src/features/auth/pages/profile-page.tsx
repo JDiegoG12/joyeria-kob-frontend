@@ -31,6 +31,11 @@ import {
 import { useToastStore } from '@/store/toast.store';
 import { useAuthStore } from '@/store/auth.store';
 import { apiClient } from '@/api/api-client';
+import { getApiErrorMessage } from '@/api/get-error-message';
+import type {
+  ApiResponse,
+  AuthUser,
+} from '@/features/auth/types/auth.types';
 
 // ─────────────────────────────
 // TIPOS
@@ -137,7 +142,7 @@ export const ProfilePage = () => {
         lastName: user.lastName ?? '',
         email: user.email ?? '',
         phone: user.phone ?? '',
-        address: (user as any).address ?? '',
+        address: user.address ?? '',
       };
       setForm(initial);
       setOriginalForm(initial);
@@ -177,11 +182,9 @@ export const ProfilePage = () => {
     if (!validateProfile()) return;
     try {
       setProfileLoading(true);
-      const { data: envelope } = await apiClient.put<{
-        success: boolean;
-        data: any;
-        message: string;
-      }>(`/users/me`, {
+      const { data: envelope } = await apiClient.put<
+        ApiResponse<Partial<AuthUser>>
+      >(`/users/me`, {
         name: form.name,
         lastName: form.lastName,
         email: form.email,
@@ -196,8 +199,8 @@ export const ProfilePage = () => {
 
       setOriginalForm(form);
       showToast('success', 'Perfil actualizado exitosamente');
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || error.message || 'Error al actualizar';
+    } catch (error: unknown) {
+      const msg = getApiErrorMessage(error, 'Error al actualizar');
       // HU_03 — criterio 4: unicidad de correo
       if (msg.toLowerCase().includes('correo') || msg.toLowerCase().includes('email')) {
         setProfileErrors({ email: 'El correo electrónico ya está en uso por otra cuenta' });

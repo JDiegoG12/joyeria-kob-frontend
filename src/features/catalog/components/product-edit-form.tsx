@@ -6,15 +6,15 @@
  * ## Funcionalidades (paridad con product-create-form)
  * - Carga los valores actuales del producto al abrir.
  * - Selector de categoría en dos pasos pre-inicializado con la categoría actual.
- * - Editor de especificaciones dinámico pre-cargado con las specs actuales.
+ * - Editor de especificaciones dinámico (`SpecEditor`) pre-cargado.
  * - Precio recalculado en tiempo real usando el precio real del oro del store.
- * - Campo "valor adicional" con formato visual de miles.
+ * - Campo "valor adicional" (`AdditionalValueField`) con prefijo COP y formateo
+ *   de miles en tiempo real.
  * - Gestión de imágenes: conservar, quitar (marcar para eliminar) y restaurar
- *   las existentes; agregar nuevas con preview y deselección individual.
- * - Validaciones inline por campo (sin `window.alert`).
+ *   las existentes; agregar nuevas con clic o drag & drop (`ImageDropzone`).
+ * - Validaciones inline + barra de acciones sticky con resumen de errores
+ *   (`ProductFormActions`) y scroll automático al primer error.
  * - `ConfirmModal` para descartar cambios sin guardar.
- * - Toast de éxito o error al completar la operación.
- * - Hover y `active:scale-95` en todos los botones interactivos.
  *
  * ## Resolución de categoría al cargar
  * Se usa `product.category.parentId` para determinar si el `categoryId` del
@@ -26,36 +26,42 @@
  * - `imagesToDelete` → nombres marcados para eliminar en el PUT.
  * - `newImages`      → archivos nuevos que se agregarán.
  * - El total (`existingImages.length + newImages.length`) no puede superar 5.
+ *
+ * ## Piezas compartidas
+ * La lógica común con `product-create-form` vive en `./product-form/*` y en el
+ * hook `useScrollToFirstError`, para no duplicarla ni desincronizarla.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ConfirmModal } from '@/components/ui/modal/confirm-modal';
 import { useCategorySelector } from '../hooks/use-category-selector';
+import { useScrollToFirstError } from '../hooks/use-scroll-to-first-error';
 import { useGoldPriceStore } from '@/store/gold-price.store';
 import { useToastStore } from '@/store/toast.store';
 import { SERVER_URL } from '@/api/server-url';
 import { productService } from '../services/product.service';
-import type { Product, ProductSpecifications } from '../types/product.types';
+import type { Product } from '../types/product.types';
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
-
-const MAX_IMAGES = 5;
-const MAX_NAME_LENGTH = 120;
-const MAX_DESCRIPTION_LENGTH = 800;
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_IMAGE_SIZE_MB = 25;
-const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
-
-// ─── Clases reutilizables ─────────────────────────────────────────────────────
-
-const INPUT_BASE =
-  'w-full rounded-xl border border-[var(--border-color)] bg-transparent px-4 py-3 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]';
-
-const BTN_PRIMARY =
-  'rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-[var(--accent-text)] shadow-[var(--shadow-accent)] transition hover:opacity-90 active:scale-95 active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
-
-const BTN_SECONDARY =
-  'rounded-xl border border-[var(--border-color)] px-6 py-3 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer';
+import {
+  INPUT_BASE,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_IMAGES,
+  MAX_IMAGE_SIZE_MB,
+  MAX_NAME_LENGTH,
+} from './product-form/constants';
+import {
+  buildSpecifications,
+  generateId,
+  specsToEntries,
+  validateImageFiles,
+  type ProductFormErrors,
+  type SpecEntry,
+} from './product-form/utils';
+import { Field } from './product-form/field';
+import { AdditionalValueField } from './product-form/additional-value-field';
+import { SpecEditor } from './product-form/spec-editor';
+import { ImageDropzone } from './product-form/image-dropzone';
+import { ProductFormActions } from './product-form/form-actions';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -68,30 +74,10 @@ interface EditFormState {
   stock: string;
 }
 
-interface SpecEntry {
-  id: string;
-  key: string;
-  value: string;
-}
-
 interface NewImagePreview {
   file: File;
   previewUrl: string;
 }
-
-type FormErrors = Partial<
-  Record<
-    | 'name'
-    | 'description'
-    | 'baseWeight'
-    | 'additionalValue'
-    | 'stock'
-    | 'categoryId'
-    | 'images'
-    | 'specs',
-    string
-  >
->;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -103,37 +89,8 @@ const EMPTY_FORM: EditFormState = {
   stock: '',
 };
 
-const generateId = () => Math.random().toString(36).substring(2, 9);
-
-/** Formatea dígitos con separadores de miles (locale colombiano). */
-const formatThousands = (raw: string): string => {
-  const num = parseFloat(raw.replace(/[^0-9]/g, ''));
-  if (Number.isNaN(num)) return '';
-  return num.toLocaleString('es-CO');
-};
-
-/** Extrae solo los dígitos de un string formateado. */
-const stripFormatting = (formatted: string): string =>
-  formatted.replace(/[^0-9]/g, '');
-
-/**
- * Convierte el objeto `ProductSpecifications` en filas del editor dinámico.
- * Los booleanos se convierten a "true"/"false".
- * Los arrays se convierten a string separado por coma.
- *
- * @param specs - Especificaciones del producto.
- * @returns Array de filas para el editor de especificaciones.
- */
-const specsToEntries = (specs: ProductSpecifications): SpecEntry[] =>
-  Object.entries(specs).map(([key, value]) => ({
-    id: generateId(),
-    key,
-    value: Array.isArray(value)
-      ? value.join(', ')
-      : typeof value === 'boolean'
-        ? String(value)
-        : String(value ?? ''),
-  }));
+/** Prefijo de los `id` de los campos, usado por el scroll-a-error. */
+const ID_PREFIX = 'edit';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -147,44 +104,6 @@ interface ProductEditFormProps {
   /** Callback tras una edición exitosa. */
   onSuccess: () => void;
 }
-
-// ─── Subcomponente Field ──────────────────────────────────────────────────────
-
-interface FieldProps {
-  label: string;
-  error?: string;
-  required?: boolean;
-  hint?: string;
-  children: React.ReactNode;
-}
-
-const Field = ({
-  label,
-  error,
-  required = false,
-  hint,
-  children,
-}: FieldProps) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-sm font-medium text-[var(--text-primary)]">
-      {label}
-      {required && (
-        <span className="ml-1 text-red-500" aria-hidden="true">
-          *
-        </span>
-      )}
-    </label>
-    {children}
-    {hint && !error && (
-      <p className="text-xs text-[var(--text-muted)]">{hint}</p>
-    )}
-    {error && (
-      <p className="text-xs text-red-500" role="alert">
-        {error}
-      </p>
-    )}
-  </div>
-);
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
@@ -200,10 +119,8 @@ export const ProductEditForm = ({
 }: ProductEditFormProps) => {
   // ── Estado del formulario ──────────────────────────────────────────────────
   const [form, setForm] = useState<EditFormState>(EMPTY_FORM);
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [errors, setErrors] = useState<ProductFormErrors>({});
   const [saving, setSaving] = useState(false);
-  const [isAdditionalValueFocused, setIsAdditionalValueFocused] =
-    useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // ── Estado de imágenes ─────────────────────────────────────────────────────
@@ -213,18 +130,18 @@ export const ProductEditForm = ({
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   /** Archivos nuevos a agregar. */
   const [newImages, setNewImages] = useState<NewImagePreview[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Especificaciones ───────────────────────────────────────────────────────
   const [specEntries, setSpecEntries] = useState<SpecEntry[]>([]);
 
-  // ── Stores ─────────────────────────────────────────────────────────────────
+  // ── Stores y utilidades ────────────────────────────────────────────────────
   const {
     goldPricePerGram,
     isLoading: isLoadingGold,
     loadGoldPrice,
   } = useGoldPriceStore();
   const { showToast } = useToastStore();
+  const scrollToFirstError = useScrollToFirstError();
 
   // ── Selector de categoría ──────────────────────────────────────────────────
   const {
@@ -349,7 +266,7 @@ export const ProductEditForm = ({
       imagesToDelete.length > 0 ||
       newImages.length > 0 ||
       // Comparar specs serializado para detectar cambios
-      JSON.stringify(buildSpecifications()) !==
+      JSON.stringify(buildSpecifications(specEntries)) !==
         JSON.stringify(product.specifications)
     );
   }, [
@@ -360,7 +277,7 @@ export const ProductEditForm = ({
     imagesToDelete,
     newImages,
     specEntries,
-  ]); // eslint-disable-line react-hooks/exhaustive-deps
+  ]);
 
   // ── Manejo del cierre ──────────────────────────────────────────────────────
 
@@ -383,21 +300,9 @@ export const ProductEditForm = ({
 
   const updateField = (field: keyof EditFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field as keyof FormErrors])
+    if (errors[field as keyof ProductFormErrors])
       setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
-
-  // ── Valor adicional con formato ────────────────────────────────────────────
-
-  const handleAdditionalValueChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    updateField('additionalValue', stripFormatting(e.target.value));
-  };
-
-  const additionalValueDisplay = isAdditionalValueFocused
-    ? form.additionalValue
-    : formatThousands(form.additionalValue);
 
   // ── Gestión de imágenes existentes ────────────────────────────────────────
 
@@ -426,45 +331,23 @@ export const ProductEditForm = ({
 
   // ── Gestión de imágenes nuevas ─────────────────────────────────────────────
 
-  const handleNewImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
-
+  /**
+   * Procesa los archivos recibidos del `ImageDropzone` (clic o drop): valida
+   * tipo/tamaño/cupo con la utilidad compartida y genera previews.
+   */
+  const handleNewFilesSelected = (files: File[]) => {
     const availableSlots = MAX_IMAGES - totalImages;
-
-    if (availableSlots <= 0) {
-      setErrors((prev) => ({
-        ...prev,
-        images: `Ya tienes el máximo de ${MAX_IMAGES} imágenes permitidas.`,
-      }));
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    const invalidType = files.find(
-      (f) => !ACCEPTED_IMAGE_TYPES.includes(f.type),
+    const { accepted, error, overflow } = validateImageFiles(
+      files,
+      availableSlots,
     );
-    if (invalidType) {
-      setErrors((prev) => ({
-        ...prev,
-        images: 'Solo se permiten imágenes JPG, PNG o WEBP.',
-      }));
-      if (fileInputRef.current) fileInputRef.current.value = '';
+
+    if (error) {
+      setErrors((prev) => ({ ...prev, images: error }));
       return;
     }
 
-    const oversized = files.find((f) => f.size > MAX_IMAGE_SIZE_BYTES);
-    if (oversized) {
-      setErrors((prev) => ({
-        ...prev,
-        images: `Cada imagen debe pesar menos de ${MAX_IMAGE_SIZE_MB} MB.`,
-      }));
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    const filesToAdd = files.slice(0, availableSlots);
-    const previews: NewImagePreview[] = filesToAdd.map((file) => ({
+    const previews: NewImagePreview[] = accepted.map((file) => ({
       file,
       previewUrl: URL.createObjectURL(file),
     }));
@@ -472,19 +355,15 @@ export const ProductEditForm = ({
     setNewImages((prev) => [...prev, ...previews]);
     setErrors((prev) => ({ ...prev, images: undefined }));
 
-    if (files.length > availableSlots) {
+    if (overflow > 0) {
       showToast(
         'info',
-        `Solo se agregaron ${availableSlots} imagen(es). Límite alcanzado.`,
+        `Solo se agregaron ${accepted.length} imagen(es). Límite alcanzado.`,
       );
     }
-
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  /**
-   * Elimina una imagen nueva de la lista y revoca su URL de objeto.
-   */
+  /** Elimina una imagen nueva de la lista y revoca su URL de objeto. */
   const handleRemoveNewImage = (previewUrl: string) => {
     setNewImages((prev) => {
       const toRemove = prev.find((img) => img.previewUrl === previewUrl);
@@ -517,29 +396,14 @@ export const ProductEditForm = ({
     setSpecEntries((prev) => prev.filter((e) => e.id !== id));
   };
 
-  /** Construye el objeto de specs a partir de las filas del editor. */
-  function buildSpecifications(): ProductSpecifications {
-    const specs: ProductSpecifications = {};
-    specEntries.forEach(({ key, value }) => {
-      const k = key.trim();
-      const v = value.trim();
-      if (!k || !v) return;
-      if (v.toLowerCase() === 'true') specs[k] = true;
-      else if (v.toLowerCase() === 'false') specs[k] = false;
-      else if (v.includes(','))
-        specs[k] = v
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
-      else specs[k] = v;
-    });
-    return specs;
-  }
-
   // ── Validación ─────────────────────────────────────────────────────────────
 
-  const validateForm = (): boolean => {
-    const next: FormErrors = {};
+  /**
+   * Valida todos los campos, guarda los errores en estado y los devuelve para
+   * que `handleSubmit` pueda desplazarse al primer error inmediatamente.
+   */
+  const validateForm = (): ProductFormErrors => {
+    const next: ProductFormErrors = {};
 
     if (!form.name.trim()) {
       next.name = 'El nombre es obligatorio.';
@@ -595,22 +459,28 @@ export const ProductEditForm = ({
       .map((e) => e.key.trim());
 
     if (keys.length !== new Set(keys).size) {
-      next.specs = 'Hay claves de especificación duplicadas.';
+      next.specs = 'Hay detalles de especificación duplicados.';
     } else if (specEntries.some((e) => e.key.trim() && !e.value.trim())) {
-      next.specs = 'Todas las claves deben tener un valor.';
+      next.specs = 'Cada detalle debe tener un valor.';
     } else if (specEntries.some((e) => !e.key.trim() && e.value.trim())) {
-      next.specs = 'Todos los valores deben tener una clave.';
+      next.specs = 'Cada valor debe tener un detalle.';
     }
 
     setErrors(next);
-    return Object.keys(next).length === 0;
+    return next;
   };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!product || !validateForm()) return;
+    if (!product) return;
+
+    const next = validateForm();
+    if (Object.keys(next).length > 0) {
+      scrollToFirstError(next, ID_PREFIX);
+      return;
+    }
     if (!hasChanges) {
       showToast('info', 'No hay cambios para guardar.');
       return;
@@ -625,7 +495,7 @@ export const ProductEditForm = ({
         baseWeight: parsedValues.baseWeight,
         additionalValue: parsedValues.additionalValue,
         stock: parsedValues.stock,
-        specifications: buildSpecifications(),
+        specifications: buildSpecifications(specEntries),
         imageFiles: newImages.map((img) => img.file),
         imagesToDelete,
       });
@@ -660,6 +530,15 @@ export const ProductEditForm = ({
     imagesToDelete.includes(img),
   );
 
+  /**
+   * Nº de campos con error. Se cuentan solo los errores con MENSAJE definido,
+   * no las claves del objeto: al resolver un error lo marcamos como `undefined`
+   * (sin borrar la clave), por lo que `Object.keys(errors).length` seguiría
+   * contándolo. Filtrar por valor logra que el resumen no aparezca al subir una
+   * imagen (que limpia `errors.images`) y que el conteo baje al completar campos.
+   */
+  const errorCount = Object.values(errors).filter(Boolean).length;
+
   return (
     <>
       {/* ── Modal principal ──────────────────────────────────────────── */}
@@ -691,7 +570,7 @@ export const ProductEditForm = ({
               type="button"
               onClick={handleRequestClose}
               aria-label="Cerrar formulario"
-              className={BTN_SECONDARY}
+              className="rounded-xl border border-[var(--border-color)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-tertiary)] active:scale-95 cursor-pointer"
             >
               Cerrar
             </button>
@@ -716,8 +595,14 @@ export const ProductEditForm = ({
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Nombre */}
                 <div className="md:col-span-2">
-                  <Field label="Nombre" required error={errors.name}>
+                  <Field
+                    label="Nombre"
+                    required
+                    htmlFor={`${ID_PREFIX}-name`}
+                    error={errors.name}
+                  >
                     <input
+                      id={`${ID_PREFIX}-name`}
                       type="text"
                       value={form.name}
                       maxLength={MAX_NAME_LENGTH}
@@ -736,9 +621,11 @@ export const ProductEditForm = ({
                   <Field
                     label="Descripción"
                     required
+                    htmlFor={`${ID_PREFIX}-description`}
                     error={errors.description}
                   >
                     <textarea
+                      id={`${ID_PREFIX}-description`}
                       value={form.description}
                       maxLength={MAX_DESCRIPTION_LENGTH}
                       rows={4}
@@ -758,10 +645,12 @@ export const ProductEditForm = ({
                 <Field
                   label="Peso (gramos)"
                   required
+                  htmlFor={`${ID_PREFIX}-baseWeight`}
                   error={errors.baseWeight}
                   hint="Admite decimales. Ej: 4.5"
                 >
                   <input
+                    id={`${ID_PREFIX}-baseWeight`}
                     type="number"
                     step="0.01"
                     min="0.01"
@@ -773,22 +662,20 @@ export const ProductEditForm = ({
                   />
                 </Field>
 
-                {/* Valor adicional con formato de miles */}
+                {/* Valor adicional con prefijo COP y formato en tiempo real */}
                 <Field
                   label="Valor adicional (COP)"
                   required
+                  htmlFor={`${ID_PREFIX}-additionalValue`}
                   error={errors.additionalValue}
-                  hint="Ingresa el monto. Se formatea automáticamente."
+                  hint="Se formatea automáticamente mientras escribes."
                 >
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={additionalValueDisplay}
-                    onFocus={() => setIsAdditionalValueFocused(true)}
-                    onBlur={() => setIsAdditionalValueFocused(false)}
-                    onChange={handleAdditionalValueChange}
-                    placeholder="1.200.000"
-                    className={INPUT_BASE}
+                  <AdditionalValueField
+                    id={`${ID_PREFIX}-additionalValue`}
+                    value={form.additionalValue}
+                    onChange={(digits) =>
+                      updateField('additionalValue', digits)
+                    }
                   />
                 </Field>
 
@@ -797,10 +684,12 @@ export const ProductEditForm = ({
                   <Field
                     label="Stock"
                     required
+                    htmlFor={`${ID_PREFIX}-stock`}
                     error={errors.stock}
                     hint="Número entero de unidades disponibles."
                   >
                     <input
+                      id={`${ID_PREFIX}-stock`}
                       type="number"
                       step="1"
                       min="0"
@@ -895,10 +784,14 @@ export const ProductEditForm = ({
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {/* Paso 1 */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-[var(--text-primary)]">
+                    <label
+                      htmlFor={`${ID_PREFIX}-categoryId`}
+                      className="text-sm font-medium text-[var(--text-primary)]"
+                    >
                       Categoría principal
                     </label>
                     <select
+                      id={`${ID_PREFIX}-categoryId`}
                       value={selectedParentId ?? ''}
                       onChange={(e) => {
                         selectParent(
@@ -910,7 +803,7 @@ export const ProductEditForm = ({
                             categoryId: undefined,
                           }));
                       }}
-                      className={`${INPUT_BASE} bg-[var(--bg-secondary)] cursor-pointer`}
+                      className={`${INPUT_BASE} cursor-pointer bg-[var(--bg-secondary)]`}
                     >
                       <option
                         value=""
@@ -961,7 +854,7 @@ export const ProductEditForm = ({
                               : Number(e.target.value),
                           )
                         }
-                        className={`${INPUT_BASE} bg-[var(--bg-secondary)] cursor-pointer`}
+                        className={`${INPUT_BASE} cursor-pointer bg-[var(--bg-secondary)]`}
                       >
                         <option
                           value=""
@@ -992,83 +885,14 @@ export const ProductEditForm = ({
             </section>
 
             {/* ── Sección 4: Especificaciones ──────────────────────── */}
-            <section aria-labelledby="edit-section-specs">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <h3
-                    id="edit-section-specs"
-                    className="text-base font-semibold text-[var(--text-primary)]"
-                  >
-                    Especificaciones técnicas{' '}
-                    <span className="font-normal text-[var(--text-muted)]">
-                      (opcional)
-                    </span>
-                  </h3>
-                  <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                    Agrega detalles como talla, material o piedras. Si es un
-                    sí/no, escribe "true" o "false". Para varios valores,
-                    sepáralos con comas.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={addSpecEntry}
-                  className="shrink-0 rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm font-medium transition hover:bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] active:scale-95 cursor-pointer"
-                >
-                  + Agregar
-                </button>
-              </div>
-
-              {specEntries.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[var(--border-color)] px-4 py-6 text-center">
-                  <p className="text-sm text-[var(--text-muted)]">
-                    Sin especificaciones. Haz clic en "+ Agregar" para añadir.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {specEntries.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-center"
-                    >
-                      <input
-                        type="text"
-                        value={entry.key}
-                        onChange={(e) =>
-                          updateSpecEntry(entry.id, 'key', e.target.value)
-                        }
-                        placeholder="Detalle (ej: talla)"
-                        className="w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]"
-                      />
-                      <input
-                        type="text"
-                        value={entry.value}
-                        onChange={(e) =>
-                          updateSpecEntry(entry.id, 'value', e.target.value)
-                        }
-                        placeholder="Valor (ej: 6, 7, 8 o true)"
-                        className="w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition focus:outline-none focus:ring-2 focus:ring-[var(--accent)] hover:border-[var(--border-strong)]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeSpecEntry(entry.id)}
-                        aria-label="Eliminar especificación"
-                        className="rounded-xl border border-[var(--border-color)] px-3 py-2 text-sm text-red-500 transition hover:bg-red-500/10 hover:border-red-500/30 active:scale-95 sm:justify-self-start"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {errors.specs && (
-                <p className="mt-2 text-xs text-red-500" role="alert">
-                  {errors.specs}
-                </p>
-              )}
-            </section>
+            <SpecEditor
+              id={`${ID_PREFIX}-specs`}
+              entries={specEntries}
+              error={errors.specs}
+              onAdd={addSpecEntry}
+              onUpdate={updateSpecEntry}
+              onRemove={removeSpecEntry}
+            />
 
             {/* ── Sección 5: Imágenes ──────────────────────────────── */}
             <section aria-labelledby="edit-section-images">
@@ -1210,27 +1034,13 @@ export const ProductEditForm = ({
                 </div>
               )}
 
-              {/* Zona de carga */}
+              {/* Zona de carga (clic o drag & drop) */}
               {totalImages < MAX_IMAGES && (
-                <label className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border-color)] bg-[var(--bg-primary)] px-6 py-8 text-center transition hover:border-[var(--accent)] hover:bg-[var(--bg-tertiary)]">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    onChange={handleNewImagesChange}
-                    className="hidden"
-                  />
-                  <div className="mb-2 text-2xl opacity-60 transition group-hover:scale-110 group-hover:opacity-80">
-                    📤
-                  </div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">
-                    Agregar imágenes
-                  </p>
-                  <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                    Puedes agregar {MAX_IMAGES - totalImages} imagen(es) más
-                  </p>
-                </label>
+                <ImageDropzone
+                  id={`${ID_PREFIX}-images`}
+                  remaining={MAX_IMAGES - totalImages}
+                  onFiles={handleNewFilesSelected}
+                />
               )}
 
               {errors.images && (
@@ -1240,23 +1050,15 @@ export const ProductEditForm = ({
               )}
             </section>
 
-            {/* ── Acciones ─────────────────────────────────────────── */}
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={handleRequestClose}
-                className={BTN_SECONDARY}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={saving || !hasChanges}
-                className={BTN_PRIMARY}
-              >
-                {saving ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-            </div>
+            {/* ── Acciones (sticky con resumen de errores) ─────────── */}
+            <ProductFormActions
+              saving={saving}
+              submitLabel="Guardar cambios"
+              savingLabel="Guardando..."
+              errorCount={errorCount}
+              onCancel={handleRequestClose}
+              submitDisabled={!hasChanges}
+            />
           </form>
         </div>
       </div>

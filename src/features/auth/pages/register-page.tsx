@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useToastStore } from '@/store/toast.store';
 import { AuthService } from '@/features/auth/services/auth.service';
+import { getApiErrorMessage } from '@/api/get-error-message';
 
 interface FormState {
   firstName: string;
@@ -72,8 +73,8 @@ export const RegisterPage = () => {
       });
       showToast('success', '¡Cuenta creada exitosamente!');
       navigate('/login');
-    } catch (error: any) {
-      showToast('error', error?.message || 'Error al crear la cuenta');
+    } catch (error: unknown) {
+      showToast('error', getApiErrorMessage(error, 'Error al crear la cuenta'));
     } finally {
       setLoading(false);
     }
