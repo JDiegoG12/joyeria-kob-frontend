@@ -327,7 +327,7 @@ const UserMenu = ({ name, email }: UserMenuProps) => {
                 label="Mi perfil"
                 onClick={() => {
                   setOpen(false);
-                  navigate('/admin/perfil');
+                  navigate('/perfil');
                 }}
               />
               <DropdownButton

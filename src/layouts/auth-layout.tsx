@@ -28,7 +28,7 @@ export const AuthLayout = () => {
 
           {/* Logo KOB */}
           <Link
-            to="/catalogo"
+            to="/"
             className="flex items-center transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
             aria-label="Joyería KOB — Inicio"
           >

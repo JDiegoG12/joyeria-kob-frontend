@@ -18,7 +18,15 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Heart, Menu, Moon, Sun, User } from 'lucide-react';
+import {
+  ChevronRight,
+  Heart,
+  LogOut,
+  Menu,
+  Moon,
+  Sun,
+  User,
+} from 'lucide-react';
 
 import { useThemeStore } from '@/store/theme.store';
 import { useAuthStore } from '@/store/auth.store';
@@ -183,6 +191,7 @@ export const Navbar = () => {
             {isAuthenticated ? (
               <UserMenu
                 name={user?.name ?? ''}
+                email={user?.email ?? ''}
                 role={user?.role ?? 'CLIENT'}
               />
             ) : (
@@ -256,18 +265,22 @@ export const Navbar = () => {
 
 interface UserMenuProps {
   name: string;
+  email: string;
   role: string;
 }
 
 /**
  * Menú dropdown del usuario autenticado.
  */
-const UserMenu = ({ name, role }: UserMenuProps) => {
+const UserMenu = ({ name, email, role }: UserMenuProps) => {
   const [open, setOpen] = useState(false);
 
   const firstName = name.trim().split(' ')[0] || 'usuario';
   // Inicial del nombre para el avatar, igual que el topbar del panel admin.
   const initial = firstName.charAt(0).toUpperCase();
+  const isAdmin = role === 'ADMIN';
+  // Nombre a mostrar en la cabecera: nombre completo si existe, si no el primero.
+  const displayName = name.trim() || firstName;
 
   return (
     <div className="relative">
@@ -310,10 +323,10 @@ const UserMenu = ({ name, role }: UserMenuProps) => {
 
       {/* Dropdown */}
       <div
-        className={`absolute right-0 z-50 mt-2 w-56 max-w-[calc(100vw-1rem)] origin-top-right border py-2 shadow-[var(--shadow-lg)] transition-[opacity,transform] duration-200 ease-out ${
+        className={`absolute right-0 z-50 mt-2 w-64 max-w-[calc(100vw-1rem)] origin-top-right border pb-1.5 shadow-[var(--shadow-lg)] transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none ${
           open
-            ? 'pointer-events-auto scale-100 opacity-100'
-            : 'pointer-events-none scale-95 opacity-0'
+            ? 'pointer-events-auto translate-y-0 scale-100 opacity-100'
+            : 'pointer-events-none -translate-y-2 scale-95 opacity-0'
         }`}
         style={{
           backgroundColor: 'var(--bg-secondary)',
@@ -321,54 +334,72 @@ const UserMenu = ({ name, role }: UserMenuProps) => {
         }}
         role="menu"
       >
-        {/* Saludo */}
-        <p
-          className="px-4 pt-1 pb-2"
-          style={{
-            fontFamily: 'var(--font-ui)',
-            fontSize: 'var(--text-xs)',
-            letterSpacing: 'var(--tracking-wide)',
-            color: 'var(--text-muted)',
-          }}
-        >
-          Hola, {firstName}
-        </p>
+        {/* ── Cabecera editorial: nombre (serif) + correo + chip de rol ── */}
+        <div className="px-5 pt-4 pb-3.5">
+          <p
+            className="truncate"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'var(--text-lg)',
+              fontWeight: 'var(--font-semibold)',
+              lineHeight: 'var(--leading-tight)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            {displayName}
+          </p>
+          {email && (
+            <p
+              className="mt-0.5 truncate"
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 'var(--text-xs)',
+                color: 'var(--text-muted)',
+              }}
+            >
+              {email}
+            </p>
+          )}
+        </div>
 
-        {/* Perfil */}
-        <DropdownItem to="/perfil" label="Mi perfil" />
+        <div className="h-px" style={{ backgroundColor: 'var(--border-color)' }} />
 
-        {/* Admin */}
-        {role === 'ADMIN' && (
-          <DropdownItem
-            to="/admin/general"
-            label="Panel admin"
-          />
-        )}
+        {/* ── Navegación ── */}
+        <div className="py-1.5">
+          <DropdownItem to="/perfil" label="Mi perfil" onNavigate={() => setOpen(false)} />
+          {isAdmin && (
+            <DropdownItem
+              to="/admin/general"
+              label="Panel admin"
+              onNavigate={() => setOpen(false)}
+            />
+          )}
+        </div>
 
-        <div
-          className="my-2 h-px"
-          style={{
-            backgroundColor: 'var(--border-color)',
-          }}
-        />
+        <div className="h-px" style={{ backgroundColor: 'var(--border-color)' }} />
 
-        {/* Logout */}
-        <button
-          onClick={() => AuthService.logout()}
-          role="menuitem"
-          className="block w-full px-4 py-2.5 text-left transition-colors duration-200 hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
-          style={{
-            fontFamily: 'var(--font-ui)',
-            fontSize: 'var(--text-xs)',
-            fontWeight: 'var(--font-medium)',
-            letterSpacing: 'var(--tracking-wide)',
-            textTransform: 'uppercase',
-            color:
-              'color-mix(in srgb, var(--color-error) 70%, var(--text-secondary))',
-          }}
-        >
-          Cerrar sesión
-        </button>
+        {/* ── Cerrar sesión (acción, en rojo) ── */}
+        <div className="pt-1.5">
+          <button
+            onClick={() => AuthService.logout()}
+            role="menuitem"
+            className="group relative flex w-full cursor-pointer items-center justify-between gap-3 py-2.5 pr-4 pl-5 text-left transition-colors duration-200 hover:bg-[color-mix(in_srgb,var(--color-error)_9%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
+            style={{
+              fontFamily: 'var(--font-ui)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 'var(--font-medium)',
+              color: 'var(--color-error)',
+            }}
+          >
+            <span
+              aria-hidden="true"
+              className="absolute top-0 left-0 h-full w-[2px] origin-top scale-y-0 transition-transform duration-200 group-hover:scale-y-100"
+              style={{ backgroundColor: 'var(--color-error)' }}
+            />
+            <span>Cerrar sesión</span>
+            <LogOut size={15} className="shrink-0" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -381,34 +412,42 @@ const UserMenu = ({ name, role }: UserMenuProps) => {
 interface DropdownItemProps {
   to: string;
   label: string;
-  danger?: boolean;
+  onNavigate?: () => void;
 }
 
 /**
- * Ítem normal de navegación del dropdown.
+ * Ítem de navegación del dropdown — estilo editorial.
+ * En reposo: texto en `--text-secondary`, sentence-case. En hover: una fina
+ * barra de acento crece desde arriba a la izquierda, el texto sube a
+ * `--text-primary` y un chevron se desliza desde la derecha.
  */
-const DropdownItem = ({
-  to,
-  label,
-  danger = false,
-}: DropdownItemProps) => (
+const DropdownItem = ({ to, label, onNavigate }: DropdownItemProps) => (
   <Link
     to={to}
     role="menuitem"
-    className="block px-4 py-2.5 transition-colors duration-200 hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
+    onClick={onNavigate}
+    className="group relative flex items-center justify-between gap-3 py-2.5 pr-4 pl-5 transition-colors duration-200 hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)]"
     style={{
       fontFamily: 'var(--font-ui)',
-      fontSize: 'var(--text-xs)',
-      fontWeight: danger
-        ? 'var(--font-medium)'
-        : 'var(--font-semibold)',
-      letterSpacing: 'var(--tracking-wide)',
-      textTransform: 'uppercase',
-      color: danger
-        ? 'color-mix(in srgb, var(--color-error) 70%, var(--text-secondary))'
-        : 'var(--text-secondary)',
+      fontSize: 'var(--text-sm)',
+      fontWeight: 'var(--font-medium)',
+      color: 'var(--text-secondary)',
     }}
   >
-    {label}
+    {/* Barra de acento que crece en hover */}
+    <span
+      aria-hidden="true"
+      className="absolute top-0 left-0 h-full w-[2px] origin-top scale-y-0 transition-transform duration-200 group-hover:scale-y-100"
+      style={{ backgroundColor: 'var(--accent)' }}
+    />
+    <span className="transition-colors duration-200 group-hover:text-[var(--text-primary)]">
+      {label}
+    </span>
+    <ChevronRight
+      size={15}
+      aria-hidden="true"
+      className="-translate-x-1 shrink-0 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+      style={{ color: 'var(--text-muted)' }}
+    />
   </Link>
 );

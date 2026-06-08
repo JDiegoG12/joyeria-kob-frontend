@@ -96,7 +96,7 @@ export const LoginPage = () => {
           <div className="mb-6">
             <p
               className="text-xs uppercase tracking-[0.3em]"
-              style={{ color: 'var(--accent)' }}
+              style={{ color: 'var(--text-accent)' }}
             >
               Bienvenido
             </p>
@@ -163,7 +163,7 @@ export const LoginPage = () => {
             <Link
               to="/registro"
               className="font-semibold underline-offset-4 transition hover:underline"
-              style={{ color: 'var(--accent)' }}
+              style={{ color: 'var(--text-accent)' }}
             >
               Regístrate
             </Link>
