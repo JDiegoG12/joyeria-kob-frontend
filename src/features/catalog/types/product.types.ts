@@ -111,6 +111,14 @@ export interface Product {
   baseWeight: number;
   additionalValue: number;
   calculatedPrice: number;
+  /** Descuento fijo en COP asignado por el admin. 0 = sin descuento. */
+  discountValue: number;
+  /**
+   * Precio con el descuento aplicado (`calculatedPrice - discountValue`),
+   * limitado por el backend para no ser negativo. Igual a `calculatedPrice`
+   * cuando no hay descuento.
+   */
+  finalPrice: number;
   stock: number;
   status: ProductStatus;
   images: string[];
@@ -158,4 +166,6 @@ export interface UpdateProductPayload {
   specifications?: ProductSpecifications;
   imageFiles?: File[];
   imagesToDelete?: string[];
+  /** Descuento fijo en COP. Enviar 0 para quitar el descuento. */
+  discountValue?: number;
 }

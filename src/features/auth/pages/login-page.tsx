@@ -1,25 +1,28 @@
 /**
  * @file login-page.tsx
  * @description Página de inicio de sesión para clientes.
- * - Panel izquierdo con textos decorativos (desktop)
- * - Gradientes en modo claro y oscuro
- * - 100% responsive — cabe en pantalla sin scroll
+ * - Panel izquierdo con fotografía de joyería + degradado de marca (desktop).
+ * - Tarjeta de formulario con esquinas rectas, coherente con el resto de la app.
+ * - Enlace "Volver al inicio" para abandonar sin iniciar sesión.
+ * - Pegado de texto habilitado en todos los campos.
+ * - 100% responsive y con animaciones de entrada no invasivas.
  * Las notificaciones usan `useToastStore` para respetar el tema activo.
  */
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
 import { useToastStore } from '@/store/toast.store';
 import { AuthService } from '@/features/auth/services/auth.service';
 import { getApiErrorMessage } from '@/api/get-error-message';
+import { AuthField } from '@/features/auth/components/auth-field';
+import { AuthSidePanel } from '@/features/auth/components/auth-side-panel';
+import { AuthMobileBanner } from '@/features/auth/components/auth-mobile-banner';
+import { BackHomeLink } from '@/features/auth/components/back-home-link';
 
 interface FormState {
   email: string;
   password: string;
 }
-
-const blockClipboard = (e: React.ClipboardEvent) => e.preventDefault();
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -27,7 +30,6 @@ export const LoginPage = () => {
   const [form, setForm] = useState<FormState>({ email: '', password: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const updateField = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -59,199 +61,115 @@ export const LoginPage = () => {
   };
 
   return (
-    /**
-     * h-[calc(100vh-64px)]: ocupa exactamente el espacio bajo el header del AuthLayout
-     * overflow-hidden: evita scroll
-     */
     <div
-      className="relative flex h-[calc(100vh-64px)] overflow-hidden"
+      className="grid min-h-[calc(100vh-var(--navbar-height,64px))] grid-cols-1 lg:grid-cols-2"
       style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
     >
-      {/* ── Gradientes decorativos ── */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(212,175,55,0.13),_transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(212,175,55,0.08),_transparent_50%)]" />
-      <div className="pointer-events-none absolute inset-0 dark:bg-[radial-gradient(ellipse_at_top_left,_rgba(212,175,55,0.07),_transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(212,175,55,0.04),_transparent_50%)]" />
+      {/* ── Panel decorativo — solo desktop ── */}
+      <AuthSidePanel
+        eyebrow="Acceso de clientes"
+        titleTop="Tus piezas"
+        titleAccent="favoritas te esperan"
+        description="Vuelve a tu cuenta para retomar lo que guardaste, seguir las piezas que te enamoraron y descubrir lo nuevo de la colección."
+        footnote="Atención cercana · piezas seleccionadas con detalle"
+      />
 
-      {/* ── Grid de dos columnas ── */}
-      <div className="relative z-10 grid w-full grid-cols-1 lg:grid-cols-2">
+      {/* ── Panel del formulario ── */}
+      <section className="flex items-center justify-center overflow-y-auto px-4 py-8 sm:px-10">
+        <div
+          className="animate-fade-in w-full max-w-md border p-6 sm:p-8"
+          style={{
+            backgroundColor: 'var(--bg-secondary)',
+            borderColor: 'var(--border-color)',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+        >
+          {/* Banner de marca — solo móvil */}
+          <AuthMobileBanner tagline="Atención cercana · piezas seleccionadas con detalle" />
 
-        {/* ── Panel izquierdo — solo desktop ── */}
-        <section className="hidden lg:flex lg:flex-col lg:justify-between px-14 py-10 xl:px-16 xl:py-14 animate-fade-in">
-          <div>
-            <span
-              className="inline-flex items-center rounded-full border px-4 py-1.5 text-xs uppercase tracking-[0.25em] backdrop-blur-md"
-              style={{
-                borderColor: 'var(--border-color)',
-                backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-secondary)',
-              }}
-            >
-              Joyería KOB
-            </span>
+          {/* Volver al inicio */}
+          <div className="mb-6">
+            <BackHomeLink />
           </div>
 
-          <div className="max-w-lg">
+          {/* Cabecera */}
+          <div className="mb-6">
             <p
-              className="mb-4 text-xs uppercase tracking-[0.35em]"
+              className="text-xs uppercase tracking-[0.3em]"
               style={{ color: 'var(--accent)' }}
             >
-              Elegancia atemporal
+              Bienvenido
             </p>
-            <h1
-              className="font-serif text-5xl leading-[1.08] xl:text-6xl"
-              style={{ color: 'var(--text-primary)' }}
+            <h2
+              className="mt-2"
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'var(--text-3xl)',
+                fontWeight: 'var(--font-bold)',
+                lineHeight: 'var(--leading-tight)',
+                color: 'var(--text-primary)',
+              }}
             >
-              Joyas que cuentan
-              <span className="block" style={{ color: 'var(--accent)' }}>
-                tu historia
-              </span>
-            </h1>
+              Iniciar sesión
+            </h2>
             <p
-              className="mt-5 max-w-md text-base leading-7 xl:text-lg xl:leading-8"
+              className="mt-2 text-sm leading-6"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Ingresa para explorar piezas exclusivas, guardar tus intereses y
-              continuar una experiencia diseñada con detalle, lujo y
-              personalización.
+              Ingresa con tu correo para continuar en Joyería KOB.
             </p>
           </div>
 
-          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            Diseño premium • experiencia cuidada • acceso seguro
-          </p>
-        </section>
+          {/* Formulario */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <AuthField
+              label="Correo electrónico"
+              type="email"
+              value={form.email}
+              onChange={(v) => updateField('email', v)}
+              placeholder="correo@ejemplo.com"
+              autoComplete="email"
+              error={errors.email}
+              animationDelay="80ms"
+            />
 
-        {/* ── Panel derecho — formulario ── */}
-        <section className="flex h-[calc(100vh-64px)] items-center justify-center px-4 py-6 sm:px-10">
-          <div
-            className="w-full max-w-sm animate-fade-in rounded-2xl border p-6 shadow-lg backdrop-blur-xl sm:max-w-md sm:p-8"
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              borderColor: 'var(--border-color)',
-              boxShadow: 'var(--shadow-lg)',
-            }}
+            <AuthField
+              label="Contraseña"
+              value={form.password}
+              onChange={(v) => updateField('password', v)}
+              placeholder="Tu contraseña"
+              autoComplete="current-password"
+              error={errors.password}
+              isPassword
+              animationDelay="160ms"
+            />
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="animate-fade-in mt-2 w-full cursor-pointer py-3 text-sm font-bold uppercase tracking-wide text-[var(--accent-text)] transition-all duration-200 hover:brightness-125 hover:shadow-[var(--shadow-accent)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ backgroundColor: 'var(--accent)', animationDelay: '240ms' }}
+            >
+              {loading ? 'Ingresando…' : 'Entrar'}
+            </button>
+          </form>
+
+          {/* Pie */}
+          <p
+            className="mt-6 text-center text-sm"
+            style={{ color: 'var(--text-secondary)' }}
           >
-            {/* Cabecera */}
-            <div className="mb-5">
-              <p
-                className="text-xs uppercase tracking-[0.3em]"
-                style={{ color: 'var(--accent)' }}
-              >
-                Bienvenida
-              </p>
-              <h2
-                className="mt-1 font-serif text-3xl"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Iniciar sesión
-              </h2>
-              <p
-                className="mt-1 text-xs leading-5"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Accede a tu cuenta para continuar en Joyería KOB.
-              </p>
-            </div>
-
-            {/* Formulario */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-
-              {/* Correo */}
-              <div>
-                <label
-                  className="mb-1 block text-xs font-medium"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  Correo electrónico
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => updateField('email', e.target.value)}
-                  onCopy={blockClipboard}
-                  onCut={blockClipboard}
-                  onPaste={blockClipboard}
-                  placeholder="correo@ejemplo.com"
-                  autoComplete="email"
-                  className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
-                  style={{
-                    borderColor: 'var(--border-color)',
-                    backgroundColor: 'var(--bg-primary)',
-                    color: 'var(--text-primary)',
-                  }}
-                />
-                {errors.email && (
-                  <p className="mt-1 text-xs text-red-500">{errors.email}</p>
-                )}
-              </div>
-
-              {/* Contraseña */}
-              <div>
-                <label
-                  className="mb-1 block text-xs font-medium"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  Contraseña
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={form.password}
-                    onChange={(e) => updateField('password', e.target.value)}
-                    onCopy={blockClipboard}
-                    onCut={blockClipboard}
-                    onPaste={blockClipboard}
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    className="w-full rounded-xl border px-3 py-2.5 pr-10 text-sm outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20"
-                    style={{
-                      borderColor: 'var(--border-color)',
-                      backgroundColor: 'var(--bg-primary)',
-                      color: 'var(--text-primary)',
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 transition hover:opacity-70"
-                    style={{ color: 'var(--text-secondary)' }}
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="mt-1 text-xs text-red-500">{errors.password}</p>
-                )}
-              </div>
-
-              {/* Botón */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-xl py-2.5 text-sm font-medium text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                style={{ backgroundColor: 'var(--accent)' }}
-              >
-                {loading ? 'Ingresando...' : 'Entrar'}
-              </button>
-            </form>
-
-            {/* Pie */}
-            <p
-              className="mt-4 text-center text-xs"
-              style={{ color: 'var(--text-secondary)' }}
+            ¿No tienes cuenta?{' '}
+            <Link
+              to="/registro"
+              className="font-semibold underline-offset-4 transition hover:underline"
+              style={{ color: 'var(--accent)' }}
             >
-              ¿No tienes cuenta?{' '}
-              <Link
-                to="/registro"
-                className="font-medium transition hover:opacity-80"
-                style={{ color: 'var(--accent)' }}
-              >
-                Regístrate
-              </Link>
-            </p>
-          </div>
-        </section>
-      </div>
+              Regístrate
+            </Link>
+          </p>
+        </div>
+      </section>
     </div>
   );
 };

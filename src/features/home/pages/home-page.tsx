@@ -22,7 +22,7 @@
  * de `CatalogNavBar` pueda hacer scroll suave hasta ella.
  */
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
@@ -43,34 +43,27 @@ import {
 import { CatalogNavBar } from '@/features/home/components/catalog-nav-bar';
 import { FeaturedProductsSection } from '@/features/featured-products/components/featured-products-section';
 import { buildWhatsAppUrl } from '@/config/contact';
+import { SERVER_URL } from '@/api/server-url';
+import { usePromoBannerStore } from '@/store/promo-banner.store';
+import type { PromoBanner } from '@/features/promotions/types/promotion.types';
 import GOLD_INVESTMENT_IMAGE from '@/assets/GOLD_INVESTMENT_IMAGE.jpg';
 import { SocialContentSection } from '../components/social-content-section';
 
 /**
- * Slides promocionales del carrusel (slides 1+).
- * El slide 0 siempre es el banner principal configurable desde el admin.
- *
- * @remarks
- * Cuando el backend exponga el endpoint de slides promocionales,
- * reemplazar este arreglo estático por una llamada al servicio correspondiente.
- * Cada item representa una imagen de campaña o promoción temporal.
+ * Construye la URL de destino de un banner de promoción según su tipo de enlace.
+ * - PRODUCT  → deep-link al detalle del producto en el catálogo (`?product=`).
+ * - CATEGORY → deep-link al catálogo filtrado por categoría (`?categoria=`).
+ * - NONE     → sin enlace (banner informativo).
  */
-const PROMO_SLIDES: PromoSlide[] = [
-  {
-    imageUrl:
-      'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1920&q=85',
-    imageAlt: 'Colección de pulseras de oro Joyería KOB',
-    overlayText: 'Nueva colección pulseras',
-    linkTo: '/catalogo',
-  },
-  {
-    imageUrl:
-      'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1920&q=85',
-    imageAlt: 'Anillos artesanales en oro 18k',
-    overlayText: 'Anillos a tu medida',
-    linkTo: '/catalogo',
-  },
-];
+const buildPromoLinkTo = (banner: PromoBanner): string | undefined => {
+  if (banner.linkType === 'PRODUCT' && banner.linkProductId) {
+    return `/catalogo?product=${banner.linkProductId}`;
+  }
+  if (banner.linkType === 'CATEGORY' && banner.linkCategoryId != null) {
+    return `/catalogo?categoria=${banner.linkCategoryId}`;
+  }
+  return undefined;
+};
 
 const SERVICES = [
   {
@@ -157,6 +150,25 @@ export const HomePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Banners de promoción del carrusel (slides 1+), cargados desde el backend.
+  const { banners, fetchBanners } = usePromoBannerStore();
+
+  useEffect(() => {
+    void fetchBanners();
+  }, [fetchBanners]);
+
+  const promoSlides: PromoSlide[] = useMemo(
+    () =>
+      banners.map((banner) => ({
+        imageUrl: `${SERVER_URL}${banner.imageUrl}`,
+        imageAlt: banner.title ?? 'Promoción de Joyería KOB',
+        overlayText: banner.title ?? undefined,
+        overlaySubtitle: banner.subtitle ?? undefined,
+        linkTo: buildPromoLinkTo(banner),
+      })),
+    [banners],
+  );
+
   /*
    * Scroll diferido a una sección de la home al llegar desde otra ruta.
    *
@@ -196,7 +208,7 @@ export const HomePage = () => {
   return (
     <div className="overflow-x-hidden">
       {/* Hero como carrusel — slide 0 es el banner configurable desde admin */}
-      <HeroCarousel promoSlides={PROMO_SLIDES} />
+      <HeroCarousel promoSlides={promoSlides} />
 
       {/*
        * Barra de navegación rápida al catálogo.

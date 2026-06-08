@@ -56,6 +56,8 @@ export interface PromoSlide {
    * Si es undefined, el slide muestra solo la imagen sin overlay de texto.
    */
   overlayText?: string;
+  /** Subtítulo opcional mostrado bajo `overlayText`. */
+  overlaySubtitle?: string;
   /** URL de destino al hacer clic en el slide promocional. */
   linkTo?: string;
 }
@@ -483,7 +485,7 @@ const PromoSlideItem = ({
             aria-hidden="true"
           />
           <div
-            className="relative z-10 mx-auto flex h-full items-center px-5 sm:px-6 lg:px-10"
+            className="relative z-10 mx-auto flex h-full flex-col justify-center px-5 sm:px-6 lg:px-10"
             style={{ maxWidth: 'var(--content-max-width)' }}
           >
             <p
@@ -499,11 +501,28 @@ const PromoSlideItem = ({
             >
               {slide.overlayText}
             </p>
+            {slide.overlaySubtitle && (
+              <p
+                className="mt-3 max-w-xl"
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 'clamp(1rem, 2vw, 1.25rem)',
+                  lineHeight: 'var(--leading-relaxed)',
+                  color: 'var(--announcement-text)',
+                }}
+              >
+                {slide.overlaySubtitle}
+              </p>
+            )}
           </div>
         </>
       )}
     </>
   );
+
+  // Las rutas internas (empiezan con '/') usan <Link> para navegación SPA sin
+  // recarga; cualquier otra (http…) cae a un <a> normal.
+  const isInternalLink = slide.linkTo?.startsWith('/') ?? false;
 
   return (
     <div
@@ -517,13 +536,23 @@ const PromoSlideItem = ({
       aria-hidden={!isActive}
     >
       {slide.linkTo ? (
-        <a
-          href={slide.linkTo}
-          className="relative block h-full w-full cursor-pointer"
-          aria-label={slide.imageAlt}
-        >
-          {content}
-        </a>
+        isInternalLink ? (
+          <Link
+            to={slide.linkTo}
+            className="relative block h-full w-full cursor-pointer"
+            aria-label={slide.imageAlt}
+          >
+            {content}
+          </Link>
+        ) : (
+          <a
+            href={slide.linkTo}
+            className="relative block h-full w-full cursor-pointer"
+            aria-label={slide.imageAlt}
+          >
+            {content}
+          </a>
+        )
       ) : (
         <div className="relative h-full w-full">{content}</div>
       )}

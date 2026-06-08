@@ -11,6 +11,10 @@
  *   todas las imágenes al entrar al detalle.
  * - Debajo de la imagen: nombre en `font-ui` semibold (accent), peso pequeño
  *   en muted, precio bold en accent.
+ * - Precio con descuento: si el producto tiene un descuento que reduce el
+ *   precio, se muestra el original tachado (muted) junto al precio final en
+ *   bold (accent), igual que en la tarjeta del catálogo. En móvil el par se
+ *   apila para no envolver; en desktop va en una sola línea.
  * - Toda la tarjeta es clickeable: navega a `/catalogo?product=<id>` para
  *   que el catálogo abra automáticamente el `ProductDetailModal`.
  *
@@ -113,6 +117,16 @@ export const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
   const primaryImageUrl = resolvePrimaryImage(images);
 
   /**
+   * Hay descuento visible solo si reduce el precio sin dejarlo en 0 o negativo.
+   * Misma lógica que la tarjeta del catálogo (`public-product-card`): cubre el
+   * caso de que el oro baje y el descuento iguale o supere el precio calculado.
+   */
+  const hasDiscount =
+    product.discountValue > 0 &&
+    product.finalPrice > 0 &&
+    product.finalPrice < product.calculatedPrice;
+
+  /**
    * Navega al catálogo con el query param del producto.
    * El catálogo detecta el param y abre el `ProductDetailModal` automáticamente.
    */
@@ -126,7 +140,13 @@ export const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
       onClick={handleOpenDetail}
       role="button"
       tabIndex={0}
-      aria-label={`Ver detalles de ${product.name}`}
+      aria-label={
+        hasDiscount
+          ? `Ver detalles de ${product.name}, en oferta a ${formatPrice(
+              product.finalPrice,
+            )} antes ${formatPrice(product.calculatedPrice)}`
+          : `Ver detalles de ${product.name}`
+      }
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
@@ -239,16 +259,55 @@ export const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
           {formatWeight(product.baseWeight)}
         </p>
 
-        <p
-          className="mt-1 text-xs sm:text-sm"
-          style={{
-            fontFamily: 'var(--font-ui)',
-            fontWeight: 'var(--font-bold)',
-            color: 'var(--text-accent)',
-          }}
-        >
-          {formatPrice(product.calculatedPrice)}
-        </p>
+        {/*
+         * Precio: con descuento muestra el original tachado + el final en bold;
+         * sin descuento muestra solo el precio calculado. Misma presentación que
+         * la tarjeta del catálogo (`public-product-card`).
+         *
+         * Layout responsive: en móvil las cards son angostas (~150px) y los
+         * precios en COP son largos, así que el par tachado/final se **apila**
+         * (`flex-col`) para que no envuelva de forma irregular. En desktop
+         * (`sm:`) pasa a fila con los precios alineados por su línea base,
+         * idéntico al catálogo.
+         */}
+        {hasDiscount ? (
+          <div className="mt-1 flex flex-col items-center justify-center sm:flex-row sm:items-baseline sm:gap-2">
+            {/* Precio original tachado */}
+            <span
+              className="text-xs"
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontWeight: 'var(--font-normal)',
+                color: 'var(--text-muted)',
+                textDecoration: 'line-through',
+              }}
+            >
+              {formatPrice(product.calculatedPrice)}
+            </span>
+            {/* Precio con descuento aplicado */}
+            <span
+              className="text-xs sm:text-sm"
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontWeight: 'var(--font-bold)',
+                color: 'var(--text-accent)',
+              }}
+            >
+              {formatPrice(product.finalPrice)}
+            </span>
+          </div>
+        ) : (
+          <p
+            className="mt-1 text-xs sm:text-sm"
+            style={{
+              fontFamily: 'var(--font-ui)',
+              fontWeight: 'var(--font-bold)',
+              color: 'var(--text-accent)',
+            }}
+          >
+            {formatPrice(product.calculatedPrice)}
+          </p>
+        )}
       </div>
     </article>
   );

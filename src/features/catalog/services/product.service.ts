@@ -142,6 +142,10 @@ function buildUpdateFormData(payload: UpdateProductPayload): FormData {
     formData.append('status', payload.status);
   }
 
+  if (payload.discountValue !== undefined) {
+    formData.append('discountValue', String(payload.discountValue));
+  }
+
   if (payload.specifications !== undefined) {
     formData.append('specifications', JSON.stringify(payload.specifications));
   }
