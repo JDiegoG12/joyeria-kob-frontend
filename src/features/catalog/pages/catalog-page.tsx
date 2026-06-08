@@ -131,6 +131,8 @@ export const CatalogPage = () => {
     loadCategories,
     selectedCatalogCategoryId,
     selectedCatalogSubCategoryId,
+    selectCatalogCategory,
+    selectCatalogSubCategory,
   } = useCategoryStore();
 
   /**
@@ -192,6 +194,41 @@ export const CatalogPage = () => {
   useEffect(() => {
     void loadCategories();
   }, [loadCategories]);
+
+  // ── Deep-link de categoría vía query param ───────────────────────────────────
+  //
+  // Caso de uso: un banner de promoción de la home enlaza a una categoría con
+  // `/catalogo?categoria=<id>` (y opcionalmente `?subcategoria=<id>`). Aquí
+  // detectamos esos params al montar/cambiar, fijamos la categoría en el store
+  // (lo que dispara el fetch del catálogo) y limpiamos los params para que un
+  // back/forward no vuelva a forzar la selección.
+  const categoriaParam = searchParams.get('categoria');
+  const subcategoriaParam = searchParams.get('subcategoria');
+
+  useEffect(() => {
+    if (!categoriaParam) return;
+    const categoryId = Number(categoriaParam);
+    if (!Number.isInteger(categoryId)) return;
+
+    // El padre primero: selectCatalogCategory resetea la subcategoría.
+    selectCatalogCategory(categoryId);
+    const subId = subcategoriaParam ? Number(subcategoriaParam) : null;
+    if (subId !== null && Number.isInteger(subId)) {
+      selectCatalogSubCategory(subId);
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.delete('categoria');
+    next.delete('subcategoria');
+    setSearchParams(next, { replace: true });
+  }, [
+    categoriaParam,
+    subcategoriaParam,
+    selectCatalogCategory,
+    selectCatalogSubCategory,
+    searchParams,
+    setSearchParams,
+  ]);
 
   // ── Fetch del catálogo server-side ───────────────────────────────────────────
 

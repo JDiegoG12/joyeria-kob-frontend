@@ -148,6 +148,8 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => ({
         baseWeight: 0,
         additionalValue: 0,
         calculatedPrice: 0,
+        discountValue: 0,
+        finalPrice: 0,
         stock: 0,
         status: 'AVAILABLE',
         images: [],

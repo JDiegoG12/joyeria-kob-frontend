@@ -287,7 +287,7 @@ export const HeroBannerCard = () => {
               }}
             >
               {isExpanded
-                ? 'Imagen y texto del primer slide del carrusel (1920 × 800 px recomendado).'
+                ? 'Imagen y texto del primer slide del carrusel (1920 × 580 px recomendado).'
                 : bannerText || DEFAULT_BANNER_TEXT}
             </p>
           </div>
@@ -338,15 +338,17 @@ export const HeroBannerCard = () => {
         {/*
          * ── Previsualización compacta (solo cuando colapsado) ───────────────
          *
-         * Proporción 16:5 para ocupar menos espacio vertical en estado colapsado.
-         * El gradiente inferior es una superposición de UI estándar (negro semitransparente)
-         * para legibilidad de texto sobre imagen — no es un color de marca.
+         * Proporción 1920:580 — misma franja real del carrusel en escritorio,
+         * unificada con la previa del formulario expandido para que el encuadre
+         * coincida con el resultado final. El gradiente inferior es una
+         * superposición de UI estándar (negro semitransparente) para legibilidad
+         * de texto sobre imagen — no es un color de marca.
          */}
         {!isExpanded && (
           <div
             className="relative mx-4 mb-4 overflow-hidden sm:mx-6 sm:mb-5"
             style={{
-              aspectRatio: '16 / 5',
+              aspectRatio: '1920 / 580',
               borderRadius: 'var(--radius-sm)',
               border: '1px solid var(--border-color)',
               backgroundColor: 'var(--bg-tertiary)',
@@ -442,7 +444,11 @@ export const HeroBannerCard = () => {
               <div
                 className="relative mb-3 overflow-hidden"
                 style={{
-                  aspectRatio: '16 / 9',
+                  // Proporción de la franja real del carrusel en escritorio
+                  // (~1920×580). Mantener en sync con la altura del carrusel en
+                  // hero-carousel.tsx (height: clamp(420px, 58vh, 580px)) para
+                  // que el recorte de esta previa coincida con el resultado final.
+                  aspectRatio: '1920 / 580',
                   borderRadius: 'var(--radius-sm)',
                   border: '1px solid var(--border-color)',
                   backgroundColor: 'var(--bg-tertiary)',
@@ -467,7 +473,7 @@ export const HeroBannerCard = () => {
                       color: 'rgba(255,255,255,0.78)',
                     }}
                   >
-                    Formato recomendado: 1920 × 1080 px · JPG, PNG, WebP
+                    Formato recomendado: 1920 × 580 px · JPG, PNG, WebP
                   </p>
                 </div>
               </div>

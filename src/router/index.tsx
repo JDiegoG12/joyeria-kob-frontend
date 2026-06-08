@@ -136,6 +136,12 @@ const AdminCategoriesPage = lazy(() =>
   })),
 );
 
+const AdminPromotionsPage = lazy(() =>
+  import('@/features/promotions/pages/admin-promotions-page').then((m) => ({
+    default: m.AdminPromotionsPage,
+  })),
+);
+
 // ─── Páginas compartidas ──────────────────────────────────────────────────────
 const NotFoundPage = lazy(() =>
   import('@/features/shared/pages/not-found-page').then((m) => ({
@@ -250,7 +256,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/admin/promociones',
-        element: withSuspense(<PlaceholderPage title="Promociones" />),
+        element: withSuspense(<AdminPromotionsPage />),
       },
     ],
   },

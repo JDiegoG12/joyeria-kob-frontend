@@ -90,6 +90,13 @@ export const PublicProductCard = ({
 
   const imageUrl = resolveImageUrl(images, activeIndex);
 
+  // Hay descuento visible solo si reduce el precio sin dejarlo en 0 o negativo.
+  // Esto cubre el caso de que el oro baje y el descuento iguale/supere el precio.
+  const hasDiscount =
+    product.discountValue > 0 &&
+    product.finalPrice > 0 &&
+    product.finalPrice < product.calculatedPrice;
+
   return (
     <article
       className="group flex h-full cursor-pointer flex-col"
@@ -228,17 +235,45 @@ export const PublicProductCard = ({
           {product.name}
         </h3>
 
-        <p
-          className="mt-1"
-          style={{
-            fontFamily: 'var(--font-ui)',
-            fontSize: 'var(--text-sm)',
-            fontWeight: 'var(--font-bold)',
-            color: 'var(--text-accent)',
-          }}
-        >
-          {formatPrice(product.calculatedPrice)}
-        </p>
+        {hasDiscount ? (
+          <div className="mt-1 flex items-baseline justify-center gap-2">
+            {/* Precio original tachado */}
+            <span
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-normal)',
+                color: 'var(--text-muted)',
+                textDecoration: 'line-through',
+              }}
+            >
+              {formatPrice(product.calculatedPrice)}
+            </span>
+            {/* Precio con descuento */}
+            <span
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 'var(--text-sm)',
+                fontWeight: 'var(--font-bold)',
+                color: 'var(--text-accent)',
+              }}
+            >
+              {formatPrice(product.finalPrice)}
+            </span>
+          </div>
+        ) : (
+          <p
+            className="mt-1"
+            style={{
+              fontFamily: 'var(--font-ui)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 'var(--font-bold)',
+              color: 'var(--text-accent)',
+            }}
+          >
+            {formatPrice(product.calculatedPrice)}
+          </p>
+        )}
       </div>
     </article>
   );

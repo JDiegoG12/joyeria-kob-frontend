@@ -190,6 +190,13 @@ export const ProductDetailModal = ({
     (product?.specifications as Record<string, unknown>) ?? {},
   );
 
+  // Hay descuento visible solo si reduce el precio sin dejarlo en 0 o negativo.
+  const hasDiscount =
+    !!product &&
+    product.discountValue > 0 &&
+    product.finalPrice > 0 &&
+    product.finalPrice < product.calculatedPrice;
+
   const allFeatures = [
     { label: 'Peso', value: `${product?.baseWeight ?? 0} g` },
     ...specs,
@@ -557,17 +564,44 @@ export const ProductDetailModal = ({
                       </p>
                     </div>
 
-                    <p
-                      style={{
-                        fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
-                        fontWeight: 'var(--font-bold)',
-                        lineHeight: 1,
-                        color: 'var(--text-accent)',
-                      }}
-                    >
-                      {formatPrice(product.calculatedPrice || 0)}
-                    </p>
+                    {hasDiscount ? (
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-ui)',
+                            fontSize: 'var(--text-base)',
+                            fontWeight: 'var(--font-normal)',
+                            color: 'var(--text-muted)',
+                            textDecoration: 'line-through',
+                          }}
+                        >
+                          {formatPrice(product.calculatedPrice || 0)}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-display)',
+                            fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
+                            fontWeight: 'var(--font-bold)',
+                            lineHeight: 1,
+                            color: 'var(--text-accent)',
+                          }}
+                        >
+                          {formatPrice(product.finalPrice)}
+                        </span>
+                      </div>
+                    ) : (
+                      <p
+                        style={{
+                          fontFamily: 'var(--font-display)',
+                          fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
+                          fontWeight: 'var(--font-bold)',
+                          lineHeight: 1,
+                          color: 'var(--text-accent)',
+                        }}
+                      >
+                        {formatPrice(product.calculatedPrice || 0)}
+                      </p>
+                    )}
 
                     <p
                       className="mt-2"

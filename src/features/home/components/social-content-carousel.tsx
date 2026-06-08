@@ -143,9 +143,11 @@ const SocialReelCard = ({ reel, reducedMotion }: SocialReelCardProps) => {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`Ver "${reel.title}" en ${label}`}
-        className="group relative block h-full overflow-hidden border transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[var(--shadow-lg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        className="group relative block h-full overflow-hidden shadow-[var(--shadow-sm)] transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[var(--shadow-lg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
         style={{
-          borderColor: 'var(--border-accent)',
+          // Sin borde (look minimal): la imagen va a sangre y la elegancia la
+          // dan la sombra suave en reposo y el lift + sombra-lg en hover.
+          // Esquinas rectas, acorde a la estética del storefront.
           backgroundColor: 'var(--bg-tertiary)',
           textDecoration: 'none',
         }}
@@ -199,14 +201,15 @@ const SocialReelCard = ({ reel, reducedMotion }: SocialReelCardProps) => {
             {label}
           </span>
 
-          {/* Botón play centrado: sutil en reposo, se agranda y opaca más en
-              hover. Es decorativo (la tarjeta entera ya es el enlace). */}
+          {/* Botón play centrado: oculto en reposo, se revela con fade + leve
+              zoom al hacer hover (desktop). Decorativo: la tarjeta entera ya es
+              el enlace. */}
           <span
             className="absolute inset-0 flex items-center justify-center"
             aria-hidden="true"
           >
             <span
-              className="flex items-center justify-center rounded-full transition-[transform,background-color] duration-300 ease-out group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+              className="flex scale-90 items-center justify-center rounded-full opacity-0 transition-[transform,opacity] duration-300 ease-out group-hover:scale-100 group-hover:opacity-100 motion-reduce:transition-none"
               style={{
                 width: 54,
                 height: 54,
@@ -238,6 +241,15 @@ const SocialReelCard = ({ reel, reducedMotion }: SocialReelCardProps) => {
               {reel.title}
             </h3>
           </div>
+
+          {/* Línea de acento que se revela en hover (refuerzo elegante sin
+              redondear). Blanca para que lea sobre el scrim oscuro de la foto;
+              el navy sería casi invisible sobre la imagen. */}
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 opacity-0 transition-[transform,opacity] duration-300 ease-out group-hover:scale-x-100 group-hover:opacity-100 motion-reduce:transition-none"
+            style={{ backgroundColor: 'var(--accent-text)' }}
+            aria-hidden="true"
+          />
         </div>
       </a>
     </motion.div>
@@ -454,20 +466,21 @@ const CarouselArrow = ({ direction, disabled, onClick }: CarouselArrowProps) => 
       onClick={onClick}
       disabled={disabled}
       aria-label={isPrev ? 'Videos anteriores' : 'Siguientes videos'}
-      className={`absolute top-[calc(50%-1.5rem)] z-10 hidden h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center border transition-[opacity,background-color] duration-200 hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed md:flex ${
-        isPrev ? '-left-3 lg:-left-5' : '-right-3 lg:-right-5'
+      className={`absolute top-[calc(50%-1.5rem)] z-10 hidden h-16 w-9 -translate-y-1/2 cursor-pointer items-center justify-center bg-[var(--accent)] transition-[opacity,background-color] duration-200 hover:bg-[var(--accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed md:flex ${
+        isPrev ? 'left-0 lg:-left-2' : 'right-0 lg:-right-2'
       }`}
       style={{
-        backgroundColor: 'var(--bg-secondary)',
-        borderColor: 'var(--border-strong)',
-        color: 'var(--text-accent)',
+        // Barra vertical navy (esquinas rectas): lee como decisión editorial,
+        // no como un cuadro sin terminar. Chevron blanco + sombra media.
+        color: 'var(--accent-text)',
+        boxShadow: 'var(--shadow-md)',
         opacity: disabled ? 0.35 : 1,
       }}
     >
       {isPrev ? (
-        <ChevronLeft size={18} strokeWidth={1.6} />
+        <ChevronLeft size={20} strokeWidth={2} />
       ) : (
-        <ChevronRight size={18} strokeWidth={1.6} />
+        <ChevronRight size={20} strokeWidth={2} />
       )}
     </button>
   );
