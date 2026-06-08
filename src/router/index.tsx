@@ -136,6 +136,12 @@ const AdminCategoriesPage = lazy(() =>
   })),
 );
 
+const AdminCustomersPage = lazy(() =>
+  import('@/features/customers/pages/admin-customers-page').then((m) => ({
+    default: m.AdminCustomersPage,
+  })),
+);
+
 const AdminPromotionsPage = lazy(() =>
   import('@/features/promotions/pages/admin-promotions-page').then((m) => ({
     default: m.AdminPromotionsPage,
@@ -146,12 +152,6 @@ const AdminPromotionsPage = lazy(() =>
 const NotFoundPage = lazy(() =>
   import('@/features/shared/pages/not-found-page').then((m) => ({
     default: m.NotFoundPage,
-  })),
-);
-
-const PlaceholderPage = lazy(() =>
-  import('@/features/shared/pages/placeholder-page').then((m) => ({
-    default: m.PlaceholderPage,
   })),
 );
 
@@ -252,7 +252,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/admin/clientes',
-        element: withSuspense(<PlaceholderPage title="Clientes" />),
+        element: withSuspense(<AdminCustomersPage />),
       },
       {
         path: '/admin/promociones',

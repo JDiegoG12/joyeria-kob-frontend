@@ -5,9 +5,8 @@
  */
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth.store';
+import { useAuthPromptStore } from '@/store/auth-prompt.store';
 import { useFavoriteStore } from '../store/favorite.store';
 
 interface UseFavoriteActionReturn {
@@ -20,7 +19,7 @@ export const useFavoriteAction = (
   productId: string,
 ): UseFavoriteActionReturn => {
   const { isAuthenticated } = useAuthStore();
-  const navigate = useNavigate();
+  const openAuthPrompt = useAuthPromptStore((state) => state.open);
   const [isPending, setIsPending] = useState(false);
 
   // Suscripción reactiva al estado real
@@ -40,10 +39,9 @@ export const useFavoriteAction = (
     if (isPending) return;
 
     if (!isAuthenticated) {
-      toast('Inicia sesión para guardar favoritos.', {
-        icon: '♡',
-      });
-      navigate('/login');
+      // En vez de redirigir, mostramos un modal que deja elegir entre ir a
+      // iniciar sesión o seguir explorando sin abandonar la página.
+      openAuthPrompt();
       return;
     }
 

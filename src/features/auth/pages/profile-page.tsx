@@ -4,7 +4,7 @@
  *
  * ## Historias cubiertas (HE-7_HU_03)
  * 1. Carga de datos del perfil al montar la página.
- * 2. Edición de nombre, apellido, teléfono y dirección.
+ * 2. Edición de nombre, apellido y teléfono.
  * 3. Cambio de contraseña con validación de contraseña actual.
  * 4. Validación de unicidad de correo electrónico.
  * 5. Cancelar edición restaura los datos originales.
@@ -46,7 +46,6 @@ interface ProfileForm {
   lastName: string;
   email: string;
   phone: string;
-  address: string;
 }
 
 interface PasswordForm {
@@ -82,7 +81,7 @@ const PROFILE_STYLES = `
     border-color: var(--border-strong);
   }
   .kob-profile-input:focus {
-    border-color: var(--accent);
+    border-color: var(--text-accent);
     box-shadow: 0 0 0 2px var(--accent-subtle);
   }
 
@@ -115,7 +114,6 @@ export const ProfilePage = () => {
     lastName: '',
     email: '',
     phone: '',
-    address: '',
   });
   const [originalForm, setOriginalForm] = useState<ProfileForm>(form);
   const [profileErrors, setProfileErrors] = useState<Partial<ProfileForm>>({});
@@ -142,7 +140,6 @@ export const ProfilePage = () => {
         lastName: user.lastName ?? '',
         email: user.email ?? '',
         phone: user.phone ?? '',
-        address: user.address ?? '',
       };
       setForm(initial);
       setOriginalForm(initial);
@@ -189,7 +186,6 @@ export const ProfilePage = () => {
         lastName: form.lastName,
         email: form.email,
         phone: form.phone || null,
-        address: form.address || null,
       });
 
       // Actualizar el store con los nuevos datos
@@ -296,7 +292,7 @@ export const ProfilePage = () => {
         <div className="mb-8">
           <p
             className="text-xs uppercase tracking-[0.35em]"
-            style={{ color: 'var(--accent)' }}
+            style={{ color: 'var(--text-accent)' }}
           >
             {isAdmin ? 'Panel administrativo' : 'Mi cuenta'}
           </p>
@@ -362,7 +358,7 @@ export const ProfilePage = () => {
                   isAdmin
                     ? {
                         backgroundColor: 'var(--accent-subtle)',
-                        color: 'var(--accent)',
+                        color: 'var(--text-accent)',
                         border:
                           '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
                       }
@@ -430,7 +426,7 @@ export const ProfilePage = () => {
                 <SectionHeader
                   label="Datos personales"
                   title="Información de perfil"
-                  description="Actualiza tu nombre, correo electrónico, teléfono y dirección."
+                  description="Actualiza tu nombre, correo electrónico y teléfono."
                 />
 
                 <div className="mt-6 space-y-4">
@@ -498,23 +494,6 @@ export const ProfilePage = () => {
                       onChange={(e) => updateField('phone', e.target.value)}
                       placeholder="+57 300 000 0000"
                       autoComplete="tel"
-                      className="kob-profile-input w-full px-3 py-2.5 text-sm outline-none"
-                      style={inputStyle}
-                    />
-                  </Field>
-
-                  {/* Dirección */}
-                  <Field
-                    label="Dirección"
-                    hint="Opcional"
-                    error={profileErrors.address}
-                  >
-                    <input
-                      type="text"
-                      value={form.address}
-                      onChange={(e) => updateField('address', e.target.value)}
-                      placeholder="Calle 10 # 5-20, Bogotá"
-                      autoComplete="street-address"
                       className="kob-profile-input w-full px-3 py-2.5 text-sm outline-none"
                       style={inputStyle}
                     />
@@ -752,7 +731,7 @@ const TabButton = ({ active, icon, label, onClick }: TabButtonProps) => (
     className="flex flex-1 cursor-pointer items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium uppercase tracking-wider transition-all duration-200 lg:justify-start lg:px-4"
     style={{
       backgroundColor: active ? 'var(--accent-subtle)' : 'transparent',
-      color: active ? 'var(--accent)' : 'var(--text-secondary)',
+      color: active ? 'var(--text-accent)' : 'var(--text-secondary)',
       border: active
         ? '1px solid color-mix(in srgb, var(--accent) 25%, transparent)'
         : '1px solid transparent',

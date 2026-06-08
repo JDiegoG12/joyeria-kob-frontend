@@ -25,6 +25,7 @@ import { Outlet } from 'react-router-dom';
 import { AnnouncementBar } from '@/components/ui/announcement-bar/announcement-bar';
 import { Navbar } from '@/components/ui/navbar/navbar';
 import { Footer } from '@/components/ui/footer/footer';
+import { FavoriteAuthPrompt } from '@/features/favorites/components/favorite-auth-prompt';
 
 import { AuthService } from '@/features/auth/services/auth.service';
 
@@ -101,6 +102,9 @@ export const MainLayout = () => {
       <div className="relative z-10">
         <Footer />
       </div>
+
+      {/* ── Modal global: "inicia sesión para guardar favoritos" ── */}
+      <FavoriteAuthPrompt />
     </div>
   );
 };
