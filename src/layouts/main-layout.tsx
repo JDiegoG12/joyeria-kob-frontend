@@ -25,6 +25,7 @@ import { Outlet } from 'react-router-dom';
 import { AnnouncementBar } from '@/components/ui/announcement-bar/announcement-bar';
 import { Navbar } from '@/components/ui/navbar/navbar';
 import { Footer } from '@/components/ui/footer/footer';
+import { ScrollToTop } from '@/components/ui/scroll-to-top';
 import { FavoriteAuthPrompt } from '@/features/favorites/components/favorite-auth-prompt';
 
 import { AuthService } from '@/features/auth/services/auth.service';
@@ -57,6 +58,9 @@ export const MainLayout = () => {
         `,
       }}
     >
+      {/* Resetea el scroll al inicio en cada cambio de ruta pública */}
+      <ScrollToTop />
+
       {/* ── Textura de fondo ───────────────────────────── */}
       <div
         className="pointer-events-none fixed inset-0 z-0 opacity-[0.06] mix-blend-multiply dark:opacity-[0.08] dark:mix-blend-screen"

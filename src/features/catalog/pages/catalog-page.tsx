@@ -60,6 +60,10 @@ import { CatalogFilterSidebar } from '@/features/catalog/components/catalog-filt
 import { CatalogMobileFiltersSheet } from '@/features/catalog/components/catalog-mobile-filters-sheet';
 import { PublicProductCard } from '@/features/catalog/components/public-product-card';
 import { ProductDetailModal } from '@/features/catalog/components/product-detail-modal';
+import {
+  BackToHomeButton,
+  BackToHomeDivider,
+} from '@/components/ui/back-to-home-button';
 import type { Product } from '@/features/catalog/types/product.types';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -330,6 +334,13 @@ export const CatalogPage = () => {
    * La doble actualización de `searchTerm` que esto provoca (aquí y de nuevo
    * cuando el debounce dispare un setter idéntico) es absorbida por la dedup
    * de `fetchCatalog`.
+   *
+   * Sube al inicio de la página al cambiar de filtro. Esto cubre el caso del
+   * filtro por categorías del footer usado DESDE el propio catálogo: como la
+   * navegación es a la misma ruta (`/catalogo`), el `pathname` no cambia y el
+   * `<ScrollToTop>` global no se dispara; el reset de scroll debe vivir aquí,
+   * junto al cambio de filtro que lo motiva (igual que `handlePageChange`).
+   * En el montaje inicial la ventana ya está arriba, así que es un no-op.
    */
   useEffect(() => {
     setCurrentPage(1);
@@ -337,6 +348,7 @@ export const CatalogPage = () => {
     setSearchInput('');
     setSearchTerm('');
     void fetchCatalog(1, '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [
     selectedCatalogCategoryId,
     selectedCatalogSubCategoryId,
@@ -494,12 +506,16 @@ export const CatalogPage = () => {
           style={{ maxWidth: 'var(--content-max-width)' }}
         >
           {/*
-           * Breadcrumb de retorno al inicio. Único affordance explícito para
-           * volver a la home desde el catálogo (antes solo el logo del navbar
-           * o el botón "atrás" del navegador). Se sitúa arriba de todo el
-           * layout para servir por igual a desktop y móvil.
+           * Fila superior de navegación: botón "Volver" (solo desktop) +
+           * breadcrumb. El botón es el affordance de retorno explícito a la
+           * home; el breadcrumb comunica la ubicación y sirve también en móvil,
+           * donde el botón se oculta (allí existe el menú de navegación).
            */}
-          <CatalogBreadcrumb />
+          <div className="flex items-center gap-3 pt-6 sm:pt-10">
+            <BackToHomeButton />
+            <BackToHomeDivider />
+            <CatalogBreadcrumb />
+          </div>
 
           <div className="flex gap-0 pt-5 pb-8 sm:pt-6 sm:pb-12 lg:gap-0">
             {/* ── Sidebar 1/4 — solo desktop ── */}
@@ -924,7 +940,7 @@ const CatalogBreadcrumb = () => (
     initial={{ opacity: 0, y: -6 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, ease: 'easeOut' }}
-    className="flex items-center gap-2 pt-6 sm:pt-10"
+    className="flex items-center gap-2"
   >
     <Link
       to="/"

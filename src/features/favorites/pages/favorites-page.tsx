@@ -9,6 +9,10 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Heart, ShoppingBag, Trash2 } from 'lucide-react';
 
 import { Breadcrumb } from '@/components/ui/breadcrumb';
+import {
+  BackToHomeButton,
+  BackToHomeDivider,
+} from '@/components/ui/back-to-home-button';
 import { useAuthStore } from '@/store/auth.store';
 import { useFavoriteStore } from '../store/favorite.store';
 
@@ -167,10 +171,13 @@ export const FavoritesPage = () => {
           className="mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8"
           style={{ maxWidth: 'var(--content-max-width)' }}
         >
-          <Breadcrumb
-            items={[{ label: 'Inicio', to: '/' }, { label: 'Favoritos' }]}
-            className="mb-5"
-          />
+          <div className="mb-5 flex items-center gap-3">
+            <BackToHomeButton />
+            <BackToHomeDivider />
+            <Breadcrumb
+              items={[{ label: 'Inicio', to: '/' }, { label: 'Favoritos' }]}
+            />
+          </div>
 
           <PageHeader count={0} loading />
 
@@ -214,11 +221,14 @@ export const FavoritesPage = () => {
         className="mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8"
         style={{ maxWidth: 'var(--content-max-width)' }}
       >
-        {/* Breadcrumb — ubicación actual + regreso al inicio */}
-        <Breadcrumb
-          items={[{ label: 'Inicio', to: '/' }, { label: 'Favoritos' }]}
-          className="mb-5"
-        />
+        {/* Fila superior: botón "Volver" (desktop) + breadcrumb */}
+        <div className="mb-5 flex items-center gap-3">
+          <BackToHomeButton />
+          <BackToHomeDivider />
+          <Breadcrumb
+            items={[{ label: 'Inicio', to: '/' }, { label: 'Favoritos' }]}
+          />
+        </div>
 
         {/* Header */}
         <PageHeader count={favorites.length} />
