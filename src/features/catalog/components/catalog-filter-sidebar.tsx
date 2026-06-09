@@ -89,6 +89,18 @@ interface CatalogFilterSidebarProps {
    * @default false
    */
   hideTitle?: boolean;
+  /**
+   * Oculta los botones de "limpiar" inline (el "Limpiar filtros" de categorías
+   * y el "Limpiar precio" del slider).
+   *
+   * Útil en el bottom sheet móvil, donde el footer ya provee un único
+   * "Limpiar todo" — mostrar además los clears por sección genera ruido y
+   * acciones redundantes. En desktop se deja en `false` porque el sidebar no
+   * tiene footer y necesita esos atajos.
+   *
+   * @default false
+   */
+  hideInlineClears?: boolean;
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -99,6 +111,7 @@ export const CatalogFilterSidebar = ({
   maxPrice,
   onPriceCommit,
   hideTitle = false,
+  hideInlineClears = false,
 }: CatalogFilterSidebarProps) => {
   const {
     categories,
@@ -188,7 +201,7 @@ export const CatalogFilterSidebar = ({
 
       {/* ── Botón limpiar filtros de categoría ── */}
       <AnimatePresence>
-        {hasActiveFilter && (
+        {!hideInlineClears && hasActiveFilter && (
           <motion.div
             variants={clearButtonVariants}
             initial="hidden"
@@ -266,7 +279,7 @@ export const CatalogFilterSidebar = ({
             valueMin={minPrice ?? priceRange.min}
             valueMax={maxPrice ?? priceRange.max}
             onCommit={onPriceCommit}
-            hasPriceFilter={hasPriceFilter}
+            showClear={!hideInlineClears && hasPriceFilter}
           />
         )}
       </section>
@@ -282,7 +295,8 @@ interface PriceRangeSliderProps {
   valueMin: number;
   valueMax: number;
   onCommit: (min: number | undefined, max: number | undefined) => void;
-  hasPriceFilter: boolean;
+  /** Si se muestra el botón inline "Limpiar precio". */
+  showClear: boolean;
 }
 
 const PriceRangeSlider = ({
@@ -291,7 +305,7 @@ const PriceRangeSlider = ({
   valueMin,
   valueMax,
   onCommit,
-  hasPriceFilter,
+  showClear,
 }: PriceRangeSliderProps) => {
   // Valores locales para feedback visual inmediato mientras el pulgar se mueve
   const [localMin, setLocalMin] = useState(valueMin);
@@ -404,7 +418,7 @@ const PriceRangeSlider = ({
 
       {/* Limpiar filtro de precio */}
       <AnimatePresence>
-        {hasPriceFilter && (
+        {showClear && (
           <motion.button
             type="button"
             onClick={handleClear}

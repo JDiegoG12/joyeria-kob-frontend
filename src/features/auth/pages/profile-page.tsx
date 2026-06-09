@@ -28,6 +28,10 @@ import {
   ChevronRight,
   ShieldCheck,
 } from 'lucide-react';
+import {
+  BackToHomeButton,
+  BackToHomeDivider,
+} from '@/components/ui/back-to-home-button';
 import { useToastStore } from '@/store/toast.store';
 import { useAuthStore } from '@/store/auth.store';
 import { apiClient } from '@/api/api-client';
@@ -283,10 +287,16 @@ export const ProfilePage = () => {
       <div className="relative z-10 mx-auto max-w-4xl">
 
         {/*
-         * Breadcrumb de retorno al inicio — mismo patrón que el del catálogo.
-         * Único affordance explícito para volver a la home desde el perfil.
+         * Fila superior: botón "Volver" (solo desktop) + breadcrumb. El botón
+         * es el affordance de retorno explícito a la home; el breadcrumb
+         * comunica la ubicación y cubre también el móvil, donde el botón se
+         * oculta porque ya existe el menú de navegación.
          */}
-        <ProfileBreadcrumb />
+        <div className="mb-6 flex items-center gap-3">
+          <BackToHomeButton />
+          <BackToHomeDivider />
+          <ProfileBreadcrumb />
+        </div>
 
         {/* ── Encabezado de página ── */}
         <div className="mb-8">
@@ -660,7 +670,7 @@ export const ProfilePage = () => {
 const ProfileBreadcrumb = () => (
   <nav
     aria-label="Ruta de navegación"
-    className="kob-breadcrumb mb-6 flex items-center gap-2"
+    className="kob-breadcrumb flex items-center gap-2"
   >
     <Link
       to="/"
@@ -764,7 +774,7 @@ const SectionHeader = ({ label, title, description }: SectionHeaderProps) => (
   <div>
     <p
       className="text-xs uppercase tracking-[0.3em]"
-      style={{ color: 'var(--accent)' }}
+      style={{ color: 'var(--text-accent)' }}
     >
       {label}
     </p>

@@ -44,7 +44,7 @@
  * el sheet.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   AnimatePresence,
   motion,
@@ -146,6 +146,11 @@ export const CatalogMobileFiltersSheet = ({
   const shouldReduceMotion = useReducedMotion();
   const { selectCatalogCategory, selectCatalogSubCategory } = useCategoryStore();
 
+  /** Panel del sheet — referencia para el focus-trap. */
+  const panelRef = useRef<HTMLDivElement>(null);
+  /** Elemento enfocado antes de abrir, para restaurar el foco al cerrar. */
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
   // ── Bloqueo del scroll de fondo mientras el sheet está abierto ──────────
   useEffect(() => {
     if (isOpen) {
@@ -167,6 +172,55 @@ export const CatalogMobileFiltersSheet = ({
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
+
+  // ── Focus-trap del diálogo ──────────────────────────────────────────────
+  /*
+   * Al abrir: se recuerda el elemento que tenía el foco (el botón "Filtros")
+   * y se mueve el foco dentro del panel. Mientras está abierto, Tab/Shift+Tab
+   * ciclan entre el primer y último elemento enfocable sin escaparse al fondo.
+   * Al cerrar: se restaura el foco al disparador.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+
+    const getFocusable = (): HTMLElement[] => {
+      const panel = panelRef.current;
+      if (!panel) return [];
+      return Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+    };
+
+    // Mueve el foco al panel una vez montado/animando (rAF asegura el ref listo).
+    const raf = requestAnimationFrame(() => panelRef.current?.focus());
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const items = getFocusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === panelRef.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTab);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('keydown', handleTab);
+      previouslyFocusedRef.current?.focus?.();
+    };
+  }, [isOpen]);
 
   /**
    * Limpia todos los filtros activos del catálogo.
@@ -238,6 +292,8 @@ export const CatalogMobileFiltersSheet = ({
           {/* ── Hoja inferior ───────────────────────────────────────────── */}
           <motion.div
             key="filters-sheet-panel"
+            ref={panelRef}
+            tabIndex={-1}
             variants={resolvedSheetVariants}
             initial="hidden"
             animate="visible"
@@ -252,7 +308,7 @@ export const CatalogMobileFiltersSheet = ({
             role="dialog"
             aria-modal="true"
             aria-label="Filtros del catálogo"
-            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88vh] flex-col border-t lg:hidden"
+            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] flex-col border-t outline-none lg:hidden"
             style={{
               backgroundColor: 'var(--bg-secondary)',
               borderColor: 'var(--border-color)',
@@ -364,6 +420,7 @@ export const CatalogMobileFiltersSheet = ({
                 maxPrice={maxPrice}
                 onPriceCommit={onPriceCommit}
                 hideTitle
+                hideInlineClears
               />
             </div>
 
