@@ -70,7 +70,7 @@ const SERVICES = [
     icon: Paintbrush,
     title: 'Diseño',
     description:
-      'Personalizamos piezas de orfebrería y construimos detalles que recuerdan momentos para siempre.',
+      'Transformamos tus ideas y emociones en joyas de oro 18k personalizadas, diseñadas con dedicación, precisión y pasión.',
     message:
       'Hola, me interesa el servicio de Diseño de joyas personalizadas. ¿Podrían darme más información?',
   },
@@ -275,7 +275,7 @@ const GoldInvestmentSection = () => (
             color: 'var(--text-accent)',
           }}
         >
-          ¿Por qué invertir en oro?
+          Invierte en Oro, Invierte en Seguridad
         </h2>
 
         {/*
@@ -285,17 +285,10 @@ const GoldInvestmentSection = () => (
          */}
         <div className="mt-8 max-w-md mx-auto text-center lg:mx-0 lg:text-left">
           <p>
-            Invertir en oro es proteger tu capital con uno de los activos más
-            sólidos y valorados del mundo.
+            El oro ha sido durante siglos uno de los activos más seguros y valorados del mundo. La capacidad para mantener su valor frente a la inflación y los cambios económicos lo convierte en una alternativa confiable para quienes buscan proteger y fortalecer su patrimonio.
           </p>
           <p className="mt-5">
-            A lo largo del tiempo, el oro ha demostrado estabilidad frente a la
-            inflación y la incertidumbre económica, convirtiéndose en una opción
-            inteligente para quienes buscan seguridad, respaldo y crecimiento
-            patrimonial.
-          </p>
-          <p className="mt-5">
-            Más que una inversión, es tranquilidad para tu futuro.
+            Cada pieza de oro representa elegancia, exclusividad y, al mismo tiempo, una inversión tangible que puedes disfrutar hoy mientras construyes valor para mañana.
           </p>
         </div>
       </RevealBlock>

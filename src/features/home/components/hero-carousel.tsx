@@ -77,7 +77,7 @@ interface HeroCarouselProps {
  * El primer slide siempre es el banner configurable desde el panel admin.
  */
 export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
-  const { bannerText, bannerSubtitle, bannerImageUrl, fetchBanner } =
+  const { bannerText, bannerSubtitle, bannerImageUrl, hasLoaded, fetchBanner } =
     useHeroBannerStore();
 
   // Obtiene el banner desde el backend al montar el carrusel.
@@ -178,14 +178,21 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
     >
       {/* ── Pista de slides ─────────────────────────────────────────────── */}
       <div className="relative h-full w-full">
-        {/* Slide 0: Banner principal configurable */}
-        <MainBannerSlide
-          imageUrl={heroImage}
-          bannerText={bannerText}
-          bannerSubtitle={bannerSubtitle}
-          isActive={currentIndex === 0}
-          prefersReducedMotion={prefersReducedMotion}
-        />
+        {/* Slide 0: Banner principal configurable.
+         * Mientras el banner aún no ha cargado del backend mostramos un
+         * skeleton sobre el fondo de marca, en vez de los valores por
+         * defecto — así evitamos el parpadeo cuando llega el dato real. */}
+        {hasLoaded ? (
+          <MainBannerSlide
+            imageUrl={heroImage}
+            bannerText={bannerText}
+            bannerSubtitle={bannerSubtitle}
+            isActive={currentIndex === 0}
+            prefersReducedMotion={prefersReducedMotion}
+          />
+        ) : (
+          <HeroSkeleton prefersReducedMotion={prefersReducedMotion} />
+        )}
 
         {/* Slides 1+: Imágenes promocionales */}
         {promoSlides.map((slide, index) => (
@@ -319,22 +326,45 @@ const MainBannerSlide = ({
   bannerSubtitle,
   isActive,
   prefersReducedMotion,
-}: MainBannerSlideProps) => (
-  <div
-    className="absolute inset-0"
-    style={{
-      opacity: isActive ? 1 : 0,
-      transition: prefersReducedMotion ? 'none' : 'opacity 600ms ease',
-      zIndex: isActive ? 1 : 0,
-    }}
-    aria-hidden={!isActive}
-  >
-    {/* Imagen de fondo */}
-    <img
-      src={imageUrl}
-      alt="Banner principal de Joyería KOB"
-      className="absolute inset-0 h-full w-full object-cover"
-    />
+}: MainBannerSlideProps) => {
+  /*
+   * `imageReady` se activa cuando la imagen del banner ha terminado de
+   * decodificarse. Hasta entonces el slide solo muestra el fondo de marca
+   * (igual que el skeleton previo), de modo que la imagen + texto aparecen
+   * juntos con un fade-in y nunca se ve un cambio brusco entre la imagen
+   * por defecto y la imagen remota del servidor.
+   */
+  const [imageReady, setImageReady] = useState(false);
+
+  return (
+    <div
+      className="absolute inset-0"
+      style={{
+        opacity: isActive ? 1 : 0,
+        transition: prefersReducedMotion ? 'none' : 'opacity 600ms ease',
+        zIndex: isActive ? 1 : 0,
+        backgroundColor: 'var(--accent)',
+      }}
+      aria-hidden={!isActive}
+    >
+      {/* Contenido del banner (imagen + overlay + texto). Aparece con un
+       * fade-in cuando la imagen está lista; mientras tanto queda el fondo
+       * de marca debajo, sin parpadeos. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          opacity: prefersReducedMotion || imageReady ? 1 : 0,
+          transition: prefersReducedMotion ? 'none' : 'opacity 500ms ease',
+        }}
+      >
+        {/* Imagen de fondo */}
+        <img
+          src={imageUrl}
+          alt="Banner principal de Joyería KOB"
+          className="absolute inset-0 h-full w-full object-cover"
+          onLoad={() => setImageReady(true)}
+          onError={() => setImageReady(true)}
+        />
 
     {/* Overlay degradado para legibilidad del texto.
      * Opacidades reducidas para que la imagen protagonice:
@@ -443,9 +473,81 @@ const MainBannerSlide = ({
           </a>
         </div>
       </div>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+// ─── Skeleton del banner principal ──────────────────────────────────────────────
+
+interface HeroSkeletonProps {
+  prefersReducedMotion: boolean;
+}
+
+/**
+ * Placeholder del banner hero mostrado mientras `hasLoaded === false`.
+ *
+ * Ocupa todo el área del carrusel sobre el fondo de marca (`--accent`) y
+ * replica la posición del título, subtítulo y CTAs con barras `animate-pulse`
+ * (mismo patrón que el skeleton de productos destacados). Así no hay saltos de
+ * layout y, sobre todo, no se ven los valores por defecto del banner antes de
+ * que llegue el dato real del servidor.
+ *
+ * @internal
+ */
+const HeroSkeleton = ({ prefersReducedMotion }: HeroSkeletonProps) => {
+  // Color de las barras: tinte claro derivado de --accent-text para que
+  // contraste sobre el fondo azul del hero.
+  const barColor = 'color-mix(in srgb, var(--accent-text) 22%, transparent)';
+  const pulse = prefersReducedMotion ? '' : 'animate-pulse';
+
+  return (
+    <div
+      className="absolute inset-0"
+      style={{ backgroundColor: 'var(--accent)', zIndex: 1 }}
+      role="status"
+      aria-label="Cargando banner"
+    >
+      <div
+        className="relative z-10 mx-auto flex h-full items-end px-5 pb-10 pt-16 sm:px-6 sm:pb-12 lg:px-10"
+        style={{ maxWidth: 'var(--content-max-width)' }}
+      >
+        <div className={`w-full max-w-3xl ${pulse}`}>
+          {/* Título (2 líneas) */}
+          <div
+            className="h-12 w-3/4 sm:h-16 lg:h-20"
+            style={{ backgroundColor: barColor }}
+          />
+          <div
+            className="mt-3 h-12 w-1/2 sm:h-16 lg:h-20"
+            style={{ backgroundColor: barColor }}
+          />
+          {/* Subtítulo */}
+          <div
+            className="mt-6 h-4 w-full max-w-2xl sm:h-5"
+            style={{ backgroundColor: barColor }}
+          />
+          <div
+            className="mt-2 h-4 w-2/3 max-w-2xl sm:h-5"
+            style={{ backgroundColor: barColor }}
+          />
+          {/* CTAs */}
+          <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
+            <div
+              className="h-10 w-40"
+              style={{ backgroundColor: barColor }}
+            />
+            <div
+              className="h-10 w-48"
+              style={{ backgroundColor: barColor }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ─── Slides promocionales ──────────────────────────────────────────────────────
 
