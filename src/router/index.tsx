@@ -55,6 +55,7 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
+import { RootLayout } from '@/layouts/root-layout';
 import { AuthLayout } from '@/layouts/auth-layout';
 import { MainLayout } from '@/layouts/main-layout';
 import { AdminLayout } from '@/layouts/admin-layout';
@@ -174,6 +175,12 @@ const withSuspense = (element: React.ReactNode) => (
  * @see {@link https://reactrouter.com/en/main/routers/create-browser-router}
  */
 export const router = createBrowserRouter([
+  // ─── Ruta raíz: no aporta UI, solo activa el tracking global de GA4 ───────
+  // Envuelve TODO el árbol (público, auth, admin y 404) para enviar un
+  // `page_view` en cada navegación del SPA desde un único punto.
+  {
+    element: <RootLayout />,
+    children: [
   // ─── Rutas públicas con MainLayout (Navbar + Footer) ─────────────────────
   {
     element: <MainLayout />,
@@ -265,5 +272,7 @@ export const router = createBrowserRouter([
   {
     path: '*',
     element: withSuspense(<NotFoundPage />),
+  },
+    ],
   },
 ]);

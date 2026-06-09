@@ -22,7 +22,7 @@ import {
 } from '@/config/contact';
 
 const INFO_LINKS = [
-  'Términos y condiciones de uso - KOB Joyería',
+  'Términos y condiciones de uso',
   'Política de garantía, reembolso y devoluciones',
   'Política de privacidad',
   'Materiales',

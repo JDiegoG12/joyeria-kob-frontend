@@ -16,6 +16,11 @@
  *       → ok   → hydrata bannerText / bannerSubtitle / bannerImageUrl
  *       → 404  → usa valores por defecto (banner aún no configurado)
  *       → otro error → expone `fetchError`
+ *     → en cualquier caso marca `hasLoaded = true`
+ *
+ * Mientras `hasLoaded === false` el carrusel muestra un skeleton en vez de
+ * los valores por defecto, evitando el parpadeo ("flash of default content")
+ * cuando llega el dato real del servidor.
  *
  * Admin guarda en HeroBannerCard
  *   → saveBanner({ title, subtitle, imageFile? })
@@ -97,6 +102,13 @@ interface HeroBannerState {
     /** `true` mientras se ejecuta la petición GET /api/banner. */
     isFetching: boolean;
     /**
+     * `true` una vez que `fetchBanner` ha resuelto al menos una vez (éxito,
+     * 404 o error). Permite distinguir "todavía no he cargado" de "ya cargué
+     * y toca usar los valores por defecto", de modo que el carrusel solo
+     * muestre los defaults cuando de verdad corresponde, sin parpadeos.
+     */
+    hasLoaded: boolean;
+    /**
      * Mensaje de error de la última llamada a `fetchBanner`.
      * `null` si no hay error o si la carga fue exitosa.
      */
@@ -146,6 +158,7 @@ export const useHeroBannerStore = create<HeroBannerState>()((set) => ({
     bannerImageUrl: null,
 
     isFetching: false,
+    hasLoaded: false,
     fetchError: null,
 
     isSaving: false,
@@ -163,6 +176,7 @@ export const useHeroBannerStore = create<HeroBannerState>()((set) => ({
                 bannerSubtitle: banner.subtitle ?? DEFAULT_BANNER_SUBTITLE,
                 bannerImageUrl: resolveImageUrl(banner.imageUrl),
                 isFetching: false,
+                hasLoaded: true,
             });
         } catch (error: unknown) {
             // 404 → el banner aún no fue configurado por el admin.
@@ -175,6 +189,7 @@ export const useHeroBannerStore = create<HeroBannerState>()((set) => ({
                     bannerSubtitle: DEFAULT_BANNER_SUBTITLE,
                     bannerImageUrl: null,
                     isFetching: false,
+                    hasLoaded: true,
                     fetchError: null,
                 });
                 return;
@@ -182,6 +197,7 @@ export const useHeroBannerStore = create<HeroBannerState>()((set) => ({
 
             set({
                 isFetching: false,
+                hasLoaded: true,
                 fetchError: 'No se pudo cargar el banner. Verifica tu conexión.',
             });
         }
