@@ -29,3 +29,6 @@ dist-ssr
 .env.*.local
 
 .claude
+
+#Testing
+coverage

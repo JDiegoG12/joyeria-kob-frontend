@@ -37,7 +37,10 @@
  * ```
  */
 
-import { defineConfig } from 'vite';
+// `defineConfig` se importa desde `vitest/config` (no desde `vite`) para que el
+// bloque `test` esté tipado. Es un superset de la config de Vite, así que el
+// build de producción sigue funcionando igual.
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
@@ -49,6 +52,36 @@ export default defineConfig({
     alias: {
       // Alias @ → src/ para imports absolutos en toda la app.
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+
+  /**
+   * Configuración de Vitest. Reutiliza el alias `@/` definido arriba para que
+   * los tests resuelvan los imports igual que la app. El entorno `jsdom` provee
+   * las APIs del navegador (Date, URLSearchParams, atob, localStorage) que usan
+   * utils, servicios y stores.
+   */
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.types.ts',
+        'src/**/*.test.ts',
+        'src/main.tsx',
+        'src/test/**',
+      ],
+      /**
+       * Umbral suave (informativo): en 0 para no bloquear mientras la cobertura
+       * solo abarca la lógica pura (utils/services/stores) y el grueso de la app
+       * (páginas y componentes) aún no tiene tests. Subir estos valores a medida
+       * que crezca la cobertura — p. ej. cuando se añadan tests de componentes.
+       */
+      thresholds: { lines: 0, functions: 0, statements: 0, branches: 0 },
     },
   },
 
