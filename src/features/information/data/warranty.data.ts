@@ -34,7 +34,7 @@ export const WARRANTY_POLICY: IPolicyDocument = {
       blocks: [
         {
           kind: 'paragraph',
-          text: 'El oro de 18k no cambia de color. Si una pieza llegara a cambiar de color, está cubierta por la garantía. No realizamos baños en oro, por lo que no aplica garantía de baño.',
+          text: 'El oro de 18k no cambia de color. Si una pieza llegara a cambiar de color, está cubierta por la garantía. No realizamos baños en oro ni enchapados.',
         },
       ],
     },
@@ -43,9 +43,7 @@ export const WARRANTY_POLICY: IPolicyDocument = {
       blocks: [
         {
           kind: 'paragraph',
-          // TODO: Confirmar con el cliente el alcance, plazo y condiciones de la
-          // cobertura por defectos de fabricación.
-          text: 'La garantía cubre defectos de fabricación, tales como fallas en broches, soldaduras o el armado de la pieza, que se presenten en condiciones normales de uso.',
+          text: 'La garantía cubre defectos de fabricación, tales como fallas en broches, soldaduras o el armado de la pieza, siempre que se presenten en condiciones normales de uso y no como producto de un uso inadecuado.',
         },
       ],
     },
@@ -69,7 +67,7 @@ export const WARRANTY_POLICY: IPolicyDocument = {
           kind: 'list',
           items: [
             'Piezas no personalizadas: dentro de los 7 días, el cliente puede solicitar la devolución y se reintegra el valor pagado. KOB Joyería asume el costo del envío de la devolución.',
-            'Piezas personalizadas (con nombre, fechas u otros elementos a la medida): por su naturaleza, estas piezas no admiten cambio ni devolución, salvo defecto de fabricación o error en el material.',
+            'Piezas personalizadas (con nombre, fechas u otros elementos a la medida): por su naturaleza, al solicitarse el cambio o la devolución se descuenta del valor de la joya el importe correspondiente al diseño y la mano de obra, salvo que el motivo sea un defecto de fabricación o un error en el material.',
           ],
         },
       ],
@@ -79,7 +77,7 @@ export const WARRANTY_POLICY: IPolicyDocument = {
       blocks: [
         {
           kind: 'paragraph',
-          text: 'Cuando proceda un reembolso, el cliente puede elegir entre: (a) el cambio o nueva fabricación de la joya, o (b) la devolución del dinero. En el caso de devolución de dinero de piezas ya fabricadas, se descuenta el valor del diseño y la mano de obra. Para piezas no personalizadas devueltas dentro del derecho de retracto, se reintegra el valor pagado conforme a la ley.',
+          text: 'Cuando proceda un reembolso, el cliente puede elegir entre: (a) el cambio o nueva fabricación de la joya, o (b) la devolución del dinero. En el caso de devolución de dinero de piezas personalizadas cuya fabricación ya se haya iniciado, se descuenta el valor del diseño y la mano de obra. Para piezas no personalizadas devueltas dentro del derecho de retracto, se reintegra el valor pagado conforme a la ley.',
         },
       ],
     },

@@ -105,6 +105,6 @@ export const ProtectedRoute = ({
     );
   }
 
-  // ✅ Acceso permitido
+  // Acceso permitido
   return <>{children}</>;
 };

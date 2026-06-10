@@ -21,7 +21,7 @@ export const MATERIALS_POLICY: IPolicyDocument = {
         {
           kind: 'paragraph',
           lead: 'Una inversión que perdura.',
-          text: 'Al ser oro de 18k, nuestras piezas no pierden su valor adquisitivo con el tiempo, por lo que además de un accesorio representan una forma de ahorro. El material está garantizado.',
+          text: 'Al ser oro de 18k, nuestras piezas no pierden su valor adquisitivo con el tiempo, por lo que además de un accesorio representan una forma de ahorro y constitución de patrimonio.',
         },
         {
           kind: 'paragraph',

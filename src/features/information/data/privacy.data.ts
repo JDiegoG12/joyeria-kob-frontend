@@ -30,7 +30,7 @@ export const PRIVACY_POLICY: IPolicyDocument = {
         {
           kind: 'paragraph',
           lead: 'Compartir con terceros.',
-          text: 'Cuando se concreta una compra, compartimos con la transportadora Servientrega los datos necesarios para realizar el envío (nombre, número de documento, dirección y teléfono de contacto). Fuera de este caso, no compartimos los datos personales de los clientes con terceros.',
+          text: 'Cuando se concreta una compra, compartimos con la transportadora (Servientrega, Inter Rapidísimo o la transportadora que autorice el cliente) los datos necesarios para realizar el envío (nombre, número de documento, dirección física y teléfono de contacto). Fuera de este caso, no compartimos los datos personales de los clientes con terceros.',
         },
         {
           kind: 'paragraph',
