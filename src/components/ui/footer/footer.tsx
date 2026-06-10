@@ -16,7 +16,8 @@ import {
 } from '@/components/ui/social-icons';
 import { useCategoryStore } from '@/store/category.store';
 import {
-  WHATSAPP_URL,
+  buildWhatsAppUrl,
+  WHATSAPP_MESSAGES,
   PHONE_TEL_HREF,
   PHONE_DISPLAY_NATIONAL,
 } from '@/config/contact';
@@ -103,7 +104,9 @@ export const Footer = () => {
       <FooterColumn title="Contacto">
         <ul className="space-y-2.5">
           <li>
-            <FooterAnchor href={WHATSAPP_URL}>Hablar por WhatsApp</FooterAnchor>
+            <FooterAnchor href={buildWhatsAppUrl(WHATSAPP_MESSAGES.generalInquiry)}>
+              Hablar por WhatsApp
+            </FooterAnchor>
           </li>
           <li>
             <FooterAnchor href="mailto:kobjoyeria@gmail.com">
@@ -146,7 +149,7 @@ export const Footer = () => {
 
           {/* CTA de proveedor — abre WhatsApp; incluye ícono para reforzar el canal */}
           <a
-            href={WHATSAPP_URL}
+            href={buildWhatsAppUrl(WHATSAPP_MESSAGES.supplier)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex cursor-pointer items-center justify-center gap-2 border px-5 py-2.5 text-center transition-[transform,box-shadow,opacity] duration-200 hover:-translate-y-0.5 hover:opacity-85 hover:shadow-[var(--shadow-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)] motion-reduce:transition-none motion-reduce:hover:translate-y-0"

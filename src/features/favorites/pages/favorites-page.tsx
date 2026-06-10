@@ -103,7 +103,8 @@ export const FavoritesPage = () => {
         variants={pageVariants}
         initial="hidden"
         animate="visible"
-        className="flex min-h-[60vh] flex-col items-center justify-center px-5 text-center"
+        className="flex min-h-screen flex-col items-center justify-center px-5 text-center"
+        style={{ backgroundColor: 'var(--bg-primary)' }}
       >
         <div
           className="mb-6 flex h-16 w-16 items-center justify-center border"

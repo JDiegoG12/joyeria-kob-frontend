@@ -47,7 +47,11 @@ import {
 } from '@/components/ui/social-icons';
 import { useAuthStore } from '@/store/auth.store';
 import { KobLogo } from '@/components/ui/navbar/kob-logo';
-import { WHATSAPP_URL, PHONE_DISPLAY } from '@/config/contact';
+import {
+  buildWhatsAppUrl,
+  WHATSAPP_MESSAGES,
+  PHONE_DISPLAY,
+} from '@/config/contact';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
@@ -359,7 +363,7 @@ export const MobileMenu = ({
                */}
               <motion.a
                 variants={resolvedItemVariants}
-                href={WHATSAPP_URL}
+                href={buildWhatsAppUrl(WHATSAPP_MESSAGES.generalInquiry)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex min-w-0 items-center gap-3 border px-4 py-3 transition-opacity duration-200 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"

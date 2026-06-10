@@ -54,3 +54,24 @@ export const PHONE_DISPLAY_NATIONAL = NATIONAL_DISPLAY;
  */
 export const buildWhatsAppUrl = (message?: string): string =>
   message ? `${WHATSAPP_URL}?text=${encodeURIComponent(message)}` : WHATSAPP_URL;
+
+/**
+ * Mensajes pre-redactados para los CTA de WhatsApp **genéricos** del storefront,
+ * de modo que el chat se abra con un texto alusivo al punto desde el que se hizo
+ * clic (navbar, hero, footer…) en lugar de un chat vacío.
+ *
+ * Los CTA con contexto propio construyen su mensaje aparte: el detalle de
+ * producto (`product-detail-modal`), las tarjetas de servicio (`home-page`) y la
+ * lista de favoritos (`favorites-whatsapp`).
+ */
+export const WHATSAPP_MESSAGES = {
+  /** Contacto general: navbar, menú móvil y footer ("Hablar por WhatsApp"). */
+  generalInquiry:
+    'Hola, me gustaría recibir más información sobre Joyería KOB. ¿Podrían ayudarme?',
+  /** CTA "Hablar con asesor" del hero. */
+  heroAdvisor:
+    'Hola, me gustaría hablar con un asesor de Joyería KOB para conocer sus joyas. ¿Podrían orientarme?',
+  /** CTA "Quiero ser proveedor" del footer. */
+  supplier:
+    'Hola, soy fabricante o importador de joyería y me gustaría ser proveedor de Joyería KOB. Me gustaría enviarles mi catálogo.',
+} as const;

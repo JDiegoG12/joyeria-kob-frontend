@@ -41,7 +41,11 @@ import {
 import { MobileMenu } from '@/components/ui/navbar/mobile-menu';
 import { KobLogo } from '@/components/ui/navbar/kob-logo';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
-import { WHATSAPP_URL, PHONE_DISPLAY } from '@/config/contact';
+import {
+  buildWhatsAppUrl,
+  WHATSAPP_MESSAGES,
+  PHONE_DISPLAY,
+} from '@/config/contact';
 
 const FAVORITES_PATH = '/favoritos';
 
@@ -152,7 +156,7 @@ export const Navbar = () => {
 
             {/* WhatsApp */}
             <a
-              href={WHATSAPP_URL}
+              href={buildWhatsAppUrl(WHATSAPP_MESSAGES.generalInquiry)}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden min-w-0 items-center gap-2 rounded-sm px-2 py-1 transition-opacity duration-200 hover:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:flex"
