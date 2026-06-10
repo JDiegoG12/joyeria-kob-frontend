@@ -24,13 +24,22 @@
  * scroll: se cede el control a `HomePage`, que hace el scroll suave a la sección
  * tras montar. Resetear aquí pelearía con ese scroll diferido.
  *
+ * ─── Solo en cambios reales de ruta ──────────────────────────────────────────
+ * El reseteo se limita a cambios de `pathname` (un ref recuerda el anterior).
+ * Esto es clave para la excepción anterior: tras hacer scroll a `#servicios`,
+ * `HomePage` limpia su `state.scrollTo` con un `navigate(..., { state: null })`.
+ * Ese cambio de `state` (sin cambiar `pathname`) reejecutaría este efecto y,
+ * al ya no haber `scrollTo`, dispararía un `scrollTo(0, 0)` que cancelaría el
+ * scroll suave recién iniciado, devolviendo al usuario al tope de la home.
+ * El guard por `pathname` evita esa pelea.
+ *
  * ─── useLayoutEffect ──────────────────────────────────────────────────────────
  * Se usa `useLayoutEffect` (no `useEffect`) para resetear el scroll de forma
  * síncrona antes del primer pintado de la nueva página, evitando un parpadeo
  * en el que la página destino se ve momentáneamente desplazada.
  */
 
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
 /**
@@ -41,8 +50,16 @@ import { useLocation } from 'react-router-dom';
  */
 export const ScrollToTop = () => {
   const { pathname, state } = useLocation();
+  const prevPathnameRef = useRef<string | null>(null);
 
   useLayoutEffect(() => {
+    // Solo actuar ante un cambio real de ruta. Si únicamente cambió el `state`
+    // dentro del mismo `pathname` (p. ej. `HomePage` limpiando su `scrollTo`
+    // tras el scroll a `#servicios`), no se toca el scroll para no pelear con
+    // ese scroll suave en curso.
+    if (prevPathnameRef.current === pathname) return;
+    prevPathnameRef.current = pathname;
+
     // Si la navegación pide ir a una sección concreta, deja que la página
     // destino gestione su propio scroll diferido (ver HomePage).
     if ((state as { scrollTo?: string } | null)?.scrollTo) return;
