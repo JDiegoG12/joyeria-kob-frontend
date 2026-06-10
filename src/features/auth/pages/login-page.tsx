@@ -67,10 +67,10 @@ export const LoginPage = () => {
     >
       {/* ── Panel decorativo — solo desktop ── */}
       <AuthSidePanel
-        eyebrow="Acceso de clientes"
-        titleTop="Tus piezas"
+        eyebrow="Acceso exclusivo para clientes KOB"
+        titleTop="Tus joyas"
         titleAccent="favoritas te esperan"
-        description="Vuelve a tu cuenta para retomar lo que guardaste, seguir las piezas que te enamoraron y descubrir lo nuevo de la colección."
+        description="Ingresa a tu cuenta para continuar tu experiencia, explorar novedades y descubrir lo más reciente de nuestra colección exclusiva."
         footnote="Atención personalizada · Oro 18k"
       />
 

@@ -99,10 +99,10 @@ export const RegisterPage = () => {
     >
       {/* ── Panel decorativo — solo desktop ── */}
       <AuthSidePanel
-        eyebrow="Crea tu cuenta"
-        titleTop="Haz de KOB"
-        titleAccent="tu joyería"
-        description="Crea tu cuenta para guardar tus piezas favoritas, recibir las novedades de la colección y vivir una atención cercana, pensada para ti."
+        eyebrow="CREA TU CUENYA Y HAZ PARTE DE LO EXCLUSIVO"
+        titleTop="Haz parte de KOB"
+        titleAccent="tu joyería de confianza"
+        description="Regístrate y tendrás acceso al mundo KOB, podrás explorar las joyas nuevas, guardarlas en tu lista de favoritos y descubrir (antes que nadie) las novedades de la colección. Tu historia merece un espacio único."
         footnote="Sin costo · tus favoritos siempre contigo"
       />
 

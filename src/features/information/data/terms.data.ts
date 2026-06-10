@@ -20,9 +20,7 @@ export const TERMS_POLICY: IPolicyDocument = {
         {
           kind: 'paragraph',
           lead: 'Identificación del negocio.',
-          // TODO: Confirmar los días de atención (el borrador solo indica el
-          // horario 9:00 a.m. a 6:00 p.m.; ej. lunes a sábado).
-          text: 'KOB Joyería, ubicada en el Barrio Los Estudiantes, El Bordo, Cauca (Colombia). Contacto: kobjoyeria@gmail.com / WhatsApp 313 500 7459. Horario de atención: 9:00 a.m. a 6:00 p.m.',
+          text: 'KOB Joyería, ubicada en el Barrio Los Estudiantes, El Bordo, Cauca (Colombia). Contacto: kobjoyeria@gmail.com / WhatsApp 313 500 7459. Horario de atención: lunes a sábado de 9:00 a.m. a 6:00 p.m.; festivos de 9:00 a.m. a 1:00 p.m.',
         },
         {
           kind: 'paragraph',
