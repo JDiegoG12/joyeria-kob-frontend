@@ -1,71 +1,106 @@
 /**
  * @file admin-layout.tsx
  * @description Layout exclusivo del panel de administración de Joyería KOB.
- * Estructura la interfaz con un topbar fijo arriba y un sidebar de navegación
- * administrativa a la izquierda.
  *
- * ## Estructura visual
- * ```
- * ┌─────────────────────────────────────┐
- * │            TOPBAR ADMIN             │
- * ├──────────────┬──────────────────────┤
- * │              │                      │
- * │   SIDEBAR    │     <Outlet />       │
- * │    ADMIN     │   (panel actual)     │
- * │              │                      │
- * │              │                      │
- * └──────────────┴──────────────────────┘
- * ```
+ * ## Comportamiento del margen del contenido
+ * El sidebar es `position: fixed`, por lo que no ocupa espacio en el flujo
+ * del documento. El `<main>` necesita un `marginLeft` igual al ancho del
+ * sidebar para que el contenido no quede debajo de él.
  *
- * ## Comportamiento del sidebar admin
- * - Desktop: siempre visible, puede colapsarse a solo íconos
- * - Tablet: colapsado por defecto (solo íconos)
- * - Móvil: cajón deslizable controlado por `sidebarOpen`
+ * Este margen solo aplica en desktop (≥ 1024px). En mobile el sidebar
+ * es un cajón flotante que no desplaza el contenido, por lo que aplicar
+ * el margen en mobile empuja todo hacia la derecha incorrectamente.
  *
- * ## Sin footer
- * El panel admin no tiene footer público. Si se necesita en el futuro,
- * agregar un `<AdminFooter />` al final del layout.
- *
- * ## Uso
- * Se monta automáticamente desde el router dentro de `ProtectedRoute`.
- * ```tsx
- * // router/index.tsx
- * {
- *   element: (
- *     <ProtectedRoute requiredRole="ADMIN">
- *       <AdminLayout />
- *     </ProtectedRoute>
- *   ),
- *   children: [...]
- * }
- * ```
+ * La detección del breakpoint se hace con `window.matchMedia` dentro de
+ * un hook `useIsDesktop` que actualiza el estado al redimensionar.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AdminTopbar } from '@/components/ui/topbar/admin-topbar';
 import { AdminSidebar } from '@/components/ui/sidebar/admin-sidebar';
+
+// ─── Hook: detecta si la pantalla es desktop (lg = 1024px) ───────────────────
+
+/**
+ * Devuelve `true` si el viewport es ≥ 1024px (breakpoint `lg` de Tailwind).
+ * Se actualiza reactivamente al redimensionar la ventana.
+ */
+const useIsDesktop = (): boolean => {
+  const [isDesktop, setIsDesktop] = useState(
+    () => window.matchMedia('(min-width: 1024px)').matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  return isDesktop;
+};
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
 
 /**
  * Layout raíz del panel de administración.
  * Gestiona el estado de colapso y apertura móvil del sidebar admin.
  */
 export const AdminLayout = () => {
-  /** Controla si el sidebar está colapsado en desktop (solo íconos). */
   const [collapsed, setCollapsed] = useState(false);
-  /** Controla si el cajón del sidebar está abierto en móvil. */
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isDesktop = useIsDesktop();
+
+  useEffect(() => {
+    if (!isDesktop && sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isDesktop, sidebarOpen]);
+
+  /**
+   * El margen izquierdo del contenido solo aplica en desktop,
+   * donde el sidebar es siempre visible y fijo.
+   * En mobile es 0 porque el sidebar flota sobre el contenido.
+   */
+  const contentMarginLeft = isDesktop
+    ? collapsed
+      ? 'var(--sidebar-width-collapsed)'
+      : 'var(--sidebar-width)'
+    : 0;
 
   return (
     <div
-      className="flex min-h-screen flex-col"
+      className="flex min-h-screen min-w-0 flex-col"
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
+      <a
+        href="#admin-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] focus:rounded-md focus:px-4 focus:py-2"
+        style={{
+          backgroundColor: 'var(--accent)',
+          color: 'var(--accent-text)',
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-sm)',
+          fontWeight: 'var(--font-semibold)',
+        }}
+      >
+        Saltar al contenido
+      </a>
+
       {/* ── Topbar admin ──────────────────────────────────────────── */}
       <AdminTopbar
-        onOpenSidebar={() => setSidebarOpen(true)}
+        onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+        isSidebarOpen={sidebarOpen}
         onToggleCollapse={() => setCollapsed((prev) => !prev)}
         isCollapsed={collapsed}
+        sidebarOffset={contentMarginLeft}
       />
 
       {/* ── Área central: sidebar + contenido ────────────────────── */}
@@ -73,7 +108,6 @@ export const AdminLayout = () => {
         className="flex flex-1"
         style={{ paddingTop: 'var(--topbar-height)' }}
       >
-        {/* Sidebar de navegación administrativa */}
         <AdminSidebar
           isOpen={sidebarOpen}
           isCollapsed={collapsed}
@@ -82,12 +116,10 @@ export const AdminLayout = () => {
 
         {/* Contenido del panel actual */}
         <main
-          className="flex-1 overflow-auto transition-all duration-300"
+          id="admin-content"
+          className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 transition-all duration-300 ease-in-out sm:p-6 lg:p-8"
           style={{
-            padding: '2rem',
-            marginLeft: collapsed
-              ? 'var(--sidebar-width-collapsed)'
-              : 'var(--sidebar-width)',
+            marginLeft: contentMarginLeft,
           }}
         >
           <Outlet />

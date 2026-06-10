@@ -4,52 +4,201 @@
  *
  * ## Estructura de rutas
  * ```
- * /                          → Redirige automáticamente a /catalogo
+ * /                          → Página principal pública (MainLayout)
  * /catalogo                  → Catálogo público de joyas (MainLayout)
- * /login                     → Inicio de sesión (MainLayout)
+ * /favoritos                 → Placeholder de favoritos (MainLayout)
+ * /perfil                    → Perfil del usuario autenticado (MainLayout)
+ * /informacion/terminos      → Términos y condiciones de uso (MainLayout)
+ * /informacion/garantia      → Política de garantía y devoluciones (MainLayout)
+ * /informacion/privacidad    → Política de privacidad (MainLayout)
+ * /informacion/materiales    → Materiales (MainLayout)
+ * /login                     → Inicio de sesión cliente (sin MainLayout)
+ * /registro                  → Registro de cliente (sin MainLayout)
+ * /admin/login               → Inicio de sesión administrador (sin MainLayout)
  * /admin                     → Redirige a /admin/joyas
+ * /admin/general             → Configuración general (AdminLayout + ProtectedRoute ADMIN)
  * /admin/metricas            → Métricas (AdminLayout + ProtectedRoute ADMIN)
  * /admin/joyas               → CRUD de joyas (AdminLayout + ProtectedRoute ADMIN)
  * /admin/categorias          → Gestión de categorías (AdminLayout + ProtectedRoute ADMIN)
  * /admin/clientes            → Gestión de clientes (AdminLayout + ProtectedRoute ADMIN)
- * /admin/disenos             → Gestión de diseños (AdminLayout + ProtectedRoute ADMIN)
  * /admin/promociones         → Gestión de promociones (AdminLayout + ProtectedRoute ADMIN)
  * *                          → Página 404
  * ```
  *
  * ## Regla fundamental de este archivo
  * Cada ruta debe vivir en el bloque del layout que le corresponde:
- * - Rutas públicas → dentro del bloque `element: <MainLayout />`
- * - Rutas admin    → dentro del bloque `element: <ProtectedRoute><AdminLayout /></ProtectedRoute>`
+ * - Rutas públicas con navegación general → dentro del bloque `element: <MainLayout />`
+ * - Rutas de autenticación → fuera de `MainLayout` para evitar navbar/footer
+ * - Rutas admin protegidas → dentro del bloque `element: <ProtectedRoute><AdminLayout /></ProtectedRoute>`
  *
  * Poner una ruta admin dentro de MainLayout hace que el sidebar admin
  * nunca aparezca y que la protección por rol no funcione.
  *
- * ## Cómo agregar una nueva ruta pública
- * ```tsx
- * { path: '/nueva-ruta', element: <NuevaPage /> }
- * ```
- * Agrégala dentro del objeto que tiene `element: <MainLayout />`.
+ * ## Code splitting con lazy loading
+ * Todas las páginas se cargan con `React.lazy()` + `Suspense` para que Vite
+ * genere un chunk JS independiente por ruta. El navegador descarga cada chunk
+ * solo cuando el usuario navega a esa ruta por primera vez; las visitas
+ * siguientes usan la caché del navegador.
  *
- * ## Cómo agregar una nueva ruta protegida de admin
- * ```tsx
- * { path: '/admin/nueva-seccion', element: <NuevaAdminPage /> }
+ * Patrón utilizado en cada import:
+ * ```ts
+ * const MiPagina = lazy(() =>
+ *   import('@/features/.../mi-pagina').then(m => ({ default: m.MiPagina }))
+ * );
  * ```
- * Agrégala dentro del objeto que tiene `element: <AdminLayout />`.
- * La protección por rol ya está aplicada en ese nivel.
+ * El `.then(m => ({ default: m.MiPagina }))` es necesario porque los módulos
+ * exportan named exports, no default exports, y `React.lazy` solo admite
+ * default exports.
+ *
+ * ## Layouts: NO se cargan con lazy
+ * `MainLayout`, `AdminLayout` y `AuthLayout` son shells livianos (navbar,
+ * sidebar, footer). Se importan de forma estática para que estén disponibles
+ * de inmediato y el Suspense spinner no aparezca sobre un layout vacío.
  */
 
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
+import { RootLayout } from '@/layouts/root-layout';
+import { AuthLayout } from '@/layouts/auth-layout';
 import { MainLayout } from '@/layouts/main-layout';
 import { AdminLayout } from '@/layouts/admin-layout';
 import { ProtectedRoute } from '@/components/ui/protected-route';
+import { PageLoader } from '@/features/shared/pages/page-loader';
 
-import { HomePage } from '@/features/catalog/pages/home-page';
-import { LoginPage } from '@/features/auth/pages/login-page';
-import { AdminJewelryPage } from '@/features/catalog/pages/admin-jewelry-page';
-import { NotFoundPage } from '@/features/shared/pages/not-found-page';
-import { PlaceholderPage } from '@/features/shared/pages/placeholder-page';
+// ─── Páginas públicas ─────────────────────────────────────────────────────────
+// Chunk: página principal de marca, independiente del catálogo.
+const HomePage = lazy(() =>
+  import('@/features/home/pages/home-page').then((m) => ({
+    default: m.HomePage,
+  })),
+);
+
+// Chunk: catálogo público con productos y filtros.
+const CatalogPage = lazy(() =>
+  import('@/features/catalog/pages/catalog-page').then((m) => ({
+    default: m.CatalogPage,
+  })),
+);
+
+
+const FavoritesPage = lazy(() =>
+  import('@/features/favorites/pages/favorites-page').then((m) => ({
+    default: m.FavoritesPage,
+  })),
+);
+
+// ─── Páginas de información (políticas) ─────────────────────────────────────────
+// Documentos de lectura (términos, garantía, privacidad, materiales). Cada uno
+// es un chunk independiente que se descarga solo al visitar la ruta.
+const TermsPage = lazy(() =>
+  import('@/features/information/pages/terms-page').then((m) => ({
+    default: m.TermsPage,
+  })),
+);
+
+const WarrantyPage = lazy(() =>
+  import('@/features/information/pages/warranty-page').then((m) => ({
+    default: m.WarrantyPage,
+  })),
+);
+
+const PrivacyPage = lazy(() =>
+  import('@/features/information/pages/privacy-page').then((m) => ({
+    default: m.PrivacyPage,
+  })),
+);
+
+const MaterialsPage = lazy(() =>
+  import('@/features/information/pages/materials-page').then((m) => ({
+    default: m.MaterialsPage,
+  })),
+);
+
+// ─── Páginas de autenticación ─────────────────────────────────────────────────
+// Se agrupan en el mismo chunk porque se usan en flujos consecutivos
+// (el usuario pasa de login a registro en la misma sesión).
+const LoginPage = lazy(() =>
+  import('@/features/auth/pages/login-page').then((m) => ({
+    default: m.LoginPage,
+  })),
+);
+
+const RegisterPage = lazy(() =>
+  import('@/features/auth/pages/register-page').then((m) => ({
+    default: m.RegisterPage,
+  })),
+);
+
+const AdminLoginPage = lazy(() =>
+  import('@/features/auth/pages/admin-login-page').then((m) => ({
+    default: m.AdminLoginPage,
+  })),
+);
+
+const ProfilePage = lazy(() =>
+  import('@/features/auth/pages/profile-page').then((m) => ({
+    default: m.ProfilePage,
+  })),
+);
+
+// ─── Páginas de administración ────────────────────────────────────────────────
+// Cada página admin es un chunk separado. El panel de métricas (Recharts)
+// es especialmente pesado y se beneficia mucho de cargarse bajo demanda.
+const AdminGeneralPage = lazy(() =>
+  import('@/features/general/pages/admin-general-page').then((m) => ({
+    default: m.AdminGeneralPage,
+  })),
+);
+
+const AdminMetricsPage = lazy(() =>
+  import('@/features/metrics/pages/admin-metrics-page').then((m) => ({
+    default: m.AdminMetricsPage,
+  })),
+);
+
+const AdminJewelryPage = lazy(() =>
+  import('@/features/catalog/pages/admin-jewelry-page').then((m) => ({
+    default: m.AdminJewelryPage,
+  })),
+);
+
+const AdminCategoriesPage = lazy(() =>
+  import('@/features/categories/pages/admin-categories-page').then((m) => ({
+    default: m.AdminCategoriesPage,
+  })),
+);
+
+const AdminCustomersPage = lazy(() =>
+  import('@/features/customers/pages/admin-customers-page').then((m) => ({
+    default: m.AdminCustomersPage,
+  })),
+);
+
+const AdminPromotionsPage = lazy(() =>
+  import('@/features/promotions/pages/admin-promotions-page').then((m) => ({
+    default: m.AdminPromotionsPage,
+  })),
+);
+
+// ─── Páginas compartidas ──────────────────────────────────────────────────────
+const NotFoundPage = lazy(() =>
+  import('@/features/shared/pages/not-found-page').then((m) => ({
+    default: m.NotFoundPage,
+  })),
+);
+
+// ─── Helper: envuelve un elemento en Suspense con el spinner global ───────────
+/**
+ * Envuelve `element` en un `<Suspense>` con el `<PageLoader>` como fallback.
+ * Úsalo en cada `element` de ruta para evitar repetir el boilerplate.
+ *
+ * @param element - El componente de página cargado con `React.lazy`.
+ * @returns El mismo elemento envuelto en `<Suspense>`.
+ */
+const withSuspense = (element: React.ReactNode) => (
+  <Suspense fallback={<PageLoader />}>{element}</Suspense>
+);
 
 /**
  * Instancia del enrutador principal de la aplicación.
@@ -58,21 +207,67 @@ import { PlaceholderPage } from '@/features/shared/pages/placeholder-page';
  * @see {@link https://reactrouter.com/en/main/routers/create-browser-router}
  */
 export const router = createBrowserRouter([
-  // ─── Rutas públicas — usan MainLayout (Navbar + Footer) ──────────────────
+  // ─── Ruta raíz: no aporta UI, solo activa el tracking global de GA4 ───────
+  // Envuelve TODO el árbol (público, auth, admin y 404) para enviar un
+  // `page_view` en cada navegación del SPA desde un único punto.
+  {
+    element: <RootLayout />,
+    children: [
+  // ─── Rutas públicas con MainLayout (Navbar + Footer) ─────────────────────
   {
     element: <MainLayout />,
     children: [
       {
         path: '/',
-        element: <Navigate to="/catalogo" replace />,
+        element: withSuspense(<HomePage />),
       },
       {
         path: '/catalogo',
-        element: <HomePage />,
+        element: withSuspense(<CatalogPage />),
       },
       {
+        path: '/favoritos',
+        element: withSuspense(<FavoritesPage />),
+      },
+      {
+        path: '/perfil',
+        element: withSuspense(<ProfilePage />),
+      },
+      // ── Información (políticas) ──────────────────────────────────────────
+      {
+        path: '/informacion/terminos',
+        element: withSuspense(<TermsPage />),
+      },
+      {
+        path: '/informacion/garantia',
+        element: withSuspense(<WarrantyPage />),
+      },
+      {
+        path: '/informacion/privacidad',
+        element: withSuspense(<PrivacyPage />),
+      },
+      {
+        path: '/informacion/materiales',
+        element: withSuspense(<MaterialsPage />),
+      },
+    ],
+  },
+
+  // ─── Rutas de autenticación SIN MainLayout ───────────────────────────────
+  {
+    element: <AuthLayout />,
+    children: [
+      {
         path: '/login',
-        element: <LoginPage />,
+        element: withSuspense(<LoginPage />),
+      },
+      {
+        path: '/registro',
+        element: withSuspense(<RegisterPage />),
+      },
+      {
+        path: '/admin/login',
+        element: withSuspense(<AdminLoginPage />),
       },
     ],
   },
@@ -95,28 +290,29 @@ export const router = createBrowserRouter([
         element: <Navigate to="/admin/joyas" replace />,
       },
       {
+        path: '/admin/general',
+        element: withSuspense(<AdminGeneralPage />),
+      },
+      {
         path: '/admin/metricas',
-        element: <PlaceholderPage title="Métricas" />,
+        // Recharts se descarga SOLO si el admin visita esta ruta.
+        element: withSuspense(<AdminMetricsPage />),
       },
       {
         path: '/admin/joyas',
-        element: <AdminJewelryPage />,
+        element: withSuspense(<AdminJewelryPage />),
       },
       {
         path: '/admin/categorias',
-        element: <PlaceholderPage title="Categorías" />,
+        element: withSuspense(<AdminCategoriesPage />),
       },
       {
         path: '/admin/clientes',
-        element: <PlaceholderPage title="Clientes" />,
-      },
-      {
-        path: '/admin/disenos',
-        element: <PlaceholderPage title="Diseños" />,
+        element: withSuspense(<AdminCustomersPage />),
       },
       {
         path: '/admin/promociones',
-        element: <PlaceholderPage title="Promociones" />,
+        element: withSuspense(<AdminPromotionsPage />),
       },
     ],
   },
@@ -124,6 +320,8 @@ export const router = createBrowserRouter([
   // ─── Ruta 404 — captura cualquier ruta no definida ───────────────────────
   {
     path: '*',
-    element: <NotFoundPage />,
+    element: withSuspense(<NotFoundPage />),
+  },
+    ],
   },
 ]);

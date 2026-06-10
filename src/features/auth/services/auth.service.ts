@@ -1,155 +1,197 @@
 /**
  * @file auth.service.ts
- * @description Servicio de autenticación. Contiene las funciones `login` y
- * `logout` que se comunican con el backend y actualizan el `auth.store`.
+ * @description Servicio central de autenticación. Gestiona login, registro,
+ * logout y validación de sesión activa. Toda comunicación con el backend
+ * pasa por `apiClient`; el interceptor 401 configurado en ese cliente es
+ * la barrera de seguridad real contra tokens inválidos o expirados.
  *
- * ## Modo mock
- * Mientras el backend esté en desarrollo, `USE_MOCK = true` devuelve
- * datos simulados sin hacer ninguna petición HTTP real.
- * Cuando el backend esté listo, cambia `USE_MOCK = false` — ningún
- * componente ni store necesita modificarse.
- *
- * ## Uso desde componentes o páginas
- * ```typescript
- * import { AuthService } from '@/features/auth/services/auth.service';
- *
- * // En el handler del formulario de login (login-page.tsx)
- * try {
- *   await AuthService.login({ email, password });
- *   navigate('/admin/joyas');
- * } catch (error) {
- *   // Mostrar mensaje de error al usuario
- * }
- *
- * // En el botón de cerrar sesión (navbar o sidebar)
- * AuthService.logout();
- * navigate('/login');
- * ```
+ * ## Persistencia del token
+ * El token JWT y los datos del usuario se persisten **exclusivamente** a través
+ * del middleware `persist` de Zustand, que los escribe en `localStorage` bajo
+ * la clave `"kob-auth"`. No se realizan escrituras manuales adicionales en
+ * `localStorage`, eliminando la duplicación de estado en múltiples claves.
  */
 
 import { apiClient } from '@/api/api-client';
+import { getApiErrorMessage } from '@/api/get-error-message';
 import { useAuthStore } from '@/store/auth.store';
+
 import type {
-    AuthResponse,
+    AuthLoginData,
     LoginCredentials,
 } from '@/features/auth/types/auth.types';
 
-/**
- * Controla si el servicio usa datos simulados o llama al backend real.
- * - `true`  → Usa mocks locales (backend en desarrollo).
- * - `false` → Llama a los endpoints reales del backend.
- */
-const USE_MOCK = true;
-
-// ─── Datos mock ───────────────────────────────────────────────────────────────
-
-/**
- * Respuesta simulada del backend para el usuario administrador.
- * Solo se usa cuando `USE_MOCK = true`.
- */
-const MOCK_AUTH_RESPONSE: AuthResponse = {
-    token: 'mock-jwt-token-admin-kob',
-    user: {
-        id: '1',
-        name: 'Admin KOB',
-        email: 'admin@kob.com',
-        role: 'ADMIN',
-    },
-};
-
-/**
- * Credenciales válidas en modo mock.
- * Solo se usan cuando `USE_MOCK = true`.
- */
-const MOCK_CREDENTIALS = {
-    email: 'admin@kob.com',
-    password: 'admin123',
-};
-
-// ─── Servicio ─────────────────────────────────────────────────────────────────
-
-/**
- * Servicio de autenticación de Joyería KOB.
- * Todas las operaciones relacionadas con sesión pasan por aquí.
- */
 export const AuthService = {
+    // ─────────────────────────────
+    // LOGIN
+    // ─────────────────────────────
+
     /**
-     * Autentica al usuario con email y contraseña.
-     *
-     * En modo mock valida contra `MOCK_CREDENTIALS` y simula un delay
-     * de red de 800ms para imitar el comportamiento real del backend.
-     *
-     * En modo real hace `POST /auth/login` y guarda la sesión en el store.
+     * Inicia sesión con las credenciales proporcionadas.
+     * Envía las credenciales al backend y persiste la sesión si la respuesta es válida.
      *
      * @param credentials - Email y contraseña del usuario.
      * @throws {Error} Si las credenciales son incorrectas o el servidor falla.
-     *
-     * @example
-     * ```typescript
-     * try {
-     *   await AuthService.login({ email, password });
-     *   navigate('/admin/joyas');
-     * } catch (error) {
-     *   setErrorMessage('Credenciales incorrectas');
-     * }
-     * ```
      */
     login: async (credentials: LoginCredentials): Promise<void> => {
-        if (USE_MOCK) {
-            await simulateDelay(800);
+        try {
+            const { data: envelope } = await apiClient.post<{
+                success: boolean;
+                data: AuthLoginData;
+                message: string;
+            }>('/auth/login', credentials);
 
-            const isValid =
-                credentials.email === MOCK_CREDENTIALS.email &&
-                credentials.password === MOCK_CREDENTIALS.password;
+            const authData = envelope?.data;
 
-            if (!isValid) {
-                throw new Error('Credenciales incorrectas');
+            if (!authData?.token || !authData?.user) {
+                throw new Error('Respuesta inválida del servidor');
             }
 
-            useAuthStore
-                .getState()
-                .setSession(MOCK_AUTH_RESPONSE.token, MOCK_AUTH_RESPONSE.user);
-
-            return;
+            persistSession(authData);
+        } catch (error: unknown) {
+            throw new Error(
+                getApiErrorMessage(error, 'Error al iniciar sesión'),
+            );
         }
-
-        // ── Modo real ──────────────────────────────────────────────────────────
-        const response = await apiClient.post<AuthResponse>(
-            '/auth/login',
-            credentials,
-        );
-
-        useAuthStore
-            .getState()
-            .setSession(response.data.token, response.data.user);
     },
 
+    // ─────────────────────────────
+    // REGISTER
+    // ─────────────────────────────
+
     /**
-     * Cierra la sesión del usuario actual.
-     * Limpia el store y el `localStorage`. No hace petición al backend
-     * porque los JWT son stateless — simplemente se descartan del cliente.
+     * Registra un nuevo usuario cliente en el sistema.
      *
-     * Si en el futuro el backend implementa un endpoint de logout para
-     * invalidar tokens en una blacklist, agregar la llamada aquí.
+     * @param data - Datos del nuevo usuario. `phone` es opcional.
+     * @throws {Error} Si el email ya está en uso o el servidor falla.
+     */
+    register: async (data: {
+        name: string;
+        lastName: string;
+        email: string;
+        password: string;
+        phone?: string;
+    }): Promise<void> => {
+        try {
+            await apiClient.post('/auth/register', data);
+        } catch (error: unknown) {
+            throw new Error(
+                getApiErrorMessage(error, 'Error al registrar usuario'),
+            );
+        }
+    },
+
+    // ─────────────────────────────
+    // LOGOUT
+    // ─────────────────────────────
+
+    /**
+     * Cierra la sesión activa: limpia el store y redirige al login
+     * correspondiente según el rol del usuario.
      *
-     * @example
-     * ```typescript
-     * AuthService.logout();
-     * navigate('/login');
-     * ```
+     * El middleware `persist` de Zustand se encarga automáticamente de
+     * eliminar `"kob-auth"` de `localStorage` al llamar a `clearSession()`.
+     * No se requieren llamadas manuales a `localStorage.removeItem`.
+     *
+     * El rol se lee antes de limpiar el store para poder usarlo en la redirección.
      */
     logout: (): void => {
+        const role = useAuthStore.getState().user?.role;
         useAuthStore.getState().clearSession();
+        if (role === 'ADMIN') {
+            window.location.replace('/login');
+        } else {
+            window.location.replace('/');
+        }
+    },
+
+    // ─────────────────────────────
+    // GET TOKEN
+    // ─────────────────────────────
+
+    /**
+     * Devuelve el JWT activo desde el store de Zustand, o `null` si no existe.
+     *
+     * @returns El token JWT como string, o `null`.
+     */
+    getToken: (): string | null => {
+        return useAuthStore.getState().token;
+    },
+
+    // ─────────────────────────────
+    // VALIDAR AUTENTICACIÓN
+    // ─────────────────────────────
+
+    /**
+     * Indica si el usuario tiene una sesión activa y no expirada.
+     *
+     * ## Alcance de esta validación
+     * Esta función es una **optimización de UX**: evita peticiones innecesarias
+     * al backend cuando el token ya expiró localmente. NO valida la firma
+     * criptográfica del JWT, ya que eso requeriría exponer la clave secreta
+     * del servidor en el cliente. La validación real de firma ocurre en el
+     * backend en cada request protegido; el interceptor 401 de `apiClient`
+     * llama a `logout()` automáticamente si el servidor rechaza el token.
+     *
+     * ## Qué sí verifica
+     * - Que existe un token en el store de Zustand.
+     * - Que el token tiene exactamente tres segmentos (formato JWT válido).
+     * - Que el payload contiene un campo `exp` numérico.
+     * - Que la fecha de expiración (`exp`) no ha pasado.
+     *
+     * @returns `true` si el token existe y no ha expirado; `false` en cualquier
+     * otro caso. Ejecuta `logout()` como efecto secundario si detecta un token
+     * malformado o expirado.
+     */
+    isAuthenticated: (): boolean => {
+        const token = useAuthStore.getState().token;
+
+        if (!token) {
+            return false;
+        }
+
+        try {
+            const parts = token.split('.');
+
+            if (parts.length !== 3) {
+                AuthService.logout();
+                return false;
+            }
+
+            const payload = JSON.parse(atob(parts[1]));
+
+            if (typeof payload.exp !== 'number') {
+                AuthService.logout();
+                return false;
+            }
+
+            if (payload.exp * 1000 < Date.now()) {
+                AuthService.logout();
+                return false;
+            }
+
+            return true;
+        } catch {
+            AuthService.logout();
+            return false;
+        }
     },
 };
 
-// ─── Utilidades internas ──────────────────────────────────────────────────────
+// ─────────────────────────────
+// HELPERS
+// ─────────────────────────────
 
 /**
- * Simula un retardo de red en modo mock.
- * No usar fuera de este archivo.
+ * Persiste la sesión del usuario en el store de Zustand.
+ * El middleware `persist` se encarga de sincronizar el estado con
+ * `localStorage["kob-auth"]` automáticamente — no se requiere ninguna
+ * escritura manual adicional.
  *
- * @param ms - Milisegundos a esperar.
+ * @param data - Token JWT y datos del usuario devueltos por el backend.
  */
-const simulateDelay = (ms: number): Promise<void> =>
-    new Promise((resolve) => setTimeout(resolve, ms));
+function persistSession(data: AuthLoginData) {
+    useAuthStore
+        .getState()
+        .setSession(data.token, data.user);
+}

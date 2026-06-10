@@ -1,84 +1,114 @@
 /**
  * @file main-layout.tsx
  * @description Layout principal para todas las rutas públicas de Joyería KOB.
- * Estructura la página con Navbar arriba, sidebar de filtros a la izquierda
- * (solo en /catalogo), contenido principal y footer abajo.
+ * Estructura la página con AnnouncementBar y Navbar fijos, contenido principal
+ * a ancho completo y footer.
  *
  * ## Estructura visual
- * ```
  * ┌─────────────────────────────────────┐
+ * │        ANNOUNCEMENT BAR             │
+ * ├─────────────────────────────────────┤
  * │            NAVBAR                   │
  * ├──────────────┬──────────────────────┤
- * │              │                      │
- * │   SIDEBAR    │     <Outlet />       │
- * │  (solo en    │   (página actual)    │
- * │  /catalogo)  │                      │
- * │              │                      │
+ * │                                     │
+ * │           <Outlet />                │
+ * │       (página actual)               │
+ * │                                     │
  * ├──────────────┴──────────────────────┤
  * │            FOOTER                   │
  * └─────────────────────────────────────┘
- * ```
- *
- * ## Comportamiento del sidebar
- * - `/catalogo` → sidebar de filtros visible
- * - cualquier otra ruta → sin sidebar, contenido a ancho completo
- *
- * ## Responsive
- * - Desktop: sidebar fijo a la izquierda
- * - Móvil/Tablet: sidebar como cajón deslizable controlado por `sidebarOpen`
- *
- * ## Uso
- * Se monta automáticamente desde el router. No necesita props.
- * ```tsx
- * // router/index.tsx
- * { element: <MainLayout />, children: [...] }
- * ```
  */
-import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { Navbar } from '@/components/ui/navbar/navbar';
-import { FilterSidebar } from '@/components/ui/sidebar/filter-sidebar';
-import { Footer } from '@/components/ui/footer/footer';
 
-const ROUTES_WITH_SIDEBAR = ['/catalogo'];
+import { useEffect } from 'react';
+import { Outlet } from 'react-router-dom';
+
+import { AnnouncementBar } from '@/components/ui/announcement-bar/announcement-bar';
+import { Navbar } from '@/components/ui/navbar/navbar';
+import { Footer } from '@/components/ui/footer/footer';
+import { ScrollToTop } from '@/components/ui/scroll-to-top';
+import { FavoriteAuthPrompt } from '@/features/favorites/components/favorite-auth-prompt';
+
+import { AuthService } from '@/features/auth/services/auth.service';
 
 export const MainLayout = () => {
-  const { pathname } = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const showSidebar = ROUTES_WITH_SIDEBAR.includes(pathname);
+  // ─────────────────────────────────────────────
+  // Verifica automáticamente si el token sigue
+  // siendo válido cuando se monta el layout.
+  //
+  // Si el token expiró o es inválido:
+  // → limpia sesión
+  // → redirige a /login
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    AuthService.isAuthenticated();
+  }, []);
 
   return (
     <div
-      className="flex min-h-screen flex-col"
-      style={{ backgroundColor: 'var(--bg-primary)' }}
+      className="relative flex min-h-screen flex-col overflow-hidden"
+      style={{
+        backgroundColor: 'var(--bg-primary)',
+        backgroundImage: `
+          linear-gradient(
+            180deg,
+            var(--bg-secondary) 0%,
+            var(--bg-primary) 38%,
+            var(--bg-primary) 100%
+          )
+        `,
+      }}
     >
-      <Navbar onOpenSidebar={() => setSidebarOpen(true)} />
+      {/* Resetea el scroll al inicio en cada cambio de ruta pública */}
+      <ScrollToTop />
 
-      {/*
-        Este div empuja todo el contenido hacia abajo el alto exacto
-        del navbar. El sidebar y el main viven dentro de aquí,
-        así que el sidebar nunca tapa el navbar.
-      */}
+      {/* ── Textura de fondo ───────────────────────────── */}
       <div
-        className="flex flex-1"
-        style={{ marginTop: 'var(--navbar-height)' }}
-      >
-        {showSidebar && (
-          <FilterSidebar
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
-        )}
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.06] mix-blend-multiply dark:opacity-[0.08] dark:mix-blend-screen"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, var(--text-primary) 1px, transparent 0)',
+          backgroundSize: '14px 14px',
+        }}
+        aria-hidden="true"
+      />
 
-        <main
-          className={`flex-1 ${showSidebar ? 'main-content-with-sidebar' : ''} main-content`}
-        >
+      {/* ── Overlay degradado ─────────────────────────── */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-70 dark:opacity-80"
+        style={{
+          backgroundImage:
+            'linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--bg-primary) 78%, transparent) 76%, var(--bg-primary) 100%)',
+        }}
+        aria-hidden="true"
+      />
+
+      {/* ── Header público ────────────────────────────── */}
+      <AnnouncementBar />
+      <Navbar />
+
+      {/* Spacer para navbar fixed */}
+      <div
+        className="relative z-10 flex-shrink-0"
+        style={{
+          height: 'calc(var(--announcement-height) + var(--navbar-height))',
+        }}
+        aria-hidden="true"
+      />
+
+      {/* ── Contenido principal ───────────────────────── */}
+      <div className="relative z-10 flex min-w-0 flex-1">
+        <main className="min-w-0 flex-1">
           <Outlet />
         </main>
       </div>
 
-      <Footer />
+      {/* ── Footer ────────────────────────────────────── */}
+      <div className="relative z-10">
+        <Footer />
+      </div>
+
+      {/* ── Modal global: "inicia sesión para guardar favoritos" ── */}
+      <FavoriteAuthPrompt />
     </div>
   );
 };

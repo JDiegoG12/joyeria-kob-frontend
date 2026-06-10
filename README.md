@@ -119,7 +119,10 @@ src/
 ├── components/
 │   └── ui/           # Componentes atómicos reutilizables (Button, Input, Modal)
 ├── features/         # Módulos funcionales de la aplicación
-│   ├── catalog/      # Listado de joyas y filtros
+│   ├── home/         # Página principal pública y contenido de marca
+│   │   ├── components/# Tarjetas y bloques reutilizables exclusivos de la home
+│   │   └── pages/    # Composición de la página principal
+│   ├── catalog/      # Catálogo público, listado de joyas y filtros
 │   └── customization/# Personalizador de anillos
 ├── layouts/          # Estructuras de página (MainLayout, AuthLayout)
 ├── shared/           # Tipos globales, utilidades y constantes
@@ -133,6 +136,9 @@ src/
 ### Reglas de arquitectura
 
 - Un componente dentro de `features/catalog` **no puede** importar nada de `features/customization`. Si algo se repite entre features, se mueve a `components/ui/` o `shared/`.
+- La página principal vive en `features/home` y no debe importar stores, servicios ni tipos de `features/catalog`.
+- Los componentes visuales que solo usa la home viven en `features/home/components`; si luego se reutilizan fuera de la home, se mueven a `components/ui/`.
+- El catálogo público vive en `features/catalog/pages/catalog-page.tsx`; allí pertenecen los filtros, categorías y carga de productos.
 - Cada carpeta de feature debe tener un `index.ts` que exporte solo lo necesario hacia afuera.
 - Toda la lógica de manipulación de estado vive en el store, nunca en el componente.
 
