@@ -71,7 +71,7 @@ export const LoginPage = () => {
         titleTop="Tus piezas"
         titleAccent="favoritas te esperan"
         description="Vuelve a tu cuenta para retomar lo que guardaste, seguir las piezas que te enamoraron y descubrir lo nuevo de la colección."
-        footnote="Atención cercana · piezas seleccionadas con detalle"
+        footnote="Atención personalizada · Oro 18k"
       />
 
       {/* ── Panel del formulario ── */}
@@ -85,7 +85,7 @@ export const LoginPage = () => {
           }}
         >
           {/* Banner de marca — solo móvil */}
-          <AuthMobileBanner tagline="Atención cercana · piezas seleccionadas con detalle" />
+          <AuthMobileBanner tagline="Atención personalizada · Oro 18k" />
 
           {/* Volver al inicio */}
           <div className="mb-6">

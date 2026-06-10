@@ -22,10 +22,13 @@ import {
 } from '@/config/contact';
 
 const INFO_LINKS = [
-  'Términos y condiciones de uso',
-  'Política de garantía, reembolso y devoluciones',
-  'Política de privacidad',
-  'Materiales',
+  { label: 'Términos y condiciones de uso', to: '/informacion/terminos' },
+  {
+    label: 'Política de garantía, reembolso y devoluciones',
+    to: '/informacion/garantia',
+  },
+  { label: 'Política de privacidad', to: '/informacion/privacidad' },
+  { label: 'Materiales', to: '/informacion/materiales' },
 ] as const;
 
 const SOCIAL_LINKS = [
@@ -120,9 +123,9 @@ export const Footer = () => {
 
       <FooterColumn title="Información">
         <ul className="space-y-2.5">
-          {INFO_LINKS.map((label) => (
-            <li key={label}>
-              <FooterLink to="#">{label}</FooterLink>
+          {INFO_LINKS.map(({ label, to }) => (
+            <li key={to}>
+              <FooterLink to={to}>{label}</FooterLink>
             </li>
           ))}
         </ul>

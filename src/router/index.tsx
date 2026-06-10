@@ -8,6 +8,10 @@
  * /catalogo                  → Catálogo público de joyas (MainLayout)
  * /favoritos                 → Placeholder de favoritos (MainLayout)
  * /perfil                    → Perfil del usuario autenticado (MainLayout)
+ * /informacion/terminos      → Términos y condiciones de uso (MainLayout)
+ * /informacion/garantia      → Política de garantía y devoluciones (MainLayout)
+ * /informacion/privacidad    → Política de privacidad (MainLayout)
+ * /informacion/materiales    → Materiales (MainLayout)
  * /login                     → Inicio de sesión cliente (sin MainLayout)
  * /registro                  → Registro de cliente (sin MainLayout)
  * /admin/login               → Inicio de sesión administrador (sin MainLayout)
@@ -83,6 +87,34 @@ const FavoritesPage = lazy(() =>
     default: m.FavoritesPage,
   })),
 );
+
+// ─── Páginas de información (políticas) ─────────────────────────────────────────
+// Documentos de lectura (términos, garantía, privacidad, materiales). Cada uno
+// es un chunk independiente que se descarga solo al visitar la ruta.
+const TermsPage = lazy(() =>
+  import('@/features/information/pages/terms-page').then((m) => ({
+    default: m.TermsPage,
+  })),
+);
+
+const WarrantyPage = lazy(() =>
+  import('@/features/information/pages/warranty-page').then((m) => ({
+    default: m.WarrantyPage,
+  })),
+);
+
+const PrivacyPage = lazy(() =>
+  import('@/features/information/pages/privacy-page').then((m) => ({
+    default: m.PrivacyPage,
+  })),
+);
+
+const MaterialsPage = lazy(() =>
+  import('@/features/information/pages/materials-page').then((m) => ({
+    default: m.MaterialsPage,
+  })),
+);
+
 // ─── Páginas de autenticación ─────────────────────────────────────────────────
 // Se agrupan en el mismo chunk porque se usan en flujos consecutivos
 // (el usuario pasa de login a registro en la misma sesión).
@@ -200,6 +232,23 @@ export const router = createBrowserRouter([
       {
         path: '/perfil',
         element: withSuspense(<ProfilePage />),
+      },
+      // ── Información (políticas) ──────────────────────────────────────────
+      {
+        path: '/informacion/terminos',
+        element: withSuspense(<TermsPage />),
+      },
+      {
+        path: '/informacion/garantia',
+        element: withSuspense(<WarrantyPage />),
+      },
+      {
+        path: '/informacion/privacidad',
+        element: withSuspense(<PrivacyPage />),
+      },
+      {
+        path: '/informacion/materiales',
+        element: withSuspense(<MaterialsPage />),
       },
     ],
   },

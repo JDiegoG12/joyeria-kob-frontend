@@ -76,17 +76,17 @@ const SERVICES = [
   },
   {
     icon: Hammer,
-    title: 'Elaboración',
+    title: 'Fabricación',
     description:
-      'Recreamos piezas de joyería a medida: medallas, anillos, pulseras y otros encargos especiales.',
+      'Elaboramos las joyas desde cero a tu gusto, medida y con la mejor calidad.',
     message:
-      'Hola, me interesa el servicio de Elaboración de una pieza a medida. ¿Podrían ayudarme?',
+      'Hola, me interesa el servicio de Fabricación de una pieza a medida. ¿Podrían ayudarme?',
   },
   {
     icon: Wrench,
     title: 'Reparación',
     description:
-      'Contamos con taller especializado para reparar con cuidado las joyas que tienen valor sentimental.',
+      'Restauramos el valor sentimental de tus joyas brindandoles una nueva oportunidad para que te acompañen con la misma fuerza y elegancia.',
     message:
       'Hola, quisiera información sobre el servicio de Reparación de una joya.',
   },
@@ -94,7 +94,7 @@ const SERVICES = [
     icon: ShieldCheck,
     title: 'Mantenimiento',
     description:
-      'Extendemos la vida de tus joyas con limpieza, ajuste y revisión técnica de cada pieza.',
+      'Cuidamos, limpiamos y revisamos  tus joyas para que siempre luzcan y estén como nuevas.',
     message:
       'Hola, me interesa el servicio de Mantenimiento (limpieza y revisión) de mis joyas.',
   },
@@ -102,7 +102,7 @@ const SERVICES = [
     icon: MessageSquareText,
     title: 'Asesoría',
     description:
-      'Te acompañamos en cada ocasión para elegir una pieza especial para alguien especial.',
+      'Te acompañamos durante todo el proceso para que escojas la joya perfeta.',
     message:
       'Hola, me gustaría recibir Asesoría para elegir una joya. ¿Podrían orientarme?',
   },
@@ -118,20 +118,20 @@ const SERVICES = [
 
 const TESTIMONIALS = [
   {
-    text: 'He comprado varias veces en Joyería KOB y siempre estoy impresionada por la calidad y la artesanía de sus joyas. Se nota el amor y la dedicación que ponen en cada pieza. Es reconfortante saber que estoy invirtiendo en joyas que durarán años.',
-    name: 'Mercedes Villegas',
-    location: 'Bogotá - Colombia',
+    text: 'Compré un anillo muy bonito para mi esposa. ',
+    name: 'Jose Muñoz',
+    location: 'Mercaderes - Cauca',
   },
   {
-    text: 'La originalidad de Joyería KOB es incomparable. Cada pieza es una obra de arte que destaca, los conozco hace más de 12 años y nunca me fallan. Si buscas joyería que exprese tu arte, Joyería KOB es el lugar para conseguirlo.',
-    name: 'Ana Tobón',
-    location: 'Bogotá - Colombia',
+    text: 'Mandé a personalizar una anillo con mi nombre y fecha de nacimiento y quedó muy elegante. Los recomiendo. ',
+    name: 'Andrés Torres',
+    location: 'Popayán - Cauca',
     featured: true,
   },
   {
-    text: 'El equipo de Joyería KOB va más allá para asegurarse de que estés completamente satisfecho con tu compra. Siempre están disponibles para responder preguntas y ofrecer asesoramiento personalizado. Se nota que valoran a sus clientes.',
-    name: 'Laura López',
-    location: 'Medellín - Colombia',
+    text: 'Buena atención, me enviaron fotos durante todo el proceso de fabricación, eso me gustó. ',
+    name: 'Laura Meneses',
+    location: 'Remolino - Nariño.',
   },
 ] as const;
 
