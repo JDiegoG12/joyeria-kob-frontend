@@ -71,12 +71,85 @@ export const AuthService = {
         email: string;
         password: string;
         phone?: string;
+        acceptedTerms: boolean;
     }): Promise<void> => {
         try {
             await apiClient.post('/auth/register', data);
         } catch (error: unknown) {
             throw new Error(
                 getApiErrorMessage(error, 'Error al registrar usuario'),
+            );
+        }
+    },
+
+    // ─────────────────────────────
+    // LOGIN CON GOOGLE
+    // ─────────────────────────────
+
+    /**
+     * Inicia sesión con Google. Envía al backend el `credential` (ID token)
+     * que emite Google Identity Services y persiste la sesión recibida.
+     *
+     * @param credential - ID token de Google.
+     * @throws {Error} Si Google no se pudo verificar o el servidor falla.
+     */
+    loginWithGoogle: async (credential: string): Promise<void> => {
+        try {
+            const { data: envelope } = await apiClient.post<{
+                success: boolean;
+                data: AuthLoginData;
+                message: string;
+            }>('/auth/google', { credential });
+
+            const authData = envelope?.data;
+
+            if (!authData?.token || !authData?.user) {
+                throw new Error('Respuesta inválida del servidor');
+            }
+
+            persistSession(authData);
+        } catch (error: unknown) {
+            throw new Error(
+                getApiErrorMessage(error, 'Error al iniciar sesión con Google'),
+            );
+        }
+    },
+
+    // ─────────────────────────────
+    // RECUPERACIÓN DE CONTRASEÑA
+    // ─────────────────────────────
+
+    /**
+     * Solicita el envío del correo de recuperación de contraseña.
+     * El backend responde siempre con éxito (mensaje genérico) para no revelar
+     * si el correo está registrado.
+     *
+     * @param email - Correo de la cuenta.
+     * @throws {Error} Solo si el servidor falla a nivel de red/validación.
+     */
+    forgotPassword: async (email: string): Promise<void> => {
+        try {
+            await apiClient.post('/auth/forgot-password', { email });
+        } catch (error: unknown) {
+            throw new Error(
+                getApiErrorMessage(error, 'No se pudo procesar la solicitud'),
+            );
+        }
+    },
+
+    /**
+     * Restablece la contraseña con el token recibido por correo.
+     *
+     * @param token - Token de la URL de restablecimiento.
+     * @param password - Nueva contraseña.
+     * @throws {Error} Si el token es inválido/expiró o el servidor falla.
+     */
+    resetPassword: async (token: string, password: string): Promise<void> => {
+        try {
+            await apiClient.post('/auth/reset-password', { token, password });
+        } catch (error: unknown) {
+            throw new Error(
+                getApiErrorMessage(error, 'No se pudo restablecer la contraseña'),
             );
         }
     },

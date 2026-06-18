@@ -1,16 +1,13 @@
 /**
- * @file login-page.tsx
- * @description Página de inicio de sesión para clientes.
- * - Panel izquierdo con fotografía de joyería + degradado de marca (desktop).
- * - Tarjeta de formulario con esquinas rectas, coherente con el resto de la app.
- * - Enlace "Volver al inicio" para abandonar sin iniciar sesión.
- * - Pegado de texto habilitado en todos los campos.
- * - 100% responsive y con animaciones de entrada no invasivas.
- * Las notificaciones usan `useToastStore` para respetar el tema activo.
+ * @file reset-password-page.tsx
+ * @description Página de restablecimiento de contraseña.
+ * - Lee el `:token` de la URL (enviado por correo desde el backend).
+ * - Pide la nueva contraseña con confirmación (reescritura forzada).
+ * - Al éxito redirige a /login para iniciar sesión con la nueva contraseña.
  */
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useToastStore } from '@/store/toast.store';
 import { AuthService } from '@/features/auth/services/auth.service';
 import { getApiErrorMessage } from '@/api/get-error-message';
@@ -18,18 +15,21 @@ import { AuthField } from '@/features/auth/components/auth-field';
 import { AuthSidePanel } from '@/features/auth/components/auth-side-panel';
 import { AuthMobileBanner } from '@/features/auth/components/auth-mobile-banner';
 import { BackHomeLink } from '@/features/auth/components/back-home-link';
-import { GoogleLoginButton } from '@/features/auth/components/google-login-button';
-import { AuthDivider } from '@/features/auth/components/auth-divider';
 
 interface FormState {
-  email: string;
   password: string;
+  confirmPassword: string;
 }
 
-export const LoginPage = () => {
+export const ResetPasswordPage = () => {
   const navigate = useNavigate();
+  const { token } = useParams<{ token: string }>();
   const { showToast } = useToastStore();
-  const [form, setForm] = useState<FormState>({ email: '', password: '' });
+
+  const [form, setForm] = useState<FormState>({
+    password: '',
+    confirmPassword: '',
+  });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
 
@@ -40,23 +40,33 @@ export const LoginPage = () => {
 
   const validate = () => {
     const newErrors: Partial<FormState> = {};
-    if (!form.email.trim()) newErrors.email = 'El correo es obligatorio';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = 'Correo inválido';
     if (!form.password.trim()) newErrors.password = 'La contraseña es obligatoria';
+    else if (form.password.length < 6) newErrors.password = 'Mínimo 6 caracteres';
+
+    if (!form.confirmPassword.trim()) newErrors.confirmPassword = 'Confirma tu contraseña';
+    else if (form.confirmPassword !== form.password) newErrors.confirmPassword = 'No coinciden';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) {
+      showToast('error', 'Enlace inválido. Solicita uno nuevo.');
+      return;
+    }
     if (!validate()) return;
     try {
       setLoading(true);
-      await AuthService.login({ email: form.email, password: form.password });
-      showToast('success', '¡Hola de nuevo!');
-      navigate('/');
+      await AuthService.resetPassword(token, form.password);
+      showToast('success', 'Contraseña actualizada. Inicia sesión.');
+      navigate('/login');
     } catch (error: unknown) {
-      showToast('error', getApiErrorMessage(error, 'Error al iniciar sesión'));
+      showToast(
+        'error',
+        getApiErrorMessage(error, 'No se pudo restablecer la contraseña'),
+      );
     } finally {
       setLoading(false);
     }
@@ -67,16 +77,14 @@ export const LoginPage = () => {
       className="grid min-h-[calc(100vh-var(--navbar-height,64px))] grid-cols-1 lg:grid-cols-2"
       style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
     >
-      {/* ── Panel decorativo — solo desktop ── */}
       <AuthSidePanel
-        eyebrow="Acceso exclusivo para clientes KOB"
-        titleTop="Tus joyas"
-        titleAccent="favoritas te esperan"
-        description="Ingresa a tu cuenta para continuar tu experiencia, explorar novedades y descubrir lo más reciente de nuestra colección exclusiva."
-        footnote="Atención personalizada · Oro 18k"
+        eyebrow="Casi listo"
+        titleTop="Crea una"
+        titleAccent="nueva contraseña"
+        description="Elige una contraseña segura que no uses en otros sitios. Después podrás iniciar sesión con ella de inmediato."
+        footnote="Tu seguridad es lo primero"
       />
 
-      {/* ── Panel del formulario ── */}
       <section className="flex items-center justify-center overflow-y-auto px-4 py-8 sm:px-10">
         <div
           className="animate-fade-in w-full max-w-md border p-6 sm:p-8"
@@ -86,21 +94,18 @@ export const LoginPage = () => {
             boxShadow: 'var(--shadow-lg)',
           }}
         >
-          {/* Banner de marca — solo móvil */}
-          <AuthMobileBanner tagline="Atención personalizada · Oro 18k" />
+          <AuthMobileBanner tagline="Crea una nueva contraseña" />
 
-          {/* Volver al inicio */}
           <div className="mb-6">
             <BackHomeLink />
           </div>
 
-          {/* Cabecera */}
           <div className="mb-6">
             <p
               className="text-xs uppercase tracking-[0.3em]"
               style={{ color: 'var(--text-accent)' }}
             >
-              Bienvenido
+              Nueva contraseña
             </p>
             <h2
               className="mt-2"
@@ -112,76 +117,60 @@ export const LoginPage = () => {
                 color: 'var(--text-primary)',
               }}
             >
-              Iniciar sesión
+              Restablecer contraseña
             </h2>
             <p
               className="mt-2 text-sm leading-6"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Ingresa con tu correo para continuar en Joyería KOB.
+              Define tu nueva contraseña para acceder a tu cuenta.
             </p>
           </div>
 
-          {/* Formulario */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <AuthField
-              label="Correo electrónico"
-              type="email"
-              value={form.email}
-              onChange={(v) => updateField('email', v)}
-              placeholder="correo@ejemplo.com"
-              autoComplete="email"
-              error={errors.email}
+              label="Nueva contraseña"
+              value={form.password}
+              onChange={(v) => updateField('password', v)}
+              placeholder="Mínimo 6 caracteres"
+              autoComplete="new-password"
+              error={errors.password}
+              isPassword
               animationDelay="80ms"
             />
 
             <AuthField
-              label="Contraseña"
-              value={form.password}
-              onChange={(v) => updateField('password', v)}
-              placeholder="Tu contraseña"
-              autoComplete="current-password"
-              error={errors.password}
+              label="Confirmar contraseña"
+              value={form.confirmPassword}
+              onChange={(v) => updateField('confirmPassword', v)}
+              placeholder="Repite tu contraseña"
+              autoComplete="new-password"
+              error={errors.confirmPassword}
               isPassword
-              animationDelay="160ms"
+              blockPaste
+              animationDelay="120ms"
             />
-
-            <div className="flex justify-end">
-              <Link
-                to="/recuperar-contrasena"
-                className="text-xs font-medium underline-offset-4 transition hover:underline"
-                style={{ color: 'var(--text-accent)' }}
-              >
-                ¿Olvidaste tu contraseña?
-              </Link>
-            </div>
 
             <button
               type="submit"
               disabled={loading}
               className="animate-fade-in mt-2 w-full cursor-pointer py-3 text-sm font-bold uppercase tracking-wide text-[var(--accent-text)] transition-all duration-200 hover:brightness-125 hover:shadow-[var(--shadow-accent)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ backgroundColor: 'var(--accent)', animationDelay: '240ms' }}
+              style={{ backgroundColor: 'var(--accent)', animationDelay: '180ms' }}
             >
-              {loading ? 'Ingresando…' : 'Entrar'}
+              {loading ? 'Guardando…' : 'Guardar contraseña'}
             </button>
           </form>
 
-          {/* Acceso con Google */}
-          <AuthDivider />
-          <GoogleLoginButton redirectTo="/" />
-
-          {/* Pie */}
           <p
             className="mt-6 text-center text-sm"
             style={{ color: 'var(--text-secondary)' }}
           >
-            ¿No tienes cuenta?{' '}
             <Link
-              to="/registro"
+              to="/login"
               className="font-semibold underline-offset-4 transition hover:underline"
               style={{ color: 'var(--text-accent)' }}
             >
-              Regístrate
+              Volver a iniciar sesión
             </Link>
           </p>
         </div>

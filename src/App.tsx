@@ -8,10 +8,18 @@
 
 import { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useTheme } from '@/hooks/use-theme';
 import { router } from '@/router';
 import { initGA } from '@/analytics/google-analytics';
 import { ToastContainer } from '@/components/ui/toast/toast-container';
+
+/**
+ * Client ID de Google (OAuth 2.0). Si no está configurado, el proveedor se
+ * monta igualmente pero los botones de Google no funcionarán: se controla
+ * dentro de `GoogleLoginButton`.
+ */
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
 
 /**
  * Punto de entrada visual de la aplicación.
@@ -30,10 +38,10 @@ const App = () => {
   }, []);
 
   return (
-    <>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <ToastContainer />
       <RouterProvider router={router} />
-    </>
+    </GoogleOAuthProvider>
   );
 };
 
