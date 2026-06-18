@@ -18,6 +18,8 @@ import { AuthField } from '@/features/auth/components/auth-field';
 import { AuthSidePanel } from '@/features/auth/components/auth-side-panel';
 import { AuthMobileBanner } from '@/features/auth/components/auth-mobile-banner';
 import { BackHomeLink } from '@/features/auth/components/back-home-link';
+import { GoogleLoginButton } from '@/features/auth/components/google-login-button';
+import { AuthDivider } from '@/features/auth/components/auth-divider';
 
 interface FormState {
   firstName: string;
@@ -42,6 +44,8 @@ export const RegisterPage = () => {
   });
 
   const [errors, setErrors] = useState<Partial<FormState>>({});
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const updateField = (field: keyof FormState, value: string) => {
@@ -69,7 +73,11 @@ export const RegisterPage = () => {
     else if (form.confirmPassword !== form.password) newErrors.confirmPassword = 'No coinciden';
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    const termsInvalid = !acceptedTerms;
+    setTermsError(termsInvalid ? 'Debes aceptar los términos y condiciones' : '');
+
+    return Object.keys(newErrors).length === 0 && !termsInvalid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,6 +90,7 @@ export const RegisterPage = () => {
         lastName: form.lastName,
         email: form.email,
         password: form.password,
+        acceptedTerms,
       });
       showToast('success', '¡Cuenta creada exitosamente!');
       navigate('/login');
@@ -222,6 +231,54 @@ export const RegisterPage = () => {
               animationDelay="260ms"
             />
 
+            {/* Aceptación de términos */}
+            <div
+              className="animate-fade-in"
+              style={{ animationDelay: '290ms' }}
+            >
+              <label className="flex cursor-pointer items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => {
+                    setAcceptedTerms(e.target.checked);
+                    if (e.target.checked) setTermsError('');
+                  }}
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[var(--accent)]"
+                  aria-invalid={termsError ? true : undefined}
+                />
+                <span
+                  className="text-xs leading-5"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Acepto los{' '}
+                  <Link
+                    to="/informacion/terminos"
+                    target="_blank"
+                    className="font-semibold underline-offset-2 hover:underline"
+                    style={{ color: 'var(--text-accent)' }}
+                  >
+                    Términos y Condiciones
+                  </Link>{' '}
+                  y la{' '}
+                  <Link
+                    to="/informacion/privacidad"
+                    target="_blank"
+                    className="font-semibold underline-offset-2 hover:underline"
+                    style={{ color: 'var(--text-accent)' }}
+                  >
+                    Política de Privacidad
+                  </Link>
+                  .
+                </span>
+              </label>
+              {termsError && (
+                <p className="mt-1 text-xs" style={{ color: 'var(--color-error)' }}>
+                  {termsError}
+                </p>
+              )}
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -231,6 +288,10 @@ export const RegisterPage = () => {
               {loading ? 'Creando cuenta…' : 'Registrarme'}
             </button>
           </form>
+
+          {/* Acceso con Google */}
+          <AuthDivider />
+          <GoogleLoginButton redirectTo="/" />
 
           {/* Pie */}
           <p

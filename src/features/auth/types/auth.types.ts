@@ -37,6 +37,8 @@ export interface RegisterData {
   email: string;
   password: string;
   phone?: string;
+  /** El cliente debe aceptar los términos y condiciones para registrarse. */
+  acceptedTerms: boolean;
 }
 
 /**

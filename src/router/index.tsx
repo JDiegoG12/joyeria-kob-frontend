@@ -14,6 +14,8 @@
  * /informacion/materiales    → Materiales (MainLayout)
  * /login                     → Inicio de sesión cliente (sin MainLayout)
  * /registro                  → Registro de cliente (sin MainLayout)
+ * /recuperar-contrasena      → Solicitud de recuperación de contraseña (sin MainLayout)
+ * /restablecer-contrasena/:token → Definir nueva contraseña (sin MainLayout)
  * /admin/login               → Inicio de sesión administrador (sin MainLayout)
  * /admin                     → Redirige a /admin/joyas
  * /admin/general             → Configuración general (AdminLayout + ProtectedRoute ADMIN)
@@ -133,6 +135,18 @@ const RegisterPage = lazy(() =>
 const AdminLoginPage = lazy(() =>
   import('@/features/auth/pages/admin-login-page').then((m) => ({
     default: m.AdminLoginPage,
+  })),
+);
+
+const ForgotPasswordPage = lazy(() =>
+  import('@/features/auth/pages/forgot-password-page').then((m) => ({
+    default: m.ForgotPasswordPage,
+  })),
+);
+
+const ResetPasswordPage = lazy(() =>
+  import('@/features/auth/pages/reset-password-page').then((m) => ({
+    default: m.ResetPasswordPage,
   })),
 );
 
@@ -264,6 +278,14 @@ export const router = createBrowserRouter([
       {
         path: '/registro',
         element: withSuspense(<RegisterPage />),
+      },
+      {
+        path: '/recuperar-contrasena',
+        element: withSuspense(<ForgotPasswordPage />),
+      },
+      {
+        path: '/restablecer-contrasena/:token',
+        element: withSuspense(<ResetPasswordPage />),
       },
       {
         path: '/admin/login',
