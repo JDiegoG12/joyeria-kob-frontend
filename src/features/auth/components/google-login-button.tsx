@@ -7,7 +7,7 @@
  * (`POST /auth/google`), que lo verifica, crea/vincula la cuenta y devuelve la
  * sesión. En éxito persiste la sesión y redirige a la ruta indicada.
  *
- * El proveedor `<GoogleOAuthProvider>` se monta en `App.tsx`; si falta el
+ * El distribuidor `<GoogleOAuthProvider>` se monta en `App.tsx`; si falta el
  * `VITE_GOOGLE_CLIENT_ID` el botón de Google no se renderiza correctamente.
  */
 

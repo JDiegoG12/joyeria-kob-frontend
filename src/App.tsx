@@ -15,7 +15,7 @@ import { initGA } from '@/analytics/google-analytics';
 import { ToastContainer } from '@/components/ui/toast/toast-container';
 
 /**
- * Client ID de Google (OAuth 2.0). Si no está configurado, el proveedor se
+ * Client ID de Google (OAuth 2.0). Si no está configurado, el distribuidor se
  * monta igualmente pero los botones de Google no funcionarán: se controla
  * dentro de `GoogleLoginButton`.
  */

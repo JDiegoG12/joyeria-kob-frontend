@@ -71,7 +71,7 @@ export const WHATSAPP_MESSAGES = {
   /** CTA "Hablar con asesor" del hero. */
   heroAdvisor:
     'Hola, me gustaría hablar con un asesor de Joyería KOB para conocer sus joyas. ¿Podrían orientarme?',
-  /** CTA "Quiero ser proveedor" del footer. */
-  supplier:
-    'Hola, soy fabricante o importador de joyería y me gustaría ser proveedor de Joyería KOB. Me gustaría enviarles mi catálogo.',
+  /** CTA "Quiero ser distribuidor" del footer. */
+  distributor:
+    'Hola, soy fabricante o importador de joyería y me gustaría ser distribuidor de Joyería KOB. Me gustaría enviarles mi catálogo.',
 } as const;
