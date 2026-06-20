@@ -165,10 +165,7 @@ export const SocialContentSection = () => {
       };
 
   return (
-    <section
-      className="overflow-hidden py-16 sm:py-20 lg:py-24"
-      style={{ backgroundColor: 'var(--bg-secondary)' }}
-    >
+    <section className="bg-grain overflow-hidden py-16 sm:py-20 lg:py-24">
       <div
         className="mx-auto px-5 sm:px-6 lg:px-10"
         style={{ maxWidth: 'var(--content-max-width)' }}

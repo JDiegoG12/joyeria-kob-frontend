@@ -97,6 +97,12 @@
        más luminoso para no desaparecer sobre #1A1A1A. Mismo token, ambos temas. */
     --accent-vivid: #131638;
 
+    /* Oro cálido — único acento dorado de la marca. NO se usa como texto ni
+       relleno de botón (contraste insuficiente): vive solo como velo decorativo
+       de muy baja opacidad en el fondo "seda" (.bg-silk) del modo claro. El modo
+       oscuro de ese fondo usa el azul de marca (--accent-vivid), no el oro. */
+    --warm-gold: #bea64b;
+
     /* Favoritos — rojo semántico del corazón "me gusta".
        Independiente del azul de marca para que el estado activo se lea sobre
        cualquier foto. Contraste de #D6294F sobre chip claro (#F3F3F3) ≈ 4.6:1.

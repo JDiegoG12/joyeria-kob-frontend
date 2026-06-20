@@ -24,6 +24,84 @@
     box-shadow 0.3s ease;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Fondo "seda" — reemplaza el gris plano de página en home y catálogo.
+
+   Composición compartida entre temas (misma "luz", distinta base y acento):
+     · dos halos en diagonal (sup-izq + inf-der) sobre una base con leve
+       degradado para dar profundidad sin ruido ni imágenes.
+     · CLARO: base gris neutra (para que el navbar blanco siga encajando) +
+       velo de oro cálido (--warm-gold) muy diluido como único toque dorado.
+     · OSCURO: base navy + halos en el azul de marca (--accent-vivid).
+
+   Intensidad media (la elegida con el cliente) horneada en las opacidades.
+   color-mix añade la opacidad sin sacar el color del token.
+   ────────────────────────────────────────────────────────────────────────── */
+@layer components {
+  .bg-silk {
+    background-color: var(--bg-primary);
+    background-image:
+      radial-gradient(
+        56% 48% at 18% 24%,
+        color-mix(in srgb, var(--warm-gold) 26%, transparent) 0%,
+        transparent 54%
+      ),
+      radial-gradient(
+        56% 52% at 85% 82%,
+        color-mix(in srgb, var(--warm-gold) 26%, transparent) 0%,
+        transparent 54%
+      ),
+      linear-gradient(135deg, #f4f4f2 0%, #e7e6e2 100%);
+  }
+
+  .dark .bg-silk {
+    background-image:
+      radial-gradient(
+        58% 45% at 18% 25%,
+        color-mix(in srgb, var(--accent-vivid) 34%, transparent) 0%,
+        transparent 58%
+      ),
+      radial-gradient(
+        55% 55% at 85% 80%,
+        color-mix(in srgb, var(--accent-vivid) 16%, transparent) 0%,
+        transparent 58%
+      ),
+      linear-gradient(135deg, #24252f 0%, #151517 100%);
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     Fondo "grano" — textura tangible para las bandas de contraste (Servicios,
+     Redes). Conserva la base --bg-secundario y le superpone ruido sutil en una
+     capa propia (::before) para no ensuciar el contenido. `isolation: isolate`
+     contiene el mix-blend al backdrop de la sección.
+       · CLARO: multiply (oscurece levemente sobre el blanco).
+       · OSCURO: screen (aclara sobre #222).
+     Intensidad media horneada en la opacidad.
+     ──────────────────────────────────────────────────────────────────────── */
+  .bg-grain {
+    position: relative;
+    isolation: isolate;
+    background-color: var(--bg-secondary);
+  }
+
+  .bg-grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    mix-blend-mode: multiply;
+    opacity: 0.24;
+  }
+
+  .dark .bg-grain::before {
+    mix-blend-mode: screen;
+    opacity: 0.09;
+  }
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

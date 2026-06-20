@@ -138,7 +138,7 @@ const TESTIMONIALS = [
 /**
  * Página de inicio pública con orden editorial definido por mockups:
  * hero (carrusel), barra de navegación rápida, productos destacados,
- * inversión en oro, servicios y testimonios.
+ * servicios, inversión en oro, redes y testimonios.
  *
  * ─── Scroll a sección por navegación externa ─────────────────────────────────
  * Al llegar desde otra ruta con `location.state.scrollTo = '<id>'` (por
@@ -219,18 +219,20 @@ export const HomePage = () => {
       <CatalogNavBar />
 
       <FeaturedProductsSection />
-      <GoldInvestmentSection />
 
       {/*
        * id="servicios" expuesto para que tanto el botón "SERVICIOS" de
        * `CatalogNavBar` (desktop) como el ítem "Servicios" del menú móvil
-       * puedan hacer scroll suave hasta esta sección.
+       * puedan hacer scroll suave hasta esta sección. Va en segunda posición
+       * (antes de "Invierte en Oro") por decisión editorial del cliente.
        */}
       <ServicesSection />
 
-      <TestimonialsSection />
+      <GoldInvestmentSection />
 
       <SocialContentSection />
+
+      <TestimonialsSection />
     </div>
   );
 };
@@ -250,10 +252,7 @@ export const HomePage = () => {
  * lo que produce mejores quiebres en cualquier viewport.
  */
 const GoldInvestmentSection = () => (
-  <section
-    className="py-16 sm:py-20 lg:py-24"
-    style={{ backgroundColor: 'var(--bg-primary)' }}
-  >
+  <section className="bg-silk py-16 sm:py-20 lg:py-24">
     <div
       className="mx-auto grid items-center gap-10 px-5 sm:px-6 lg:grid-cols-[0.86fr_1.14fr] lg:gap-16 lg:px-10"
       style={{ maxWidth: 'var(--content-max-width)' }}
@@ -330,11 +329,7 @@ const GoldInvestmentSection = () => (
  * (desktop) y desde el ítem "Servicios" del menú móvil.
  */
 const ServicesSection = () => (
-  <section
-    id="servicios"
-    className="py-16 sm:py-20"
-    style={{ backgroundColor: 'var(--bg-secondary)' }}
-  >
+  <section id="servicios" className="bg-grain py-16 sm:py-20">
     <div
       className="mx-auto px-5 sm:px-6 lg:px-10"
       style={{ maxWidth: 'var(--content-max-width)' }}
@@ -371,10 +366,7 @@ const ServicesSection = () => (
  * componente `TestimonialCard`, evitando divergencias de contenido.
  */
 const TestimonialsSection = () => (
-  <section
-    className="py-16 sm:py-20 lg:py-24"
-    style={{ backgroundColor: 'var(--bg-primary)' }}
-  >
+  <section className="bg-silk py-16 sm:py-20 lg:py-24">
     <div
       className="mx-auto px-5 sm:px-6 lg:px-10"
       style={{ maxWidth: 'var(--content-max-width)' }}

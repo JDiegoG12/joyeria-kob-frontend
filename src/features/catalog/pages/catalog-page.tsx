@@ -497,10 +497,7 @@ export const CatalogPage = () => {
 
   return (
     <>
-      <div
-        className="min-h-screen"
-        style={{ backgroundColor: 'var(--bg-primary)' }}
-      >
+      <div className="bg-silk min-h-screen">
         <div
           className="mx-auto px-4 sm:px-6 lg:px-8"
           style={{ maxWidth: 'var(--content-max-width)' }}
