@@ -57,7 +57,11 @@ import type {
   CatalogPriceRange,
 } from '@/features/catalog/services/product.service';
 import { CatalogFilterSidebar } from '@/features/catalog/components/catalog-filter-sidebar';
-import { CatalogMobileFiltersSheet } from '@/features/catalog/components/catalog-mobile-filters-sheet';
+import { CatalogMobileFiltersDrawer } from '@/features/catalog/components/catalog-mobile-filters-drawer';
+import {
+  CatalogCategoryBar,
+  CatalogCategoryBarSpacer,
+} from '@/features/catalog/components/catalog-category-bar';
 import { PublicProductCard } from '@/features/catalog/components/public-product-card';
 import { ProductDetailModal } from '@/features/catalog/components/product-detail-modal';
 import {
@@ -140,10 +144,11 @@ export const CatalogPage = () => {
   } = useCategoryStore();
 
   /**
-   * Estado del bottom sheet de filtros móvil.
+   * Estado del drawer lateral de filtros móvil.
    *
-   * El sheet contiene categorías + slider de precio, reutilizando el
-   * `CatalogFilterSidebar` por dentro. Es independiente del sidebar de
+   * El drawer (`CatalogMobileFiltersDrawer`) contiene categoría + subcategoría
+   * (chips) + slider de precio para el filtrado fino. El cambio rápido de
+   * categoría raíz vive en `CatalogCategoryBar`. Independiente del sidebar de
    * desktop (que sigue visible en `lg+`) y solo se usa en `<lg`.
    */
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -325,6 +330,13 @@ export const CatalogPage = () => {
   );
 
   /**
+   * Clave de la categoría/subcategoría activa en el último render procesado.
+   * Permite detectar un cambio de categoría (vs. un cambio de solo precio) para
+   * resetear el filtro de precio sin disparar un fetch de más.
+   */
+  const prevCategoryKeyRef = useRef<string | null>(null);
+
+  /**
    * Effect de filtros (categoría/precio): resetea la página, limpia el input
    * y el término de búsqueda, y dispara el fetch desde la página 1.
    *
@@ -335,6 +347,15 @@ export const CatalogPage = () => {
    * cuando el debounce dispare un setter idéntico) es absorbida por la dedup
    * de `fetchCatalog`.
    *
+   * ── Reset del filtro de precio al cambiar de categoría/subcategoría ──
+   * El rango real de precios es por categoría (el backend lo calcula ignorando
+   * `minPrice`/`maxPrice`). Si al cambiar de categoría se conservara el precio
+   * viejo, podría caer fuera del nuevo rango → slider fuera de riel y 0
+   * resultados engañosos. Por eso, cuando cambia la categoría/subcategoría y hay
+   * un filtro de precio activo, lo limpiamos y salimos: el propio cambio de
+   * estado re-ejecuta este efecto y el fetch se dispara UNA sola vez, ya con el
+   * precio reseteado (evita un request intermedio que habría que abortar).
+   *
    * Sube al inicio de la página al cambiar de filtro. Esto cubre el caso del
    * filtro por categorías del footer usado DESDE el propio catálogo: como la
    * navegación es a la misma ruta (`/catalogo`), el `pathname` no cambia y el
@@ -343,10 +364,23 @@ export const CatalogPage = () => {
    * En el montaje inicial la ventana ya está arriba, así que es un no-op.
    */
   useEffect(() => {
+    const categoryKey = `${selectedCatalogCategoryId}|${selectedCatalogSubCategoryId}`;
+    const categoryChanged =
+      prevCategoryKeyRef.current !== null &&
+      prevCategoryKeyRef.current !== categoryKey;
+    prevCategoryKeyRef.current = categoryKey;
+
     setCurrentPage(1);
     setGridKey((k) => k + 1);
     setSearchInput('');
     setSearchTerm('');
+
+    if (categoryChanged && (minPrice !== undefined || maxPrice !== undefined)) {
+      setMinPrice(undefined);
+      setMaxPrice(undefined);
+      return;
+    }
+
     void fetchCatalog(1, '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [
@@ -468,7 +502,7 @@ export const CatalogPage = () => {
 
   /**
    * Cantidad de filtros activos — informativo para el botón móvil "Filtros (n)"
-   * y la cabecera del bottom sheet.
+   * y la cabecera del drawer.
    *
    * Se cuenta:
    * · Categoría raíz seleccionada (1 si != null).
@@ -497,18 +531,33 @@ export const CatalogPage = () => {
 
   return (
     <>
+      {/*
+       * Barra de categorías móvil — fija bajo el navbar, exclusiva de <lg.
+       * El propio componente lleva `lg:hidden`, así que es seguro montarlo
+       * siempre: en desktop no se renderiza y las categorías viven en el
+       * sidebar. El `CatalogCategoryBarSpacer` (más abajo, dentro del flujo)
+       * reserva su altura para que la barra fija no tape el breadcrumb.
+       */}
+      <CatalogCategoryBar />
+
       <div className="bg-silk min-h-screen">
         <div
           className="mx-auto px-4 sm:px-6 lg:px-8"
           style={{ maxWidth: 'var(--content-max-width)' }}
         >
+          {/* Empuja el contenido bajo la barra de categorías fija (solo móvil). */}
+          <CatalogCategoryBarSpacer />
+
           {/*
-           * Fila superior de navegación: botón "Volver" (solo desktop) +
-           * breadcrumb. El botón es el affordance de retorno explícito a la
-           * home; el breadcrumb comunica la ubicación y sirve también en móvil,
-           * donde el botón se oculta (allí existe el menú de navegación).
+           * Fila superior de navegación: botón "Volver" + breadcrumb.
+           *
+           * Oculta por completo en móvil (`hidden lg:flex`): allí la navegación
+           * de retorno ya la cubren el menú hamburguesa y la barra de categorías,
+           * y el breadcrumb roba espacio vertical valioso sin aportar tanto como
+           * en desktop. El botón "Volver" y el divisor ya eran desktop-only, así
+           * que en móvil esta fila solo mostraba el breadcrumb.
            */}
-          <div className="flex items-center gap-3 pt-6 sm:pt-10">
+          <div className="hidden items-center gap-3 pt-6 sm:pt-10 lg:flex">
             <BackToHomeButton />
             <BackToHomeDivider />
             <CatalogBreadcrumb />
@@ -558,10 +607,9 @@ export const CatalogPage = () => {
 
               {/* ── Botón "Filtros" — solo móvil ──
                *
-               * Reemplaza los pills horizontales (que no escalaban bien con
-               * muchas categorías y dejaban el slider de precio fuera del
-               * alcance del usuario móvil). Abre el bottom sheet con
-               * categorías + slider de precio en una sola UI consistente.
+               * Abre el drawer lateral (`CatalogMobileFiltersDrawer`) con el
+               * filtrado fino: categoría + subcategoría (chips) + precio. El
+               * cambio rápido de categoría raíz vive en `CatalogCategoryBar`.
                *
                * El badge "(n)" solo aparece cuando hay filtros activos —
                * evita ruido visual en el estado limpio.
@@ -607,7 +655,6 @@ export const CatalogPage = () => {
                         fontFamily: 'var(--font-ui)',
                         fontSize: 'var(--text-sm)',
                         fontWeight: 'var(--font-bold)',
-                        letterSpacing: 'var(--tracking-widest)',
                         textTransform: 'uppercase',
                         color:
                           activeFiltersCount > 0
@@ -615,7 +662,7 @@ export const CatalogPage = () => {
                             : 'var(--text-secondary)',
                       }}
                     >
-                      Filtros
+                      Filtra por categorías y precio
                     </span>
                   </span>
 
@@ -864,7 +911,10 @@ export const CatalogPage = () => {
                     initial="hidden"
                     animate="visible"
                   >
-                    <EmptyState searchTerm={searchTerm} />
+                    <EmptyState
+                      searchTerm={searchTerm}
+                      priceFilterActive={priceFilterActive}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -898,11 +948,11 @@ export const CatalogPage = () => {
       />
 
       {/*
-       * Bottom sheet de filtros móviles.
+       * Drawer lateral de filtros móviles.
        * El propio componente lleva `lg:hidden` internamente, así que es
        * seguro montarlo siempre — no afecta la vista desktop.
        */}
-      <CatalogMobileFiltersSheet
+      <CatalogMobileFiltersDrawer
         isOpen={mobileFiltersOpen}
         onClose={() => setMobileFiltersOpen(false)}
         priceRange={priceRange}
@@ -1018,7 +1068,13 @@ const ProductSkeletonGrid = () => (
   </div>
 );
 
-const EmptyState = ({ searchTerm }: { searchTerm: string }) => (
+const EmptyState = ({
+  searchTerm,
+  priceFilterActive,
+}: {
+  searchTerm: string;
+  priceFilterActive: boolean;
+}) => (
   <div
     className="border py-20 text-center"
     style={{ borderColor: 'var(--border-color)' }}
@@ -1054,7 +1110,9 @@ const EmptyState = ({ searchTerm }: { searchTerm: string }) => (
     >
       {searchTerm
         ? `No se encontraron joyas con "${searchTerm}".`
-        : 'No hay productos disponibles en esta categoría.'}
+        : priceFilterActive
+          ? 'Ninguna joya de esta categoría está en el rango de precio elegido.'
+          : 'No hay productos disponibles en esta categoría.'}
     </p>
   </div>
 );

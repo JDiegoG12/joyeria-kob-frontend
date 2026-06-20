@@ -299,7 +299,7 @@ interface PriceRangeSliderProps {
   showClear: boolean;
 }
 
-const PriceRangeSlider = ({
+export const PriceRangeSlider = ({
   min,
   max,
   valueMin,
@@ -311,18 +311,35 @@ const PriceRangeSlider = ({
   const [localMin, setLocalMin] = useState(valueMin);
   const [localMax, setLocalMax] = useState(valueMax);
 
-  // Sincronizar valores locales si el padre resetea (p. ej. al cambiar categoría)
+  /** Acota un valor al rango actual `[min, max]`. */
+  const clampToRange = (value: number) => Math.min(Math.max(value, min), max);
+
+  /*
+   * Sincronizar valores locales con el padre, ACOTADOS al rango vigente.
+   *
+   * Defensa contra rangos que se encogen: si el rango de la categoría nueva es
+   * más estrecho que el valor activo previo (p. ej. venías de una categoría con
+   * tope $5M y pasas a una de tope $800k), un valor sin acotar dejaría el pulgar
+   * y la barra fuera del riel. Acotando aquí, el slider siempre renderiza dentro
+   * de pista. (Las deps incluyen `min`/`max` para reaccionar al cambio de rango.)
+   */
   useEffect(() => {
-    setLocalMin(valueMin);
-  }, [valueMin]);
+    setLocalMin(clampToRange(valueMin));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valueMin, min, max]);
 
   useEffect(() => {
-    setLocalMax(valueMax);
-  }, [valueMax]);
+    setLocalMax(clampToRange(valueMax));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valueMax, min, max]);
 
   const range = max - min || 1;
-  const leftPct = ((localMin - min) / range) * 100;
-  const rightPct = ((localMax - min) / range) * 100;
+  // `safeMin`/`safeMax` cubren además el render transitorio en el que una prop
+  // ya cambió pero el efecto de sincronización aún no ha acotado el estado local.
+  const safeMin = clampToRange(localMin);
+  const safeMax = clampToRange(localMax);
+  const leftPct = ((safeMin - min) / range) * 100;
+  const rightPct = ((safeMax - min) / range) * 100;
 
   const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Math.min(Number(e.target.value), localMax - 1);
@@ -361,8 +378,8 @@ const PriceRangeSlider = ({
           letterSpacing: 'var(--tracking-wide)',
         }}
       >
-        <span>{formatCOP(localMin)}</span>
-        <span>{formatCOP(localMax)}</span>
+        <span>{formatCOP(safeMin)}</span>
+        <span>{formatCOP(safeMax)}</span>
       </div>
 
       {/* Track + pulgares */}
@@ -393,20 +410,20 @@ const PriceRangeSlider = ({
         <SliderThumbInput
           id="price-min"
           label="Precio mínimo"
-          value={localMin}
+          value={safeMin}
           min={min}
           max={max}
           onChange={handleMinChange}
           onMouseUp={handleCommit}
           onTouchEnd={handleCommit}
-          zIndex={localMin > max - (max - min) * 0.1 ? 4 : 3}
+          zIndex={safeMin > max - (max - min) * 0.1 ? 4 : 3}
         />
 
         {/* Input máximo */}
         <SliderThumbInput
           id="price-max"
           label="Precio máximo"
-          value={localMax}
+          value={safeMax}
           min={min}
           max={max}
           onChange={handleMaxChange}
@@ -735,7 +752,7 @@ const CategorySkeletonList = () => (
   </ul>
 );
 
-const PriceSliderSkeleton = () => (
+export const PriceSliderSkeleton = () => (
   <div>
     <div className="mb-4 flex justify-between">
       <div
