@@ -404,8 +404,8 @@ const DiscountRow = ({
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="flex w-32 flex-col">
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div className="flex flex-col sm:w-32">
           <DiscountAmountInput
             value={digits}
             disabled={isSaving}
@@ -429,39 +429,41 @@ const DiscountRow = ({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => void handleApply()}
-          disabled={isSaving || isUnchanged}
-          className="cursor-pointer px-3 py-2 text-[var(--text-sm)] transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-          style={{
-            fontFamily: 'var(--font-ui)',
-            fontWeight: 'var(--font-semibold)',
-            color: 'var(--accent-text)',
-            backgroundColor: 'var(--accent)',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-          }}
-        >
-          {isSaving ? '…' : 'Guardar'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => void handleApply()}
+            disabled={isSaving || isUnchanged}
+            className="flex-1 cursor-pointer px-3 py-2 text-[var(--text-sm)] whitespace-nowrap transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+            style={{
+              fontFamily: 'var(--font-ui)',
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--accent-text)',
+              backgroundColor: 'var(--accent)',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+            }}
+          >
+            {isSaving ? '…' : 'Guardar'}
+          </button>
 
-        <button
-          type="button"
-          onClick={onRequestRemove}
-          disabled={isSaving}
-          className="cursor-pointer px-3 py-2 text-[var(--text-sm)] transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-          style={{
-            fontFamily: 'var(--font-ui)',
-            fontWeight: 'var(--font-medium)',
-            color: 'var(--text-primary)',
-            backgroundColor: 'transparent',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--border-color)',
-          }}
-        >
-          Quitar
-        </button>
+          <button
+            type="button"
+            onClick={onRequestRemove}
+            disabled={isSaving}
+            className="flex-1 cursor-pointer px-3 py-2 text-[var(--text-sm)] whitespace-nowrap transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+            style={{
+              fontFamily: 'var(--font-ui)',
+              fontWeight: 'var(--font-medium)',
+              color: 'var(--text-primary)',
+              backgroundColor: 'transparent',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)',
+            }}
+          >
+            Quitar
+          </button>
+        </div>
       </div>
     </li>
   );

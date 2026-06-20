@@ -395,7 +395,7 @@ export const AdminJewelryPage = () => {
       ) : filteredProducts.length === 0 ? (
         <EmptyResultsState onClear={handleClearFilters} />
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredProducts.map((product) => (
             <ProductCard
               key={product.id}

@@ -838,13 +838,13 @@ export const ProductEditForm = ({
                     </label>
 
                     {selectedParentId === null ? (
-                      <div className="flex h-[50px] items-center rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4">
+                      <div className="flex h-12.5 items-center rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4">
                         <p className="text-sm text-[var(--text-muted)]">
                           Primero selecciona una categoría principal
                         </p>
                       </div>
                     ) : subCategories.length === 0 ? (
-                      <div className="flex h-[50px] items-center rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4">
+                      <div className="flex h-12.5 items-center rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4">
                         <p className="text-sm text-[var(--text-muted)]">
                           Esta categoría no tiene subcategorías
                         </p>

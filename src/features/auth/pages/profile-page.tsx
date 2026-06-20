@@ -321,7 +321,7 @@ export const ProfilePage = () => {
         </div>
 
         {/* ── Layout principal ── */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[16.25rem_1fr]">
 
           {/* ── Sidebar — avatar + badge de rol ── */}
           <aside

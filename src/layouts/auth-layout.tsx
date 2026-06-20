@@ -32,7 +32,7 @@ export const AuthLayout = () => {
             className="flex items-center transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
             aria-label="Joyería KOB — Inicio"
           >
-            <KobLogo size={66} className="block h-[64px] w-[64px] sm:h-[70px] sm:w-[70px]" />
+            <KobLogo size={66} className="block h-16 w-16 sm:h-17.5 sm:w-17.5" />
           </Link>
 
           {/* Toggle tema */}

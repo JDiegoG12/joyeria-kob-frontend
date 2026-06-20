@@ -153,13 +153,13 @@
            LAYOUT
         ════════════════════════════════════════════════════════════ */
 
-    --announcement-height: 36px;
-    --navbar-height: 64px;
-    --topbar-height: 64px;
-    --sidebar-width: 260px;
-    --sidebar-width-collapsed: 64px;
+    --announcement-height: 2.25rem;
+    --navbar-height: 4rem;
+    --topbar-height: 4rem;
+    --sidebar-width: 16.25rem;
+    --sidebar-width-collapsed: 4rem;
     --footer-height: auto;
-    --content-max-width: 1280px;
+    --content-max-width: 80rem;
 
     /* ════════════════════════════════════════════════════════════
            EFECTOS VISUALES
@@ -283,6 +283,28 @@
     scroll-behavior: smooth;
   }
 
+  /*
+   * Escalado tipográfico raíz fluido para el rango de portátil (xl→2xl).
+   *
+   * Como el proyecto es rem-first (tokens + spacing de Tailwind en rem), mover
+   * el font-size del root reescala proporcionalmente tipografía, espaciado y
+   * los tokens de layout (ya convertidos a rem) con un solo lever.
+   *
+   * Anclas: 16px a 1536px (≥2xl, estado de referencia intacto) y 13px a
+   * 1280px (~19% más compacto). Fórmula lineal: 1.172vw - 2px, recortada con
+   * clamp para no subir de 16px ni bajar de 13px. Solo px/vw dentro del
+   * clamp (sin rem) para evitar recursión con el propio root.
+   *
+   * Acotado a min-width:1024px: cubre todo el rango de laptop (incl. PCs
+   * pequeños sub-1280). Por debajo de 1024 (lg), móvil y tablet heredan los
+   * 16px del navegador y quedan idénticos a como ya se veían.
+   */
+  @media (min-width: 1024px) {
+    html {
+      font-size: clamp(13px, calc(1.172vw - 2px), 16px);
+    }
+  }
+
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
@@ -376,7 +398,7 @@
 
   @media (max-width: 639px) {
     :root {
-      --topbar-height: 60px;
+      --topbar-height: 3.75rem;
       --text-xl: 1.125rem;
       --text-3xl: 1.7rem;
     }
@@ -397,8 +419,8 @@
    */
   @media (min-width: 1024px) {
     :root {
-      --announcement-height: 30px;
-      --navbar-height: 52px;
+      --announcement-height: 1.875rem;
+      --navbar-height: 3.25rem;
     }
   }
 }
