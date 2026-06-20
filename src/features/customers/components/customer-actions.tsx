@@ -11,7 +11,8 @@
  * como en la tarjeta móvil (`variant="stack"`, botones con etiqueta).
  */
 
-import { Heart, Mail, MessageCircle } from 'lucide-react';
+import { Heart, Mail } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/ui/social-icons';
 import { useCustomerStore } from '@/features/customers/store/customer.store';
 import {
   buildCustomerWhatsAppUrl,
@@ -46,7 +47,7 @@ export const CustomerActions = ({
 
   // Clases base compartidas: icono-botón compacto vs botón con etiqueta.
   const baseClass = isStack
-    ? 'flex flex-1 items-center justify-center gap-2 border px-3 py-2 transition-colors duration-200'
+    ? 'flex flex-1 flex-col items-center justify-center gap-1 border px-2 py-2.5 transition-colors duration-200'
     : 'flex h-9 w-9 items-center justify-center border transition-colors duration-200';
 
   return (
@@ -67,7 +68,7 @@ export const CustomerActions = ({
         aria-label={`Enviar correo a ${customer.email}`}
       >
         <Mail size={16} strokeWidth={1.8} aria-hidden="true" />
-        {isStack && <span style={{ fontSize: 'var(--text-sm)' }}>Correo</span>}
+        {isStack && <span className="whitespace-nowrap" style={{ fontSize: 'var(--text-xs)' }}>Correo</span>}
       </a>
 
       {/* WhatsApp */}
@@ -84,9 +85,9 @@ export const CustomerActions = ({
           title={`Escribir por WhatsApp a ${customer.phone}`}
           aria-label={`Escribir por WhatsApp a ${customer.name}`}
         >
-          <MessageCircle size={16} strokeWidth={1.8} aria-hidden="true" />
+          <WhatsAppIcon size={16} aria-hidden="true" />
           {isStack && (
-            <span style={{ fontSize: 'var(--text-sm)' }}>WhatsApp</span>
+            <span className="whitespace-nowrap" style={{ fontSize: 'var(--text-xs)' }}>WhatsApp</span>
           )}
         </a>
       ) : (
@@ -101,9 +102,9 @@ export const CustomerActions = ({
           title="El cliente no registró teléfono"
           aria-label="El cliente no registró teléfono"
         >
-          <MessageCircle size={16} strokeWidth={1.8} aria-hidden="true" />
+          <WhatsAppIcon size={16} aria-hidden="true" />
           {isStack && (
-            <span style={{ fontSize: 'var(--text-sm)' }}>WhatsApp</span>
+            <span className="whitespace-nowrap" style={{ fontSize: 'var(--text-xs)' }}>WhatsApp</span>
           )}
         </span>
       )}
@@ -123,7 +124,7 @@ export const CustomerActions = ({
       >
         <Heart size={16} strokeWidth={1.8} aria-hidden="true" />
         {isStack ? (
-          <span style={{ fontSize: 'var(--text-sm)' }}>
+          <span className="whitespace-nowrap" style={{ fontSize: 'var(--text-xs)' }}>
             Favoritos ({customer.favoritesCount})
           </span>
         ) : (
