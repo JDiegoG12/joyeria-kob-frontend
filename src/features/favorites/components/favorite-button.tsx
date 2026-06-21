@@ -112,8 +112,24 @@ interface AnimatedHeartProps {
   burstId: number;
   /** Si el usuario prefiere movimiento reducido, se omiten pop y destello. */
   reducedMotion: boolean;
-  /** Color del corazón cuando NO está marcado. */
+  /** Color del TRAZO del corazón cuando NO está marcado. */
   emptyColor: string;
+  /**
+   * Relleno del corazón cuando NO está marcado. Por defecto `none` (solo trazo).
+   * La variante `card` lo usa para el patrón "two-tone": relleno gris oscuro
+   * semitransparente + trazo blanco, de modo que el contraste vive DENTRO de la
+   * silueta y no se ensucia la foto con halos o sombras grandes.
+   */
+  emptyFill?: string;
+  /** Color del TRAZO cuando está marcado. Por defecto el rojo de favoritos. */
+  filledStroke?: string;
+  /** Grosor del trazo del SVG. */
+  strokeWidth?: number;
+  /**
+   * Sombra de legibilidad muy ceñida para cuando el corazón flota sobre la foto
+   * (variante `card`). Es un `drop-shadow` mínimo, NO un halo difuminado.
+   */
+  glow?: boolean;
 }
 
 /**
@@ -126,6 +142,10 @@ const AnimatedHeart = ({
   burstId,
   reducedMotion,
   emptyColor,
+  emptyFill = 'none',
+  filledStroke = 'var(--favorite)',
+  strokeWidth = 1.8,
+  glow = false,
 }: AnimatedHeartProps) => (
   <span className="relative flex items-center justify-center">
     {!reducedMotion && burstId > 0 && (
@@ -149,9 +169,14 @@ const AnimatedHeart = ({
       >
         <Heart
           size={size}
-          strokeWidth={1.8}
-          fill={filled ? 'var(--favorite)' : 'none'}
-          style={{ color: filled ? 'var(--favorite)' : emptyColor }}
+          strokeWidth={strokeWidth}
+          fill={filled ? 'var(--favorite)' : emptyFill}
+          style={{
+            color: filled ? filledStroke : emptyColor,
+            filter: glow
+              ? 'drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))'
+              : undefined,
+          }}
         />
       </motion.span>
     </AnimatePresence>
@@ -222,30 +247,36 @@ export const FavoriteButton = ({
         }
         whileTap={isUnavailable ? {} : { scale: 0.88 }}
         transition={{ duration: 0.15 }}
-        className={`flex items-center justify-center transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${className}`}
+        className={`flex items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${className}`}
         style={{
           position: 'relative',
-          width: 32,
-          height: 32,
-          // Marcado: chip OPACO (mezcla sobre --bg-primary, sin transparencia)
-          // para que la foto del producto nunca se filtre y el corazón rojo
-          // tenga contraste garantizado sobre fotos claras u oscuras.
-          background: isFavorite
-            ? 'color-mix(in srgb, var(--favorite) 12%, var(--bg-primary))'
-            : 'color-mix(in srgb, var(--bg-primary) 90%, transparent)',
-          border: `1px solid ${isFavorite ? 'var(--favorite)' : 'var(--border-color)'}`,
-          backdropFilter: 'blur(4px)',
+          width: 40,
+          height: 40,
+          // Sin chip ni borde: el corazón flota sobre la foto a sangre. La
+          // legibilidad la dan el halo difuminado (abajo) + el `glow` del SVG.
+          background: 'transparent',
+          border: 'none',
           cursor: isUnavailable ? 'not-allowed' : 'pointer',
           opacity: isUnavailable ? 0.4 : 1,
-          borderRadius: 0,
         }}
       >
+        {/*
+         * Patrón "two-tone" (estilo Airbnb): el contraste vive DENTRO de la
+         * silueta del corazón, no en un halo externo. Sin marcar → relleno gris
+         * oscuro semitransparente (legible sobre fotos claras) + trazo blanco
+         * (legible sobre fotos oscuras). Marcado → relleno rojo + trazo blanco.
+         * Así nada ensucia la foto alrededor del icono.
+         */}
         <AnimatedHeart
           filled={isFavorite}
-          size={14}
+          size={20}
           burstId={burstId}
           reducedMotion={prefersReducedMotion}
-          emptyColor="var(--text-secondary)"
+          emptyColor="#ffffff"
+          emptyFill="rgba(0,0,0,0.38)"
+          filledStroke="#ffffff"
+          strokeWidth={2}
+          glow
         />
       </motion.button>
     );

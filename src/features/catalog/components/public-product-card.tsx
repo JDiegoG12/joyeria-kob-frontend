@@ -16,7 +16,7 @@
  * ```
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SERVER_URL } from '@/api/server-url';
 import type { Product } from '@/features/catalog/types/product.types';
@@ -78,14 +78,54 @@ export const PublicProductCard = ({
 
   const [activeIndex, setActiveIndex] = useState(0);
 
+  const goPrev = () =>
+    setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  const goNext = () =>
+    setActiveIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation(); // No abrir el modal al navegar
-    setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    goPrev();
   };
 
   const handleNext = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    goNext();
+  };
+
+  // ── Swipe táctil ───────────────────────────────────────────────────────────
+  // En táctil las flechas (hover-only) no aparecen, así que el swipe es el medio
+  // principal para cambiar de imagen en móvil. Se mide el desplazamiento
+  // horizontal del puntero; si supera el umbral se navega y se marca el gesto
+  // para que el `click` posterior NO abra el modal de detalle.
+  const SWIPE_THRESHOLD = 40;
+  const pointerStartX = useRef<number | null>(null);
+  const didSwipe = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!hasMultipleImages) return;
+    pointerStartX.current = e.clientX;
+    didSwipe.current = false;
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (pointerStartX.current === null) return;
+    const deltaX = e.clientX - pointerStartX.current;
+    pointerStartX.current = null;
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+      didSwipe.current = true;
+      if (deltaX < 0) goNext();
+      else goPrev();
+    }
+  };
+
+  const handleCardClick = () => {
+    // Un swipe genera un `click` espurio al soltar; lo absorbemos una vez.
+    if (didSwipe.current) {
+      didSwipe.current = false;
+      return;
+    }
+    onClick();
   };
 
   const imageUrl = resolveImageUrl(images, activeIndex);
@@ -100,7 +140,7 @@ export const PublicProductCard = ({
   return (
     <article
       className="group flex h-full cursor-pointer flex-col"
-      onClick={onClick}
+      onClick={handleCardClick}
       role="button"
       tabIndex={0}
       aria-label={`Ver detalles de ${product.name}`}
@@ -123,10 +163,13 @@ export const PublicProductCard = ({
        */}
       <div
         className="relative aspect-square overflow-hidden"
-        style={{ backgroundColor: 'var(--bg-tertiary)' }}
+        style={{ backgroundColor: 'var(--bg-tertiary)', touchAction: 'pan-y' }}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
       >
           {/* ─── FAVORITOS ───────────────────────────── */}
-          <div className="absolute top-2 right-2 z-10">
+          {/* En móvil pegado a la esquina; en ≥sm con un poco más de aire. */}
+          <div className="absolute top-1.5 right-1.5 z-10 sm:top-2 sm:right-2">
             <FavoriteButton
               productId={product.id}
               productStatus={product.status}
@@ -151,34 +194,35 @@ export const PublicProductCard = ({
         {/* Flechas de navegación — solo si hay más de 1 imagen */}
         {hasMultipleImages && (
           <>
-            {/* Flecha izquierda */}
+            {/*
+             * Chevrons flotantes: sin caja ni borde, blancos sobre la foto con
+             * `drop-shadow` para legibilidad. Hacen juego con el corazón.
+             *
+             * `pointer-events-none` por defecto + `group-hover:pointer-events-auto`:
+             * en táctil (sin hover) las flechas NO capturan taps, así que tocar
+             * los bordes de la foto abre el producto en vez de cambiar de imagen
+             * (en móvil la navegación es por swipe). En desktop, al hacer hover se
+             * vuelven visibles y clickeables. El teclado no depende de
+             * pointer-events, así que la navegación con Tab/Enter sigue intacta.
+             */}
             <button
               type="button"
               onClick={handlePrev}
               aria-label="Imagen anterior"
-              className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-              style={{
-                backgroundColor: 'var(--bg-secondary)',
-                border: '1px solid var(--border-accent)',
-                color: 'var(--text-accent)',
-              }}
+              className="pointer-events-none absolute left-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center text-white opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-90 hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.55))' }}
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={26} strokeWidth={2.25} />
             </button>
 
-            {/* Flecha derecha */}
             <button
               type="button"
               onClick={handleNext}
               aria-label="Siguiente imagen"
-              className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-              style={{
-                backgroundColor: 'var(--bg-secondary)',
-                border: '1px solid var(--border-accent)',
-                color: 'var(--text-accent)',
-              }}
+              className="pointer-events-none absolute right-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center text-white opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-90 hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.55))' }}
             >
-              <ChevronRight size={14} />
+              <ChevronRight size={26} strokeWidth={2.25} />
             </button>
 
             {/* Indicador de puntos */}

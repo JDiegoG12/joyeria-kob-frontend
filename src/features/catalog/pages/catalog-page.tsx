@@ -626,7 +626,7 @@ export const CatalogPage = () => {
                   style={{
                     borderColor:
                       activeFiltersCount > 0
-                        ? 'var(--accent-vivid)'
+                        ? 'var(--accent-marker)'
                         : 'var(--border-strong)',
                     backgroundColor: 'transparent',
                   }}
@@ -645,7 +645,7 @@ export const CatalogPage = () => {
                       style={{
                         color:
                           activeFiltersCount > 0
-                            ? 'var(--accent-vivid)'
+                            ? 'var(--accent-marker)'
                             : 'var(--text-secondary)',
                       }}
                       aria-hidden="true"

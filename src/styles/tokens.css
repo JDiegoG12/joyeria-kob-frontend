@@ -96,6 +96,11 @@
        el azul marino contrasta de sobra (12.6:1); su par en dark sube a un azul
        más luminoso para no desaparecer sobre #1A1A1A. Mismo token, ambos temas. */
     --accent-vivid: #131638;
+    /* Marcador del storefront cliente (rieles, pulgares, barras finas). Sigue la
+       regla de marca "azul principal en claro → blanco en oscuro": navy en light,
+       blanco (#F3F3F3) en dark. El azul --accent-vivid (#4a50c4 en dark) queda
+       reservado para el panel admin. */
+    --accent-marker: #131638;
 
     /* Oro cálido — único acento dorado de la marca. NO se usa como texto ni
        relleno de botón (contraste insuficiente): vive solo como velo decorativo
@@ -251,6 +256,9 @@
     --accent-text: #ffffff;
     --accent-subtle: rgba(19, 22, 56, 0.18);
     --accent-vivid: #4a50c4;
+    /* En dark el marcador del storefront cliente pasa a blanco (#F3F3F3), no al
+       azul admin de --accent-vivid. Ver nota en el bloque light. */
+    --accent-marker: #f3f3f3;
 
     /* Favoritos — rojo más luminoso para destacar sobre fondos/fotos oscuras.
        Contraste de #FF5277 sobre chip oscuro (#1A1A1A) ≈ 5.6:1. */

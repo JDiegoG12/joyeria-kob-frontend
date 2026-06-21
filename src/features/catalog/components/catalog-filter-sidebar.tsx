@@ -400,7 +400,7 @@ export const PriceRangeSlider = ({
             height: '3px',
             left: `${leftPct}%`,
             width: `${rightPct - leftPct}%`,
-            backgroundColor: 'var(--accent-vivid)',
+            backgroundColor: 'var(--accent-marker)',
             transition: 'left 0.05s, width 0.05s',
           }}
           aria-hidden="true"
@@ -525,9 +525,9 @@ const SliderThumbInput = ({
           width: 18px;
           height: 18px;
           border-radius: 50%;
-          background-color: var(--accent-vivid);
+          background-color: var(--accent-marker);
           border: 2.5px solid var(--bg-secondary);
-          box-shadow: 0 0 0 1.5px var(--accent-vivid);
+          box-shadow: 0 0 0 1.5px var(--accent-marker);
           cursor: pointer;
           pointer-events: all;
           transition: box-shadow 0.15s ease, transform 0.15s ease;
@@ -541,9 +541,9 @@ const SliderThumbInput = ({
           width: 18px;
           height: 18px;
           border-radius: 50%;
-          background-color: var(--accent-vivid);
+          background-color: var(--accent-marker);
           border: 2.5px solid var(--bg-secondary);
-          box-shadow: 0 0 0 1.5px var(--accent-vivid);
+          box-shadow: 0 0 0 1.5px var(--accent-marker);
           cursor: pointer;
           pointer-events: all;
         }
@@ -609,7 +609,7 @@ const CategoryAccordionItem = ({
           <motion.div
             layoutId="active-category-bar"
             className="absolute left-0 top-0 h-full w-0.5"
-            style={{ backgroundColor: 'var(--accent-vivid)' }}
+            style={{ backgroundColor: 'var(--accent-marker)' }}
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
             exit={{ scaleY: 0 }}
@@ -693,7 +693,7 @@ const CategoryAccordionItem = ({
                         className="block h-1 w-1 flex-shrink-0 rounded-full"
                         animate={{
                           backgroundColor: isSubActive
-                            ? 'var(--accent-vivid)'
+                            ? 'var(--accent-marker)'
                             : 'var(--border-strong)',
                           scale: isSubActive ? 1.5 : 1,
                         }}

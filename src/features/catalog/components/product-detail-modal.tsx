@@ -12,7 +12,7 @@
  *    que el borde del item seleccionado se corte.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -129,6 +129,9 @@ export const ProductDetailModal = ({
   const [direction, setDirection] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  // Swipe táctil de la galería principal (móvil).
+  const pointerStartX = useRef<number | null>(null);
+
   const navigate = useNavigate();
   const { selectCatalogCategory, selectCatalogSubCategory } =
     useCategoryStore();
@@ -184,6 +187,27 @@ export const ProductDetailModal = ({
   const goPrev = (total: number) => {
     setDirection(-1);
     setActiveIndex((i) => (i - 1 + total) % total);
+  };
+
+  // ── Swipe táctil ───────────────────────────────────────────────────────────
+  // Permite cambiar de imagen arrastrando el dedo en móvil. Mide el
+  // desplazamiento horizontal del puntero; el contenedor usa `touch-action:
+  // pan-y` para no estorbar el scroll vertical del modal.
+  const SWIPE_THRESHOLD = 40;
+
+  const handleImagePointerDown = (e: React.PointerEvent) => {
+    if (!hasMultiple) return;
+    pointerStartX.current = e.clientX;
+  };
+
+  const handleImagePointerUp = (e: React.PointerEvent) => {
+    if (pointerStartX.current === null) return;
+    const deltaX = e.clientX - pointerStartX.current;
+    pointerStartX.current = null;
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+      if (deltaX < 0) goNext(images.length);
+      else goPrev(images.length);
+    }
   };
 
   const specs = parseSpecifications(
@@ -279,7 +303,7 @@ export const ProductDetailModal = ({
             role="dialog"
             aria-modal="true"
           >
-            <div className="flex min-h-full p-4 sm:p-6 md:p-8">
+            <div className="flex min-h-full p-2 sm:p-6 md:p-8">
               <motion.div
                 variants={panelVariants}
                 initial="hidden"
@@ -290,39 +314,39 @@ export const ProductDetailModal = ({
                  * sm:overflow-hidden: En desktop, bloquea el scroll del modal completo
                  * para cederle el control al scroll de las características.
                  */
-                className="relative m-auto flex w-full max-w-[64rem] sm:max-h-[88vh] flex-col overflow-y-auto shadow-2xl sm:flex-row sm:overflow-hidden bg-[var(--bg-secondary)]"
+                className="relative m-auto flex min-h-full w-full max-w-[64rem] flex-col overflow-y-auto shadow-2xl sm:min-h-0 sm:max-h-[88vh] sm:flex-row sm:overflow-hidden bg-[var(--bg-secondary)]"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Botón de cerrar — visible y refinado en móvil y desktop */}
+                {/*
+                 * Cerrar — icono flotante sin caja, en el mismo lenguaje que
+                 * flechas/lupa/corazón. En móvil flota sobre la foto a sangre:
+                 * blanco con `drop-shadow`. En desktop (≥sm) queda sobre la
+                 * columna blanca de info → pasa a color de marca oscuro sin sombra.
+                 */}
                 <button
                   type="button"
                   onClick={onClose}
-                  className="absolute right-3 top-3 z-30 flex h-9 w-9 cursor-pointer items-center justify-center transition-all duration-150 hover:bg-[var(--bg-hover)] sm:h-10 sm:w-10"
-                  style={{
-                    border: '1px solid var(--border-strong)',
-                    backgroundColor: 'var(--bg-secondary)',
-                    color: 'var(--text-primary)',
-                    boxShadow: 'var(--shadow-sm)',
-                  }}
+                  className="absolute right-2 top-2 z-30 flex h-10 w-10 cursor-pointer items-center justify-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.55)] transition-opacity duration-150 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-3 sm:top-3 sm:text-[var(--text-primary)] sm:drop-shadow-none sm:focus-visible:outline-[var(--accent)]"
                   aria-label="Cerrar detalles"
                 >
-                  <X size={16} strokeWidth={2} />
+                  <X size={22} strokeWidth={2} />
                 </button>
 
                 {/* ══════════════════════════════════════════
                     COLUMNA IZQUIERDA — Galería
                 ══════════════════════════════════════════ */}
                 <div
-                  className="flex w-full shrink-0 flex-col justify-start p-5 pt-14 sm:pt-6 sm:w-1/2 lg:p-8"
-                  style={{ backgroundColor: 'var(--bg-tertiary)' }}
+                  className="flex w-full shrink-0 flex-col justify-start bg-[var(--bg-secondary)] p-0 sm:w-1/2 sm:bg-[var(--bg-tertiary)]"
                 >
-                  {/* Imagen Principal (Cuadrada perfecta sin bordes redondeados) */}
+                  {/* Imagen Principal — a sangre en móvil y desktop */}
                   <div
-                    className="group relative aspect-square w-full overflow-hidden border shadow-sm"
+                    className="group relative aspect-square w-full overflow-hidden"
                     style={{
                       backgroundColor: 'var(--bg-secondary)',
-                      borderColor: 'var(--border-color)',
+                      touchAction: 'pan-y',
                     }}
+                    onPointerDown={handleImagePointerDown}
+                    onPointerUp={handleImagePointerUp}
                   >
                     <AnimatePresence
                       initial={false}
@@ -346,53 +370,54 @@ export const ProductDetailModal = ({
                       />
                     </AnimatePresence>
 
-                    {/* Lupa */}
+                    {/*
+                     * Lupa — icono flotante sin caja (mismo lenguaje que flechas).
+                     * Visible siempre en móvil (tappable para ampliar) y revelada
+                     * al hover en desktop.
+                     */}
                     <button
                       type="button"
                       onClick={() => setLightboxOpen(true)}
-                      className="absolute bottom-3 right-3 z-10 flex h-9 w-9 cursor-pointer items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                      style={{
-                        backgroundColor: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)',
-                      }}
+                      aria-label="Ampliar imagen"
+                      className="absolute bottom-2 right-2 z-10 flex h-10 w-10 cursor-pointer items-center justify-center text-white opacity-100 drop-shadow-[0_1px_3px_rgba(0,0,0,0.55)] transition-opacity duration-200 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:opacity-0 sm:group-hover:opacity-100"
                     >
-                      <ZoomIn size={15} strokeWidth={1.5} />
+                      <ZoomIn size={20} strokeWidth={2} />
                     </button>
 
                     {hasMultiple && (
                       <>
+                        {/*
+                         * Chevrons flotantes — mismo lenguaje que la tarjeta del
+                         * catálogo: sin caja ni borde, blancos sobre la foto con
+                         * `drop-shadow` para legibilidad. Siempre visibles aquí
+                         * (la galería es el foco) y con realce de opacidad al hover.
+                         */}
                         <button
                           type="button"
                           onClick={() => goPrev(images.length)}
-                          className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center transition-all duration-150 hover:bg-[var(--bg-hover)]"
-                          style={{
-                            backgroundColor: 'var(--bg-secondary)',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--text-primary)',
-                          }}
+                          aria-label="Imagen anterior"
+                          className="absolute left-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center text-white opacity-90 transition-opacity duration-200 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                          style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.55))' }}
                         >
-                          <ChevronLeft size={18} strokeWidth={1.5} />
+                          <ChevronLeft size={28} strokeWidth={2.25} />
                         </button>
                         <button
                           type="button"
                           onClick={() => goNext(images.length)}
-                          className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center transition-all duration-150 hover:bg-[var(--bg-hover)]"
-                          style={{
-                            backgroundColor: 'var(--bg-secondary)',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--text-primary)',
-                          }}
+                          aria-label="Siguiente imagen"
+                          className="absolute right-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center text-white opacity-90 transition-opacity duration-200 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                          style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.55))' }}
                         >
-                          <ChevronRight size={18} strokeWidth={1.5} />
+                          <ChevronRight size={28} strokeWidth={2.25} />
                         </button>
                       </>
                     )}
                   </div>
 
-                  {/* Thumbnails (Miniaturas) */}
+                  {/* Thumbnails (Miniaturas) — con inset propio ya que la
+                      columna ya no aporta padding (imagen a sangre). */}
                   {hasMultiple && (
-                    <div className="mt-4 flex gap-2.5 overflow-x-auto pb-0.5">
+                    <div className="mt-3 flex gap-2.5 overflow-x-auto px-4 pb-1 sm:mt-4 sm:px-5 sm:pb-5 lg:px-8 lg:pb-8">
                       {images.map((img, idx) => (
                         <button
                           key={img}

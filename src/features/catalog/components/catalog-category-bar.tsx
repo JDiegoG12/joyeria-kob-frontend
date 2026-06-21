@@ -284,7 +284,7 @@ const CategoryPill = ({ label, isActive, onClick }: CategoryPillProps) => (
         left: '0.75rem',
         right: '0.75rem',
         height: '2px',
-        backgroundColor: 'var(--accent-vivid, var(--accent))',
+        backgroundColor: 'var(--accent-marker, var(--accent))',
         transformOrigin: 'center',
         transform: isActive ? 'scaleX(1)' : 'scaleX(0)',
         transition: 'transform 300ms cubic-bezier(0.22, 1, 0.36, 1)',
