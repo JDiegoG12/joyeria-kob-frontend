@@ -6,6 +6,30 @@
   RewriteEngine On
   RewriteBase /
 
+  # ─── Dynamic rendering para bots (SEO) — ANTES del fallback SPA ────────
+  # Si un crawler (Googlebot, Bingbot, redes sociales, etc.) pide una página
+  # pública, se redirige (302) al backend, que devuelve HTML pre-renderizado
+  # con el contenido real (title, meta, og:*, texto). Para usuarios normales
+  # (User-Agent que NO matchea) estas reglas se saltan y la petición cae en
+  # el fallback SPA de más abajo, sirviendo index.html como siempre.
+  #
+  # IMPORTANTE: cada RewriteCond aplica SOLO a la RewriteRule inmediatamente
+  # siguiente. Por eso la condición de User-Agent se REPITE antes de cada
+  # regla; si se pusiera una sola vez, /catalogo y /producto redirigirían a
+  # TODOS los visitantes, no solo a los bots.
+  #
+  # El flag [L] corta el procesamiento al primer match, así un bot nunca llega
+  # al fallback SPA. La parte de nombre del slug de /producto/<slug> se pasa
+  # íntegra al backend en $1 (el backend extrae el UUID del final).
+  RewriteCond %{HTTP_USER_AGENT} (googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex|facebookexternalhit|facebot|twitterbot|whatsapp|linkedinbot|telegrambot|discordbot|applebot|pinterest|redditbot) [NC]
+  RewriteRule ^$ https://api.joyeriakob.com/render/home [R=302,L]
+
+  RewriteCond %{HTTP_USER_AGENT} (googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex|facebookexternalhit|facebot|twitterbot|whatsapp|linkedinbot|telegrambot|discordbot|applebot|pinterest|redditbot) [NC]
+  RewriteRule ^catalogo/?$ https://api.joyeriakob.com/render/catalogo [R=302,L]
+
+  RewriteCond %{HTTP_USER_AGENT} (googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex|facebookexternalhit|facebot|twitterbot|whatsapp|linkedinbot|telegrambot|discordbot|applebot|pinterest|redditbot) [NC]
+  RewriteRule ^producto/([^/]+)/?$ https://api.joyeriakob.com/render/producto/$1 [R=302,L]
+
   # Si la URL pide un archivo real (ej. /assets/index-abc.js, /favicon.svg),
   # se sirve tal cual. Esta condición es CRÍTICA — sin ella reescribirías
   # incluso las peticiones a tus assets y la página queda en blanco.
