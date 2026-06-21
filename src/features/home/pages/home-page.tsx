@@ -24,6 +24,7 @@
 
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   Hammer,
@@ -207,6 +208,14 @@ export const HomePage = () => {
 
   return (
     <div className="overflow-x-hidden">
+      <Helmet>
+        <title>Joyería KOB | Joyas de oro 18k personalizadas en El Bordo</title>
+        <meta
+          name="description"
+          content="Diseñamos y fabricamos joyas de oro 18k a la medida: anillos, collares, dijes y pulseras personalizadas. Pide tu diseño único en Joyería KOB."
+        />
+      </Helmet>
+
       {/* Hero como carrusel — slide 0 es el banner configurable desde admin */}
       <HeroCarousel promoSlides={promoSlides} />
 

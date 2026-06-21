@@ -6,6 +6,7 @@
  * ```
  * /                          → Página principal pública (MainLayout)
  * /catalogo                  → Catálogo público de joyas (MainLayout)
+ * /producto/:slug            → Detalle público de una joya (MainLayout)
  * /favoritos                 → Placeholder de favoritos (MainLayout)
  * /perfil                    → Perfil del usuario autenticado (MainLayout)
  * /informacion/terminos      → Términos y condiciones de uso (MainLayout)
@@ -80,6 +81,13 @@ const HomePage = lazy(() =>
 const CatalogPage = lazy(() =>
   import('@/features/catalog/pages/catalog-page').then((m) => ({
     default: m.CatalogPage,
+  })),
+);
+
+// Chunk: página completa de detalle de producto (ruta indexable /producto/:slug).
+const ProductPage = lazy(() =>
+  import('@/features/catalog/pages/product-page').then((m) => ({
+    default: m.ProductPage,
   })),
 );
 
@@ -238,6 +246,10 @@ export const router = createBrowserRouter([
       {
         path: '/catalogo',
         element: withSuspense(<CatalogPage />),
+      },
+      {
+        path: '/producto/:slug',
+        element: withSuspense(<ProductPage />),
       },
       {
         path: '/favoritos',
