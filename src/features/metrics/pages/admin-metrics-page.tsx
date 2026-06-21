@@ -31,7 +31,7 @@ import { motion } from 'framer-motion';
 import {
   Boxes,
   CheckCircle2,
-  PieChart,
+  ListOrdered,
   RefreshCw,
   Sparkles,
   TrendingUp,
@@ -251,7 +251,7 @@ export const AdminMetricsPage = () => {
           onRetry={() => void loadGoldPrice(range)}
         />
 
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:items-start">
           <CategorySection
             resource={categoryCounts}
             onRetry={() => void loadCategoryCounts()}
@@ -564,7 +564,7 @@ const CategorySection = ({ resource, onRetry }: CategorySectionProps) => {
 
   return (
     <MetricsCardShell
-      icon={PieChart}
+      icon={ListOrdered}
       sectionLabel="Catálogo"
       title="Productos por categoría"
       description="Cantidad de productos asociados a cada categoría del catálogo."
