@@ -46,6 +46,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Filter, Search } from 'lucide-react';
@@ -64,6 +65,7 @@ import {
 } from '@/features/catalog/components/catalog-category-bar';
 import { PublicProductCard } from '@/features/catalog/components/public-product-card';
 import { ProductDetailModal } from '@/features/catalog/components/product-detail-modal';
+import { buildProductPath } from '@/features/catalog/utils/product-slug';
 import {
   BackToHomeButton,
   BackToHomeDivider,
@@ -439,6 +441,11 @@ export const CatalogPage = () => {
       // URL limpia: olvidamos el último id para que una próxima navegación
       // al mismo producto (back/forward, click de nuevo) vuelva a abrir.
       lastFetchedProductIdRef.current = null;
+      // Cierra el modal si la URL perdió el `?product` por el botón "atrás".
+      // Como abrir desde una tarjeta hace `push` de `?product`, "atrás" vuelve
+      // a `/catalogo` quedándose en esta página; sin esto el modal seguiría
+      // abierto pese a la URL limpia. Es no-op si ya estaba cerrado.
+      setSelectedProduct(null);
       return;
     }
 
@@ -488,6 +495,34 @@ export const CatalogPage = () => {
     }
   };
 
+  /**
+   * Abre el detalle de un producto desde una tarjeta del catálogo.
+   *
+   * Mecanismo ÚNICO de apertura, idéntico al de Home/Favoritos: sincroniza la
+   * URL a `/catalogo?product=<id>`. Antes, el catálogo abría el modal con un
+   * `setSelectedProduct` puramente local que NO pasaba por el router, así que la
+   * URL se quedaba en `/catalogo` (a diferencia de Home/Favoritos, que navegan
+   * con `?product=`). Ahora toda la superficie de la tarjeta comparte esta vía.
+   *
+   * Para que la apertura sea instantánea (ya tenemos el producto en memoria) y
+   * no dispare un `getById` redundante, hidratamos `selectedProduct` y marcamos
+   * el id en `lastFetchedProductIdRef` ANTES de tocar la URL: cuando el effect
+   * de deep-link vea el nuevo `?product`, encontrará el id ya "cargado" y no
+   * volverá a pedirlo por red.
+   *
+   * Se hace `push` (no `replace`) para que el botón "atrás" cierre el modal y la
+   * URL quede compartible.
+   */
+  const handleOpenProduct = (product: Product) => {
+    setSelectedProduct(product);
+    lastFetchedProductIdRef.current = product.id;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('product', product.id);
+      return next;
+    });
+  };
+
   // ── Callback del slider de precios ───────────────────────────────────────────
 
   const handlePriceCommit = (
@@ -531,6 +566,14 @@ export const CatalogPage = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Catálogo de Joyas en Oro 18k | Joyería KOB</title>
+        <meta
+          name="description"
+          content="Explora nuestro catálogo de joyas en oro 18k: anillos, collares, pulseras y dijes personalizados. Diseños únicos hechos en El Bordo."
+        />
+      </Helmet>
+
       {/*
        * Barra de categorías móvil — fija bajo el navbar, exclusiva de <lg.
        * El propio componente lleva `lg:hidden`, así que es seguro montarlo
@@ -899,7 +942,8 @@ export const CatalogPage = () => {
                       >
                         <PublicProductCard
                           product={product}
-                          onClick={() => setSelectedProduct(product)}
+                          to={buildProductPath(product)}
+                          onClick={() => handleOpenProduct(product)}
                         />
                       </motion.div>
                     ))}

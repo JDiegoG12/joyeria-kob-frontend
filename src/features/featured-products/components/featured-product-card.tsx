@@ -42,9 +42,10 @@
  * @see featured-products-section.tsx — sección que consume esta tarjeta.
  */
 
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Images } from 'lucide-react';
 import { SERVER_URL } from '@/api/server-url';
+import { buildProductPath } from '@/features/catalog/utils/product-slug';
 import type { Product } from '@/features/catalog/types/product.types';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -132,6 +133,25 @@ export const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
    */
   const handleOpenDetail = () => {
     navigate(`/catalogo?product=${product.id}`);
+  };
+
+  /** Ruta canónica de la ficha completa (`/producto/:slug`) para el `<Link>`. */
+  const productPath = buildProductPath(product);
+
+  /**
+   * Click sobre el nombre (un `<Link>` real a la ficha completa). El click
+   * normal conserva el comportamiento de la tarjeta (abrir el modal del detalle
+   * vía `/catalogo?product=`); ctrl/cmd/click central siguen el enlace y abren
+   * la ficha en otra pestaña. Un crawler indexa el `href`.
+   */
+  const handleNameLinkClick = (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) {
+      e.stopPropagation();
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    handleOpenDetail();
   };
 
   return (
@@ -246,7 +266,13 @@ export const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
             color: 'var(--text-accent)',
           }}
         >
-          {product.name}
+          <Link
+            to={productPath}
+            onClick={handleNameLinkClick}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
+            {product.name}
+          </Link>
         </h3>
 
         <p

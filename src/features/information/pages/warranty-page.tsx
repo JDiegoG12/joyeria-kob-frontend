@@ -14,6 +14,7 @@ export const WarrantyPage = () => (
     title={WARRANTY_POLICY.title}
     lastUpdated={WARRANTY_POLICY.lastUpdated}
     breadcrumbLabel="Garantía"
+    description="Política de garantía, reembolso y devoluciones de Joyería KOB para joyas de oro 18k personalizadas. Conoce tus derechos y nuestros tiempos."
   >
     {WARRANTY_POLICY.sections.map((section, i) => (
       <PolicySection key={i} section={section} />

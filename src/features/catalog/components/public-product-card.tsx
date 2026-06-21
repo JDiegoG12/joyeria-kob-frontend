@@ -17,6 +17,7 @@
  */
 
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SERVER_URL } from '@/api/server-url';
 import type { Product } from '@/features/catalog/types/product.types';
@@ -61,6 +62,13 @@ interface PublicProductCardProps {
   product: Product;
   /** Callback al hacer click en la tarjeta — abre el modal de detalle. */
   onClick: () => void;
+  /**
+   * Ruta canónica del producto (`/producto/:slug`). Si se pasa, el nombre se
+   * envuelve en un `<Link>` real navegable: un crawler lo sigue y un
+   * ctrl/cmd/click central abre la ficha completa en otra pestaña. El click
+   * normal mantiene el comportamiento de la tarjeta (abrir el modal).
+   */
+  to?: string;
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -72,9 +80,26 @@ interface PublicProductCardProps {
 export const PublicProductCard = ({
   product,
   onClick,
+  to,
 }: PublicProductCardProps) => {
   const images = product.images ?? [];
   const hasMultipleImages = images.length > 1;
+
+  /**
+   * Click sobre el nombre (que es un `<Link>` real). En un click normal se
+   * bloquea la navegación y se abre el modal, igual que el resto de la tarjeta;
+   * los clicks con modificador o central conservan la navegación nativa del
+   * enlace (abrir la ficha en otra pestaña) y se aíslan para no abrir el modal.
+   */
+  const handleNameLinkClick = (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) {
+      e.stopPropagation();
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  };
 
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -276,7 +301,17 @@ export const PublicProductCard = ({
             minHeight: '2lh',
           }}
         >
-          {product.name}
+          {to ? (
+            <Link
+              to={to}
+              onClick={handleNameLinkClick}
+              style={{ color: 'inherit', textDecoration: 'none' }}
+            >
+              {product.name}
+            </Link>
+          ) : (
+            product.name
+          )}
         </h3>
 
         {hasDiscount ? (

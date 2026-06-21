@@ -13,6 +13,7 @@ export const PrivacyPage = () => (
     title={PRIVACY_POLICY.title}
     lastUpdated={PRIVACY_POLICY.lastUpdated}
     breadcrumbLabel="Privacidad"
+    description="Política de privacidad de Joyería KOB: cómo recolectamos, usamos y protegemos tus datos personales al comprar joyas de oro 18k."
   >
     {PRIVACY_POLICY.sections.map((section, i) => (
       <PolicySection key={i} section={section} />
