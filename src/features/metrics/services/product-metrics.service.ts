@@ -51,11 +51,6 @@ function mapStatusSummary(
  * Convierte la respuesta agrupada por categoría en una lista ordenada
  * descendentemente por cantidad. Las categorías sin productos se descartan.
  *
- * TODO(backend): hoy el backend agrupa por `categoryId` directo, por lo que
- * un producto en una subcategoría se contabiliza bajo ella y no bajo su
- * categoría raíz. Pedir que `agrupar=categoria` consolide el conteo por
- * categoría raíz (roll-up de subcategorías) para que la métrica refleje el
- * total real de cada categoría del catálogo.
  *
  * @param data - Bloque `data` recibido de `GET /products/stats?agrupar=categoria`.
  * @returns Puntos listos para la lista de distribución por categoría.
