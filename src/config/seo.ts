@@ -12,6 +12,14 @@
 export const SITE_NAME = 'Joyería KOB';
 
 /**
+ * Dominio canónico del sitio (con `www`). Es la URL que Google debe indexar y
+ * la base para construir URLs absolutas en datos estructurados (JSON-LD).
+ * Se mantiene fija a producción a propósito: las URLs canónicas/estructuradas
+ * deben apuntar siempre al dominio real, no a localhost.
+ */
+export const SITE_URL = 'https://www.joyeriakob.com';
+
+/**
  * Largo máximo recomendado para una meta description antes de que Google la
  * recorte con elipsis en los resultados (~155–160 caracteres).
  */

@@ -31,6 +31,7 @@ import {
 import type { Product } from '@/features/catalog/types/product.types';
 import { PageLoader } from '@/features/shared/pages/page-loader';
 import { SITE_NAME, truncateForMeta } from '@/config/seo';
+import { buildProductJsonLd } from '@/config/structured-data';
 
 type LoadStatus = 'loading' | 'ready' | 'error';
 
@@ -93,6 +94,10 @@ export const ProductPage = () => {
       <Helmet>
         <title>{`${product.name} | ${SITE_NAME}`}</title>
         <meta name="description" content={buildProductDescription(product)} />
+        {/* Datos estructurados schema.org/Product — misma forma que el backend. */}
+        <script type="application/ld+json">
+          {JSON.stringify(buildProductJsonLd(product))}
+        </script>
       </Helmet>
 
       <div className="bg-silk min-h-screen">

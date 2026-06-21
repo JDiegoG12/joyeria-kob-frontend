@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /login
+Disallow: /registro
+Disallow: /recuperar-contrasena
+Disallow: /restablecer-contrasena
+Disallow: /perfil
+Disallow: /favoritos
+
+Sitemap: https://api.joyeriakob.com/sitemap.xml
