@@ -69,6 +69,14 @@ const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
  */
 const EASE_IN: [number, number, number, number] = [0.4, 0, 1, 1];
 
+/**
+ * Umbrales para cerrar el drawer arrastrando (swipe). El cierre se dispara si el
+ * usuario arrastra más de `OFFSET` px hacia el borde de origen (la derecha) o si
+ * suelta con velocidad superior a `VELOCITY` px/s (flick).
+ */
+const SWIPE_CLOSE_OFFSET = 80;
+const SWIPE_CLOSE_VELOCITY = 400;
+
 // ─── Variantes de animación ──────────────────────────────────────────────────
 
 /** Overlay: fade con backdrop-blur (idéntico al menú móvil). */
@@ -145,6 +153,11 @@ export const CatalogMobileFiltersDrawer = ({
   const panelRef = useRef<HTMLDivElement>(null);
   /** Elemento enfocado antes de abrir, para restaurar el foco al cerrar. */
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  /**
+   * Zona del slider de precio. Su `pointerdown` se detiene aquí para que el
+   * arrastre horizontal de los pulgares no active el swipe-to-close del panel.
+   */
+  const priceGuardRef = useRef<HTMLDivElement>(null);
 
   // Carga defensiva de categorías (el store deduplica).
   useEffect(() => {
@@ -214,6 +227,22 @@ export const CatalogMobileFiltersDrawer = ({
       previouslyFocusedRef.current?.focus?.();
     };
   }, [isOpen]);
+
+  // ── Aísla el slider de precio del swipe-to-close ────────────────────────
+  /*
+   * Framer Motion engancha el arrastre con listeners nativos sobre el panel, así
+   * que un `onPointerDown` de React no bastaría para frenarlo. Detenemos la
+   * propagación nativa del `pointerdown` dentro de la zona del slider: el gesto
+   * horizontal mueve los pulgares del precio en vez del panel entero.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+    const node = priceGuardRef.current;
+    if (!node) return;
+    const stop = (e: PointerEvent) => e.stopPropagation();
+    node.addEventListener('pointerdown', stop);
+    return () => node.removeEventListener('pointerdown', stop);
+  }, [isOpen, priceRange]);
 
   // ── Datos derivados de categorías ───────────────────────────────────────
   const rootCategories = categories.filter((cat) => cat.parentId === null);
@@ -288,6 +317,25 @@ export const CatalogMobileFiltersDrawer = ({
             initial="hidden"
             animate="visible"
             exit="exit"
+            /*
+             * Swipe-to-close (solo móvil; el panel está oculto en ≥lg).
+             * Entra desde la derecha, así que se cierra arrastrándolo hacia ese
+             * borde. `dragElastic` solo permite movimiento hacia la derecha (la
+             * izquierda queda anclada en 0). El slider de precio neutraliza su
+             * `pointerdown` para no competir con este gesto (ver efecto arriba).
+             */
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={{ left: 0, right: 0.9, top: 0, bottom: 0 }}
+            dragMomentum={false}
+            onDragEnd={(_, info) => {
+              if (
+                info.offset.x > SWIPE_CLOSE_OFFSET ||
+                info.velocity.x > SWIPE_CLOSE_VELOCITY
+              ) {
+                onClose();
+              }
+            }}
             role="dialog"
             aria-modal="true"
             aria-label="Filtros del catálogo"
@@ -297,6 +345,7 @@ export const CatalogMobileFiltersDrawer = ({
               borderColor: 'var(--border-color)',
               boxShadow: 'var(--shadow-lg)',
               paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+              touchAction: 'pan-y',
             }}
           >
             {/* ── Cabecera ──────────────────────────────────────────────── */}
@@ -355,9 +404,18 @@ export const CatalogMobileFiltersDrawer = ({
             </div>
 
             {/* ── Cuerpo scrollable ─────────────────────────────────────── */}
+            {/*
+             * `touch-action: pan-y` es clave para el swipe-to-close: este div es
+             * su propio contenedor de scroll, así que gobierna los gestos en su
+             * interior con independencia del panel. Sin esto, el navegador trata
+             * el arrastre horizontal como scroll (no hay scroll-x → lo descarta y
+             * cancela el puntero), y Framer nunca recibe el gesto. Con pan-y, solo
+             * el desplazamiento vertical lo maneja el navegador; el horizontal se
+             * delega a JS y el panel se puede arrastrar desde toda la zona.
+             */}
             <div
               className="flex-1 space-y-7 overflow-y-auto px-5 py-6"
-              style={{ overscrollBehaviorY: 'contain' }}
+              style={{ overscrollBehaviorY: 'contain', touchAction: 'pan-y' }}
             >
               {/* ── Filtros activos (removibles) ── */}
               <AnimatePresence initial={false}>
@@ -472,7 +530,7 @@ export const CatalogMobileFiltersDrawer = ({
               </AnimatePresence>
 
               {/* ── Precio ── */}
-              <section aria-label="Filtrar por precio">
+              <section aria-label="Filtrar por precio" ref={priceGuardRef}>
                 <SectionTitle>Precio</SectionTitle>
                 {priceRange === null ? (
                   <PriceSliderSkeleton />
