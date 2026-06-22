@@ -49,7 +49,6 @@ import { usePromoBannerStore } from '@/store/promo-banner.store';
 import type { PromoBanner } from '@/features/promotions/types/promotion.types';
 import GOLD_INVESTMENT_IMAGE_LG from '@/assets/gold-investment-lg.webp';
 import GOLD_INVESTMENT_IMAGE_SM from '@/assets/gold-investment-sm.webp';
-import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.webp';
 import { SocialContentSection } from '../components/social-content-section';
 
 /**
@@ -217,12 +216,15 @@ export const HomePage = () => {
           content="Diseñamos y fabricamos joyas de oro 18k a la medida: anillos, collares, dijes y pulseras personalizadas. Pide tu diseño único en Joyería KOB."
         />
         {/*
-         * Precarga de la imagen por defecto del hero (candidato a LCP). Acelera
-         * el primer paint: el navegador la solicita antes de ejecutar el JS.
-         * Si el admin configuró un banner propio, el carrusel intercambia el
-         * `src` cuando llega; el peso extra es mínimo (WebP ~52 KB).
+         * El banner del hero (candidato a LCP) vive en el backend de archivos
+         * (`SERVER_URL`), de dominio distinto. Su URL no se conoce hasta el
+         * fetch de `/api/banner`, así que no se puede precargar; pero sí
+         * calentamos la conexión (DNS + TCP + TLS) para que, en cuanto el fetch
+         * resuelva, la descarga de la imagen empiece sin ese coste. Acelera el
+         * LCP móvil sin precargar bytes que quizá no se usen.
          */}
-        <link rel="preload" as="image" href={DEFAULT_HERO_IMAGE} />
+        {SERVER_URL && <link rel="preconnect" href={SERVER_URL} />}
+        {SERVER_URL && <link rel="dns-prefetch" href={SERVER_URL} />}
       </Helmet>
 
       {/* Hero como carrusel — slide 0 es el banner configurable desde admin */}

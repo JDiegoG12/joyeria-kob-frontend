@@ -35,6 +35,10 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHeroBannerStore } from '@/store/hero-banner.store';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
 import { buildWhatsAppUrl, WHATSAPP_MESSAGES } from '@/config/contact';
+import {
+  buildUploadsSrcSet,
+  BANNER_IMAGE_WIDTHS,
+} from '@/shared/utils/image-srcset';
 import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.webp';
 
 /** Duración en ms entre cambios automáticos de slide. */
@@ -154,8 +158,6 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
     touchStartX.current = null;
   };
 
-  const heroImage = bannerImageUrl ?? DEFAULT_HERO_IMAGE;
-
   return (
     <section
       className="relative overflow-hidden"
@@ -180,16 +182,16 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
       <div className="relative h-full w-full">
         {/* Slide 0: Banner principal configurable.
          *
-         * La imagen se renderiza SIEMPRE desde el primer paint (no se espera al
-         * fetch del banner): usa la imagen por defecto empaquetada y, cuando
-         * llega la del backend, se intercambia el `src`. Esto es clave para el
-         * LCP — antes la imagen quedaba detrás de `hasLoaded` (un fetch) y de un
-         * fade por opacidad, lo que en móvil impedía medir el LCP (NO_LCP).
+         * La <img> está en el primer render (no se monta/desmonta por el estado
+         * de carga del backend), es `eager` y `fetchpriority="high"`. Detrás hay
+         * un placeholder de color de marca del tamaño exacto de la imagen, así
+         * que nunca se ve un hueco ni un estado roto; la imagen real aparece con
+         * un fade sobre ese color. Ver `MainBannerSlide` para el detalle.
          *
          * Solo el texto (título/subtítulo, que sí dependen del backend) muestra
          * un skeleton hasta que `hasLoaded` es true. */}
         <MainBannerSlide
-          imageUrl={heroImage}
+          bannerImageUrl={bannerImageUrl}
           bannerText={bannerText}
           bannerSubtitle={bannerSubtitle}
           hasLoaded={hasLoaded}
@@ -292,7 +294,11 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
 // ─── Slide principal ───────────────────────────────────────────────────────────
 
 interface MainBannerSlideProps {
-  imageUrl: string;
+  /**
+   * URL remota del banner (`/uploads/banners/...`), o `null` si todavía no
+   * llegó del backend o no hay banner configurado.
+   */
+  bannerImageUrl: string | null;
   bannerText: string;
   bannerSubtitle: string;
   /** `true` cuando ya llegó el banner del backend (texto real vs. skeleton). */
@@ -305,25 +311,51 @@ interface MainBannerSlideProps {
  * Slide principal del carrusel con texto configurable y CTAs fijos.
  * Ocupa el 100% del área del carrusel y siempre es el slide 0.
  *
+ * ── Carga del banner: LCP medible + CERO parpadeo ───────────────────────────
+ * La imagen es el candidato a LCP de la home. Para lograr LCP rápido/medible y
+ * sin ningún flash de imagen por defecto:
+ *
+ * - **Placeholder de color**: un degradado de marca SIEMPRE visible, del tamaño
+ *   exacto de la imagen. Nunca se ve un hueco, un salto de layout ni un estado
+ *   "roto"; solo color de marca hasta que la foto aparece encima.
+ * - **Un solo `src`, sin swap**: antes se pintaba la imagen por defecto y luego
+ *   se intercambiaba por la remota — ese swap era el "parpadeo feo" y, además,
+ *   al cambiar el contenido del candidato a LCP, impedía medirlo (NO_LCP). Ahora
+ *   el `src` se fija UNA vez cuando el fetch resuelve:
+ *     · con banner configurado → la imagen remota (con `srcset`/miniatura);
+ *     · 404 (sin banner) → la imagen por defecto empaquetada.
+ *   Como la URL remota no se conoce hasta el fetch, no es posible pintarla antes
+ *   sin mostrar primero la de por defecto (lo que el negocio rechaza): el
+ *   placeholder de color cubre esa fracción de segundo.
+ * - **`<img>` en el primer render**: nunca se monta/desmonta por estado; es
+ *   `eager`, `fetchpriority="high"` y se desvanece (opacity) al decodificarse.
+ *
  * El padding inferior se redujo de `pb-14` a `pb-10` para acompañar la menor
  * altura del contenedor y mantener los botones siempre visibles.
- *
- * ── Rendimiento (LCP) ───────────────────────────────────────────────────────
- * La imagen es el candidato a LCP de la home, así que:
- * - Se renderiza desde el primer paint con su `src` real (no se espera ningún
- *   fetch ni estado): la "solicitud es visible en el documento inicial".
- * - Lleva `fetchpriority="high"` y `loading="eager"` (nunca `lazy`).
- * - No se oculta tras una transición de opacidad: un elemento con `opacity: 0`
- *   no cuenta como LCP hasta hacerse visible, lo que en móvil daba NO_LCP.
  */
 const MainBannerSlide = ({
-  imageUrl,
+  bannerImageUrl,
   bannerText,
   bannerSubtitle,
   hasLoaded,
   isActive,
   prefersReducedMotion,
 }: MainBannerSlideProps) => {
+  // Se activa cuando la imagen del banner termina de decodificarse, para
+  // desvanecerla sobre el placeholder de color.
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  // Fuente final, decidida una sola vez cuando el fetch resolvió. Antes de eso
+  // queda `undefined` (solo se ve el placeholder de color), evitando el flash
+  // de la imagen por defecto cuando sí hay un banner configurado.
+  const resolvedSrc =
+    bannerImageUrl ?? (hasLoaded ? DEFAULT_HERO_IMAGE : undefined);
+  // Miniatura/srcset solo para la imagen remota; la de por defecto (empaquetada)
+  // no vive en /uploads y se sirve tal cual.
+  const srcSet = bannerImageUrl
+    ? buildUploadsSrcSet(bannerImageUrl, BANNER_IMAGE_WIDTHS)
+    : undefined;
+
   return (
     <div
       className="absolute inset-0"
@@ -331,19 +363,38 @@ const MainBannerSlide = ({
         opacity: isActive ? 1 : 0,
         transition: prefersReducedMotion ? 'none' : 'opacity 600ms ease',
         zIndex: isActive ? 1 : 0,
-        backgroundColor: 'var(--accent)',
       }}
       aria-hidden={!isActive}
     >
       <div className="absolute inset-0">
-        {/* Imagen de fondo — candidato a LCP: carga inmediata y prioritaria. */}
+        {/* Placeholder: degradado de color de marca, del tamaño exacto de la
+         * imagen. Es lo que se ve mientras la foto carga — nunca un hueco. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              'linear-gradient(135deg, var(--accent) 0%, var(--accent-active) 100%)',
+          }}
+          aria-hidden="true"
+        />
+
+        {/* Imagen del banner — candidato a LCP. Carga prioritaria y se desvanece
+         * sobre el placeholder. `src` undefined hasta que el fetch resuelve. */}
         <img
-          src={imageUrl}
+          src={resolvedSrc}
+          srcSet={srcSet}
+          sizes="100vw"
           alt="Banner principal de Joyería KOB"
           className="absolute inset-0 h-full w-full object-cover"
           fetchPriority="high"
           loading="eager"
           decoding="async"
+          onLoad={() => setImgLoaded(true)}
+          onError={() => setImgLoaded(true)}
+          style={{
+            opacity: prefersReducedMotion || imgLoaded ? 1 : 0,
+            transition: prefersReducedMotion ? 'none' : 'opacity 300ms ease',
+          }}
         />
 
     {/* Overlay degradado para legibilidad del texto.
