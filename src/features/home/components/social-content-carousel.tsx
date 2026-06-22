@@ -289,6 +289,16 @@ export const SocialContentCarousel = ({
   const shouldReduceMotion = useReducedMotion() ?? false;
 
   /**
+   * `true` en móvil (`< sm`), donde las tarjetas se anclan al CENTRO. En ese
+   * modo la posición de scroll y el índice activo se calculan centrando la
+   * tarjeta en el viewport, no alineándola al borde izquierdo. Coincide con el
+   * breakpoint del `scroll-snap-align` inyectado más abajo.
+   */
+  const isCenterMode = (): boolean =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 639px)').matches;
+
+  /**
    * Distancia en px entre el inicio de dos slides consecutivos (ancho de la
    * tarjeta + gap). Se mide del DOM para no hardcodear el gap responsive.
    */
@@ -309,8 +319,25 @@ export const SocialContentCarousel = ({
     setCanPrev(track.scrollLeft > 1);
     setCanNext(track.scrollLeft < maxScroll - 1);
 
-    const step = getStep();
-    const idx = Math.round(track.scrollLeft / step);
+    let idx: number;
+    if (isCenterMode()) {
+      // Tarjeta cuyo centro queda más cerca del centro del viewport.
+      const viewportCenter = track.scrollLeft + track.clientWidth / 2;
+      idx = 0;
+      let best = Infinity;
+      slideRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const cardCenter = el.offsetLeft + el.offsetWidth / 2;
+        const dist = Math.abs(cardCenter - viewportCenter);
+        if (dist < best) {
+          best = dist;
+          idx = i;
+        }
+      });
+    } else {
+      const step = getStep();
+      idx = Math.round(track.scrollLeft / step);
+    }
     setActiveIndex(Math.max(0, Math.min(items.length - 1, idx)));
   }, [getStep, items.length]);
 
@@ -349,20 +376,53 @@ export const SocialContentCarousel = ({
     });
   };
 
-  /** Lleva el slide `idx` al borde izquierdo del track. */
+  /**
+   * Lleva el slide `idx` a su posición de reposo: centrado en móvil, alineado
+   * al borde izquierdo desde `sm`. En móvil se mide la tarjeta del DOM para
+   * centrarla con exactitud (las del medio quedan perfectamente centradas; la
+   * primera y la última reposan en los extremos, como en cualquier carrusel).
+   */
   const scrollToIndex = (idx: number) => {
     const track = trackRef.current;
     if (!track) return;
+    const slide = slideRefs.current[idx];
+    const left =
+      isCenterMode() && slide
+        ? slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2
+        : idx * getStep();
     track.scrollTo({
-      left: idx * getStep(),
+      left,
       behavior: shouldReduceMotion ? 'auto' : 'smooth',
     });
   };
 
   return (
-    <div className="relative">
-      {/* Oculta la scrollbar del track sin perder el scroll. */}
-      <style>{`[data-social-track]::-webkit-scrollbar { display: none; }`}</style>
+    // Gutters laterales en desktop (`md+`, donde aparecen las flechas): reservan
+    // un espacio a cada lado para que las flechas vivan FUERA de las tarjetas y
+    // nunca queden sobre un video. Así, al desaparecer en los extremos, debajo
+    // queda el gutter vacío (no una carta) y no hay clics accidentales. En móvil
+    // (`< md`) no hay padding ni flechas, el carrusel ocupa todo el ancho.
+    <div className="relative md:px-14 lg:px-16">
+      {/* Oculta la scrollbar del track y define el anclaje del snap por
+          breakpoint: en móvil cada tarjeta se centra (asomo simétrico a ambos
+          lados → la activa nunca queda pegada a un lado); desde `sm` se ancla
+          al inicio para la fila multi-tarjeta de tablet/desktop. */}
+      <style>{`
+        [data-social-track]::-webkit-scrollbar { display: none; }
+        [data-social-slide] {
+          scroll-snap-align: center;
+          /* Un swipe = una tarjeta: impide que la inercia salte varias de golpe. */
+          scroll-snap-stop: always;
+        }
+        @media (min-width: 640px) {
+          [data-social-slide] {
+            scroll-snap-align: start;
+            /* En desktop las flechas avanzan ~una página (varias tarjetas), así
+               que no forzamos la parada en cada una. */
+            scroll-snap-stop: normal;
+          }
+        }
+      `}</style>
 
       {/* ── Track ──────────────────────────────────────────────────────── */}
       <div
@@ -387,11 +447,11 @@ export const SocialContentCarousel = ({
             ref={(el) => {
               slideRefs.current[i] = el;
             }}
+            data-social-slide
             role="group"
             aria-roledescription="diapositiva"
             aria-label={`Video ${i + 1} de ${items.length}`}
-            className="w-[72%] shrink-0 sm:w-[44%] md:w-[31.5%] lg:w-[23.5%]"
-            style={{ scrollSnapAlign: 'start' }}
+            className="w-[84%] shrink-0 sm:w-[44%] md:w-[31.5%] lg:w-[23.5%]"
           >
             <SocialReelCard reel={reel} reducedMotion={shouldReduceMotion} />
           </div>
@@ -438,7 +498,7 @@ export const SocialContentCarousel = ({
                   height: '8px',
                   borderRadius: '999px',
                   backgroundColor: isActive
-                    ? 'var(--accent-vivid)'
+                    ? 'var(--accent-marker)'
                     : 'var(--border-strong)',
                   opacity: isActive ? 1 : 0.5,
                   border: 'none',
@@ -463,7 +523,14 @@ interface CarouselArrowProps {
 
 /**
  * Flecha lateral del carrusel. Oculta en móvil (la interacción ahí es swipe);
- * visible desde `md`. Se atenúa y deshabilita en los extremos.
+ * visible desde `md`.
+ *
+ * Diseño discreto y coherente con las flechas del carrusel hero: pastilla
+ * **circular translúcida** con desenfoque, borde fino y chevron sutil. El color
+ * del chevron usa `--accent-marker` (navy en claro → blanco en oscuro), así
+ * lee sobre el fondo de la sección en ambos temas sin el bloque navy macizo
+ * anterior. En los extremos se desvanece por completo (solo aparece cuando hay
+ * a dónde avanzar), reforzando la limpieza visual.
  */
 const CarouselArrow = ({ direction, disabled, onClick }: CarouselArrowProps) => {
   const isPrev = direction === 'prev';
@@ -472,22 +539,29 @@ const CarouselArrow = ({ direction, disabled, onClick }: CarouselArrowProps) => 
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-hidden={disabled}
+      tabIndex={disabled ? -1 : 0}
       aria-label={isPrev ? 'Videos anteriores' : 'Siguientes videos'}
-      className={`absolute top-[calc(50%-1.5rem)] z-10 hidden h-16 w-9 -translate-y-1/2 cursor-pointer items-center justify-center bg-[var(--accent)] transition-[opacity,background-color] duration-200 hover:bg-[var(--accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed md:flex ${
-        isPrev ? 'left-0 lg:-left-2' : 'right-0 lg:-right-2'
+      className={`absolute top-[calc(50%-1.5rem)] z-10 hidden h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full backdrop-blur-sm transition-[opacity,background-color,box-shadow] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-default md:flex ${
+        isPrev ? 'left-2 lg:left-3' : 'right-2 lg:right-3'
       }`}
       style={{
-        // Barra vertical navy (esquinas rectas): lee como decisión editorial,
-        // no como un cuadro sin terminar. Chevron blanco + sombra media.
-        color: 'var(--accent-text)',
-        boxShadow: 'var(--shadow-md)',
-        opacity: disabled ? 0.35 : 1,
+        backgroundColor:
+          'color-mix(in srgb, var(--bg-primary) 80%, transparent)',
+        color: 'var(--accent-marker)',
+        border:
+          '1px solid color-mix(in srgb, var(--border-strong) 70%, transparent)',
+        boxShadow: 'var(--shadow-sm)',
+        // En los extremos desaparece (no hay a dónde ir): solo se ve cuando es
+        // accionable, evitando un control "muerto" que ensucie la estética.
+        opacity: disabled ? 0 : 1,
+        pointerEvents: disabled ? 'none' : undefined,
       }}
     >
       {isPrev ? (
-        <ChevronLeft size={20} strokeWidth={2} />
+        <ChevronLeft size={18} strokeWidth={1.75} />
       ) : (
-        <ChevronRight size={20} strokeWidth={2} />
+        <ChevronRight size={18} strokeWidth={1.75} />
       )}
     </button>
   );
