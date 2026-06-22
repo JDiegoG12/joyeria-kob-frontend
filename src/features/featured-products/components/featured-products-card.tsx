@@ -53,6 +53,10 @@ import {
   type FeaturedProductWithProduct,
 } from '@/features/featured-products/types/featured-product.types';
 import { SERVER_URL } from '@/api/server-url';
+import {
+  buildUploadsSrcSet,
+  PRODUCT_IMAGE_WIDTHS,
+} from '@/shared/utils/image-srcset';
 import { FeaturedProductPickerModal } from './featured-product-picker-modal';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -530,6 +534,11 @@ const FeaturedRow = ({
 
     <img
       src={resolveThumbnail(item.product.images)}
+      srcSet={buildUploadsSrcSet(
+        resolveThumbnail(item.product.images),
+        PRODUCT_IMAGE_WIDTHS,
+      )}
+      sizes="48px"
       alt=""
       aria-hidden="true"
       className="h-12 w-12 flex-shrink-0 object-cover"
@@ -538,6 +547,7 @@ const FeaturedRow = ({
         borderRadius: 'var(--radius-xs)',
       }}
       onError={(event) => {
+        event.currentTarget.srcset = '';
         (event.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
       }}
     />
