@@ -171,6 +171,9 @@
     --sidebar-width-collapsed: 4rem;
     --footer-height: auto;
     --content-max-width: 80rem;
+    /* Ancho de la ficha completa de producto (/producto/:slug): más angosto que
+       el catálogo para centrar galería + info sin que se estiren de más. */
+    --product-max-width: 64rem;
 
     /* ════════════════════════════════════════════════════════════
            EFECTOS VISUALES

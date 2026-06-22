@@ -23,16 +23,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { ChevronRight, ChevronLeft, ZoomIn, X } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
-import { useCategoryStore } from '@/store/category.store';
 import { SERVER_URL } from '@/api/server-url';
 import { buildWhatsAppUrl } from '@/config/contact';
 import type { Product } from '@/features/catalog/types/product.types';
 import { FavoriteButton } from '@/features/favorites';
+import { ProductBreadcrumb } from './product-breadcrumb';
 import FALLBACK_IMAGE from '@/assets/HERO_IMAGE.webp';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -141,10 +140,6 @@ export const ProductDetailContent = ({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const pointerStartX = useRef<number | null>(null);
 
-  const navigate = useNavigate();
-  const { selectCatalogCategory, selectCatalogSubCategory } =
-    useCategoryStore();
-
   const images = product.images ?? [];
   const hasImages = images.length > 0;
   const hasMultiple = images.length > 1;
@@ -221,50 +216,6 @@ export const ProductDetailContent = ({
     { label: 'Peso', value: `${product.baseWeight ?? 0} g` },
     ...specs,
   ];
-
-  const rootCategoryName =
-    product.category?.parent?.name ?? product.category?.name ?? null;
-  const subCategoryName = product.category?.parent
-    ? product.category.name
-    : null;
-
-  const category = product.category ?? null;
-  const rootCategoryId = category ? (category.parentId ?? category.id) : null;
-  const subCategoryId =
-    category && category.parentId !== null ? category.id : null;
-
-  /*
-   * Handlers del breadcrumb. En modal cierran el modal (el catálogo subyacente
-   * reacciona al store y se re-filtra). En page navegan a la ruta destino.
-   */
-  const leaveToCatalog = () => {
-    if (isModal) onClose?.();
-    else navigate('/catalogo');
-  };
-
-  const handleCrumbHome = () => {
-    onClose?.();
-    navigate('/');
-  };
-  const handleCrumbCatalog = () => {
-    selectCatalogCategory(null);
-    selectCatalogSubCategory(null);
-    leaveToCatalog();
-  };
-  const handleCrumbRoot = () => {
-    if (rootCategoryId === null) return;
-    selectCatalogCategory(rootCategoryId);
-    selectCatalogSubCategory(null);
-    leaveToCatalog();
-  };
-  const handleCrumbSub = () => {
-    if (rootCategoryId === null || subCategoryId === null) return;
-    // El padre primero: selectCatalogCategory resetea la subcategoría, así que
-    // debe ir antes de fijar la subcategoría concreta.
-    selectCatalogCategory(rootCategoryId);
-    selectCatalogSubCategory(subCategoryId);
-    leaveToCatalog();
-  };
 
   return (
     <>
@@ -389,34 +340,17 @@ export const ProductDetailContent = ({
         }`}
         style={{ backgroundColor: 'var(--bg-secondary)' }}
       >
-        {/* SECCIÓN SUPERIOR: Título y Descripción */}
+        {/* SECCIÓN SUPERIOR: Título y Descripción.
+            El breadcrumb solo se renderiza aquí en el modal; en la página
+            (`layout="page"`) lo monta `ProductPage` a nivel de página, con aire. */}
         <div className="shrink-0">
-          <nav
-            aria-label="Ruta de navegación"
-            className="mb-4 flex flex-wrap items-center gap-1 uppercase"
-            style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-xs)',
-              letterSpacing: 'var(--tracking-wide)',
-              color: 'var(--text-muted)',
-            }}
-          >
-            <Crumb label="Inicio" onClick={handleCrumbHome} />
-            <ChevronRight size={10} aria-hidden="true" />
-            <Crumb label="Catálogo" onClick={handleCrumbCatalog} />
-            {rootCategoryName && (
-              <>
-                <ChevronRight size={10} aria-hidden="true" />
-                <Crumb label={rootCategoryName} onClick={handleCrumbRoot} />
-              </>
-            )}
-            {subCategoryName && (
-              <>
-                <ChevronRight size={10} aria-hidden="true" />
-                <Crumb label={subCategoryName} onClick={handleCrumbSub} accent />
-              </>
-            )}
-          </nav>
+          {isModal && (
+            <ProductBreadcrumb
+              product={product}
+              mode="modal"
+              onClose={onClose}
+            />
+          )}
 
           <TitleTag
             className="uppercase"
@@ -630,50 +564,5 @@ export const ProductDetailContent = ({
         document.body,
       )}
     </>
-  );
-};
-
-// ─── Breadcrumb ──────────────────────────────────────────────────────────────
-
-interface CrumbProps {
-  /** Texto visible del ítem. */
-  label: string;
-  /** Acción al hacer click (navegar y/o filtrar el catálogo). */
-  onClick: () => void;
-  /** Resalta el ítem (color de acento + bold). Reservado para la subcategoría. */
-  accent?: boolean;
-}
-
-/**
- * Ítem clickeable del breadcrumb del detalle de producto.
- */
-const Crumb = ({ label, onClick, accent = false }: CrumbProps) => {
-  const restColor = accent ? 'var(--text-accent)' : 'var(--text-muted)';
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="cursor-pointer rounded-sm transition-colors duration-200 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-      style={{
-        fontFamily: 'inherit',
-        fontSize: 'inherit',
-        letterSpacing: 'inherit',
-        textTransform: 'inherit',
-        background: 'none',
-        border: 'none',
-        padding: 0,
-        color: restColor,
-        fontWeight: accent ? 'var(--font-bold)' : 'inherit',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.color = 'var(--text-accent)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.color = restColor;
-      }}
-    >
-      {label}
-    </button>
   );
 };

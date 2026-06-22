@@ -20,16 +20,20 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { motion, useReducedMotion } from 'framer-motion';
+import { LayoutGrid } from 'lucide-react';
 import { productService } from '@/features/catalog/services/product.service';
 import { ProductDetailContent } from '@/features/catalog/components/product-detail-content';
+import { ProductBreadcrumb } from '@/features/catalog/components/product-breadcrumb';
+import { RelatedProducts } from '@/features/catalog/components/related-products';
+import { OutlineButtonLink } from '@/components/ui/outline-button-link';
 import {
   buildProductSlug,
   extractProductId,
 } from '@/features/catalog/utils/product-slug';
 import type { Product } from '@/features/catalog/types/product.types';
-import { PageLoader } from '@/features/shared/pages/page-loader';
 import { SITE_NAME, truncateForMeta } from '@/config/seo';
 import { buildProductJsonLd } from '@/config/structured-data';
 
@@ -46,6 +50,7 @@ const buildProductDescription = (product: Product): string => {
 export const ProductPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotion();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [status, setStatus] = useState<LoadStatus>('loading');
@@ -85,9 +90,31 @@ export const ProductPage = () => {
     }
   }, [status, product, slug, navigate]);
 
-  if (status === 'loading') return <PageLoader />;
+  if (status === 'loading') return <ProductPageSkeleton />;
 
   if (status === 'error' || !product) return <ProductNotFound />;
+
+  // Entrada escalonada coherente con el resto del sitio (fade + leve translate),
+  // que respeta `prefers-reduced-motion`. El header entra primero; el bloque del
+  // producto lo sigue con un pequeño retardo.
+  const headerMotion = shouldReduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: -8 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.4, ease: 'easeOut' as const },
+      };
+  const blockMotion = shouldReduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 18 },
+        animate: { opacity: 1, y: 0 },
+        transition: {
+          duration: 0.5,
+          delay: 0.08,
+          ease: [0.22, 1, 0.36, 1] as const,
+        },
+      };
 
   return (
     <>
@@ -103,9 +130,37 @@ export const ProductPage = () => {
       <div className="bg-silk min-h-screen">
         <div
           className="mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8"
-          style={{ maxWidth: '64rem' }}
+          style={{ maxWidth: 'var(--product-max-width)' }}
         >
-          <div
+          {/* ── Cabecera de página: breadcrumb + acción "ir al catálogo" ──
+              En sm+ van en una fila (breadcrumb a la izquierda, botón a la
+              derecha). En móvil se apilan y el botón ocupa el ancho completo,
+              quedando separado de "Comprar por WhatsApp" (que vive en la
+              columna de info) para que no compitan. */}
+          <motion.div
+            {...headerMotion}
+            className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <ProductBreadcrumb product={product} mode="page" />
+            </div>
+
+            <OutlineButtonLink
+              to="/catalogo"
+              size="sm"
+              className="w-full shrink-0 sm:w-auto"
+            >
+              <LayoutGrid size={15} strokeWidth={1.8} aria-hidden="true" />
+              Ir al catálogo completo
+            </OutlineButtonLink>
+          </motion.div>
+
+          {/* ── Bloque principal del producto (galería + info) ──
+              Se conserva la tarjeta con borde (estética de marca), pero ahora
+              rodeada de contexto de página real: breadcrumb arriba, relacionados
+              abajo y footer fluyendo, de modo que ya no lee como un modal suelto. */}
+          <motion.div
+            {...blockMotion}
             className="flex flex-col overflow-hidden border sm:flex-row"
             style={{
               borderColor: 'var(--border-color)',
@@ -113,10 +168,70 @@ export const ProductPage = () => {
             }}
           >
             <ProductDetailContent product={product} layout="page" />
-          </div>
+          </motion.div>
+
+          {/* ── También te puede interesar ── */}
+          <RelatedProducts product={product} />
         </div>
       </div>
     </>
+  );
+};
+
+// ─── Estado: cargando ────────────────────────────────────────────────────────
+
+/**
+ * Esqueleto con la silueta real de la página (cabecera + galería cuadrada +
+ * columna de info). Reemplaza al spinner genérico para reducir la sensación de
+ * espera y evitar el salto de layout cuando llega el producto.
+ */
+const ProductPageSkeleton = () => {
+  const bar = (className: string) => (
+    <div
+      className={`animate-pulse ${className}`}
+      style={{ backgroundColor: 'var(--bg-tertiary)' }}
+    />
+  );
+
+  return (
+    <div className="bg-silk min-h-screen" aria-hidden="true">
+      <div
+        className="mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8"
+        style={{ maxWidth: 'var(--product-max-width)' }}
+      >
+        {/* Cabecera */}
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+          {bar('h-4 w-48 rounded')}
+          {bar('h-9 w-full sm:w-44')}
+        </div>
+
+        {/* Bloque del producto */}
+        <div
+          className="flex flex-col overflow-hidden border sm:flex-row"
+          style={{
+            borderColor: 'var(--border-color)',
+            backgroundColor: 'var(--bg-secondary)',
+          }}
+        >
+          {bar('aspect-square w-full sm:w-1/2')}
+          <div className="w-full p-6 sm:w-1/2 sm:p-8 lg:p-10">
+            {bar('h-3 w-40 rounded')}
+            {bar('mt-5 h-7 w-3/4 rounded')}
+            <div className="mt-5 space-y-2">
+              {bar('h-3 w-full rounded')}
+              {bar('h-3 w-5/6 rounded')}
+              {bar('h-3 w-2/3 rounded')}
+            </div>
+            <div
+              className="mt-8 h-px w-full"
+              style={{ backgroundColor: 'var(--border-color)' }}
+            />
+            {bar('mt-5 h-8 w-1/2 rounded')}
+            {bar('mt-6 h-12 w-full')}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -154,19 +269,9 @@ const ProductNotFound = () => (
         >
           La joya que buscas no está disponible o el enlace es incorrecto.
         </p>
-        <Link
-          to="/catalogo"
-          className="mt-8 inline-block border px-6 py-3 transition-colors duration-200 hover:bg-[var(--bg-hover)]"
-          style={{
-            fontFamily: 'var(--font-ui)',
-            fontSize: 'var(--text-sm)',
-            fontWeight: 'var(--font-semibold)',
-            color: 'var(--text-accent)',
-            borderColor: 'var(--border-strong)',
-          }}
-        >
+        <OutlineButtonLink to="/catalogo" size="md" className="mt-8">
           Volver al catálogo
-        </Link>
+        </OutlineButtonLink>
       </div>
     </div>
   </>

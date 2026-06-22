@@ -64,6 +64,7 @@ import {
   CatalogCategoryBarSpacer,
 } from '@/features/catalog/components/catalog-category-bar';
 import { PublicProductCard } from '@/features/catalog/components/public-product-card';
+import { ProductCardSkeleton } from '@/features/catalog/components/product-card-skeleton';
 import { ProductDetailModal } from '@/features/catalog/components/product-detail-modal';
 import { buildProductPath } from '@/features/catalog/utils/product-slug';
 import {
@@ -1080,34 +1081,7 @@ const CatalogBreadcrumb = () => (
 const ProductSkeletonGrid = () => (
   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
     {Array.from({ length: 6 }).map((_, i) => (
-      <div
-        key={i}
-        className="animate-pulse border"
-        style={{
-          borderColor: 'var(--border-color)',
-          backgroundColor: 'var(--bg-secondary)',
-          animationDelay: `${i * 80}ms`,
-        }}
-      >
-        <div
-          className="aspect-square w-full"
-          style={{ backgroundColor: 'var(--bg-tertiary)' }}
-        />
-        <div
-          className="h-px w-full"
-          style={{ backgroundColor: 'var(--border-color)' }}
-        />
-        <div className="px-3 pb-4 pt-3 text-center">
-          <div
-            className="mx-auto h-3 w-3/4 rounded"
-            style={{ backgroundColor: 'var(--bg-tertiary)' }}
-          />
-          <div
-            className="mx-auto mt-2 h-3 w-1/2 rounded"
-            style={{ backgroundColor: 'var(--bg-tertiary)' }}
-          />
-        </div>
-      </div>
+      <ProductCardSkeleton key={i} delayMs={i * 80} />
     ))}
   </div>
 );
