@@ -60,7 +60,7 @@ import {
   DEFAULT_BANNER_SUBTITLE,
 } from '@/store/hero-banner.store';
 import { useToastStore } from '@/store/toast.store';
-import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.jpg';
+import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.webp';
 /** Imagen local estática que se muestra cuando no hay imagen del backend. */
 
 /** Formatos de imagen aceptados por el input file. */

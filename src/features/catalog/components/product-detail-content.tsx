@@ -33,7 +33,7 @@ import { SERVER_URL } from '@/api/server-url';
 import { buildWhatsAppUrl } from '@/config/contact';
 import type { Product } from '@/features/catalog/types/product.types';
 import { FavoriteButton } from '@/features/favorites';
-import FALLBACK_IMAGE from '@/assets/HERO_IMAGE.jpg';
+import FALLBACK_IMAGE from '@/assets/HERO_IMAGE.webp';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

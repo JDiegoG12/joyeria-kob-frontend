@@ -37,6 +37,9 @@ export const PRODUCT_IMAGE_WIDTHS: SrcSetWidths = { thumb: 400, full: 1000 };
 /** Variantes de imágenes de social-content (vertical 9:16). */
 export const SOCIAL_IMAGE_WIDTHS: SrcSetWidths = { thumb: 600, full: 1080 };
 
+/** Variantes del banner del hero (16:9, ancho completo del viewport). */
+export const BANNER_IMAGE_WIDTHS: SrcSetWidths = { thumb: 1280, full: 1920 };
+
 /**
  * Construye un `srcSet` (miniatura + grande) para una imagen de `/uploads`.
  * Devuelve `undefined` si la URL no es un `.webp` de nuestro backend (por
