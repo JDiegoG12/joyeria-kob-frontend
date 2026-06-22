@@ -38,6 +38,10 @@ import {
   InstagramIcon,
   TikTokIcon,
 } from '@/components/ui/social-icons';
+import {
+  buildUploadsSrcSet,
+  SOCIAL_IMAGE_WIDTHS,
+} from '@/shared/utils/image-srcset';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -157,9 +161,12 @@ const SocialReelCard = ({ reel, reducedMotion }: SocialReelCardProps) => {
           {showImage ? (
             <img
               src={reel.thumbnailUrl}
+              srcSet={buildUploadsSrcSet(reel.thumbnailUrl, SOCIAL_IMAGE_WIDTHS)}
+              sizes="(min-width: 1024px) 24vw, (min-width: 768px) 32vw, (min-width: 640px) 44vw, 72vw"
               alt={reel.title}
               className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
               loading="lazy"
+              decoding="async"
               onError={() => setImgError(true)}
             />
           ) : (

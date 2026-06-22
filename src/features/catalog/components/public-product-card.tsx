@@ -20,6 +20,10 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SERVER_URL } from '@/api/server-url';
+import {
+  buildUploadsSrcSet,
+  PRODUCT_IMAGE_WIDTHS,
+} from '@/shared/utils/image-srcset';
 import type { Product } from '@/features/catalog/types/product.types';
 
 // Import por ruta profunda (no por el barrel `@/features/favorites`) para
@@ -154,6 +158,9 @@ export const PublicProductCard = ({
   };
 
   const imageUrl = resolveImageUrl(images, activeIndex);
+  // Sirve la miniatura en la tarjeta (a sangre, ~150–250 px) vía srcset; si la
+  // imagen no es de nuestro /uploads (fallback externo) queda undefined.
+  const imageSrcSet = buildUploadsSrcSet(imageUrl, PRODUCT_IMAGE_WIDTHS);
 
   // Hay descuento visible solo si reduce el precio sin dejarlo en 0 o negativo.
   // Esto cubre el caso de que el oro baje y el descuento iguale/supere el precio.
@@ -204,6 +211,8 @@ export const PublicProductCard = ({
 
           <img
             src={imageUrl}
+            srcSet={imageSrcSet}
+            sizes="(min-width: 1024px) 250px, (min-width: 640px) 33vw, 50vw"
             alt={`${product.name}${
               hasMultipleImages
                 ? ` — imagen ${activeIndex + 1} de ${images.length}`
@@ -211,7 +220,10 @@ export const PublicProductCard = ({
             }`}
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             loading="lazy"
+            decoding="async"
             onError={(e) => {
+              // Limpia el srcset para que no reintente el candidato roto.
+              e.currentTarget.srcset = '';
               (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
             }}
           />

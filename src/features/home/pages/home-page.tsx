@@ -47,7 +47,9 @@ import { buildWhatsAppUrl } from '@/config/contact';
 import { SERVER_URL } from '@/api/server-url';
 import { usePromoBannerStore } from '@/store/promo-banner.store';
 import type { PromoBanner } from '@/features/promotions/types/promotion.types';
-import GOLD_INVESTMENT_IMAGE from '@/assets/GOLD_INVESTMENT_IMAGE.jpg';
+import GOLD_INVESTMENT_IMAGE_LG from '@/assets/gold-investment-lg.webp';
+import GOLD_INVESTMENT_IMAGE_SM from '@/assets/gold-investment-sm.webp';
+import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.webp';
 import { SocialContentSection } from '../components/social-content-section';
 
 /**
@@ -214,6 +216,13 @@ export const HomePage = () => {
           name="description"
           content="Diseñamos y fabricamos joyas de oro 18k a la medida: anillos, collares, dijes y pulseras personalizadas. Pide tu diseño único en Joyería KOB."
         />
+        {/*
+         * Precarga de la imagen por defecto del hero (candidato a LCP). Acelera
+         * el primer paint: el navegador la solicita antes de ejecutar el JS.
+         * Si el admin configuró un banner propio, el carrusel intercambia el
+         * `src` cuando llega; el peso extra es mínimo (WebP ~52 KB).
+         */}
+        <link rel="preload" as="image" href={DEFAULT_HERO_IMAGE} />
       </Helmet>
 
       {/* Hero como carrusel — slide 0 es el banner configurable desde admin */}
@@ -307,10 +316,13 @@ const GoldInvestmentSection = () => (
           style={{ backgroundColor: 'var(--bg-tertiary)' }}
         >
           <img
-            src={GOLD_INVESTMENT_IMAGE}
+            src={GOLD_INVESTMENT_IMAGE_LG}
+            srcSet={`${GOLD_INVESTMENT_IMAGE_SM} 640w, ${GOLD_INVESTMENT_IMAGE_LG} 1067w`}
+            sizes="(min-width: 1024px) 680px, 100vw"
             alt="Detalle de joya de oro con piedras sobre fondo de marca"
             className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-[1.025] motion-reduce:transition-none motion-reduce:hover:scale-100"
             loading="lazy"
+            decoding="async"
           />
         </div>
       </RevealBlock>

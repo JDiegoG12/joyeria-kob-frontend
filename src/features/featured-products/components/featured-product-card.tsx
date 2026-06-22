@@ -45,6 +45,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Images } from 'lucide-react';
 import { SERVER_URL } from '@/api/server-url';
+import {
+  buildUploadsSrcSet,
+  PRODUCT_IMAGE_WIDTHS,
+} from '@/shared/utils/image-srcset';
 import { buildProductPath } from '@/features/catalog/utils/product-slug';
 import type { Product } from '@/features/catalog/types/product.types';
 
@@ -116,6 +120,11 @@ export const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
   const imageCount = images.length;
   const hasMultipleImages = imageCount > 1;
   const primaryImageUrl = resolvePrimaryImage(images);
+  // Miniatura vía srcset (tarjeta ~150–220 px); undefined si es fallback externo.
+  const primaryImageSrcSet = buildUploadsSrcSet(
+    primaryImageUrl,
+    PRODUCT_IMAGE_WIDTHS,
+  );
 
   /**
    * Hay descuento visible solo si reduce el precio sin dejarlo en 0 o negativo.
@@ -190,10 +199,14 @@ export const FeaturedProductCard = ({ product }: FeaturedProductCardProps) => {
       >
         <img
           src={primaryImageUrl}
+          srcSet={primaryImageSrcSet}
+          sizes="(min-width: 1024px) 220px, (min-width: 640px) 30vw, 45vw"
           alt={product.name}
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           loading="lazy"
+          decoding="async"
           onError={(event) => {
+            event.currentTarget.srcset = '';
             (event.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
           }}
         />
