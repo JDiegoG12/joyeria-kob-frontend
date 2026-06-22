@@ -25,7 +25,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
-import { ChevronRight, ChevronLeft, ZoomIn, X } from 'lucide-react';
+import {
+  ChevronRight,
+  ChevronLeft,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  X,
+} from 'lucide-react';
+import {
+  TransformWrapper,
+  TransformComponent,
+  useControls,
+} from 'react-zoom-pan-pinch';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
 import { SERVER_URL } from '@/api/server-url';
 import { buildWhatsAppUrl } from '@/config/contact';
@@ -97,6 +109,53 @@ const imageSlideVariants: Variants = {
     opacity: 0,
     transition: { duration: 0.2 },
   }),
+};
+
+// ─── Controles del lightbox ───────────────────────────────────────────────────
+
+/**
+ * Barra de controles (acercar / restablecer / alejar) del visor con zoom. Vive
+ * DENTRO de `<TransformWrapper>` para poder consumir `useControls()`, que es la
+ * API imperativa de `react-zoom-pan-pinch`. `stopPropagation` evita que un clic
+ * en los botones se propague al overlay y cierre el lightbox.
+ */
+const LightboxControls = () => {
+  const { zoomIn, zoomOut, resetTransform } = useControls();
+
+  const btn =
+    'flex h-10 w-10 cursor-pointer items-center justify-center border border-white/20 text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white';
+
+  return (
+    <div
+      className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className={btn}
+        onClick={() => zoomOut()}
+        aria-label="Alejar"
+      >
+        <ZoomOut size={18} />
+      </button>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => resetTransform()}
+        aria-label="Restablecer zoom"
+      >
+        <RotateCcw size={16} />
+      </button>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => zoomIn()}
+        aria-label="Acercar"
+      >
+        <ZoomIn size={18} />
+      </button>
+    </div>
+  );
 };
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -530,7 +589,13 @@ export const ProductDetailContent = ({
       </div>
 
       {/* ── Lightbox de Zoom — portaleado al body para escapar de cualquier
-          contenedor con transform (panel del modal) u overflow. ── */}
+          contenedor con transform (panel del modal) u overflow.
+
+          El visor usa `react-zoom-pan-pinch`: rueda del mouse para acercar/
+          alejar, doble-clic para alternar zoom, pinch en móvil y arrastre
+          (pan) cuando la imagen está ampliada. El `key={activeIndex}` remonta
+          el wrapper al cambiar de imagen, de modo que el zoom se restablece
+          automáticamente al navegar entre fotos. ── */}
       {createPortal(
         <AnimatePresence>
           {lightboxOpen && (
@@ -539,25 +604,52 @@ export const ProductDetailContent = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[10000] flex cursor-zoom-out items-center justify-center bg-black/95"
-              onClick={() => setLightboxOpen(false)}
+              className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/95"
+              onClick={(e) => {
+                // Cerrar solo al clicar el FONDO (el propio overlay). El visor de
+                // zoom (`react-transform-wrapper`, dimensionado al tamaño de la
+                // imagen) es un hijo, así que un clic sobre él tiene un `target`
+                // distinto del overlay y NO cierra: eso deja libre el doble-clic
+                // para hacer zoom. Nota: la librería pone `pointer-events:none`
+                // en el <img>, por eso no se puede detectar el clic por el <img>.
+                if (e.target === e.currentTarget) {
+                  setLightboxOpen(false);
+                }
+              }}
             >
               <button
                 type="button"
-                className="absolute right-5 top-5 z-10 flex h-10 w-10 cursor-pointer items-center justify-center border border-white/20 text-white hover:bg-white/10"
+                onClick={() => setLightboxOpen(false)}
+                className="absolute right-5 top-5 z-20 flex h-10 w-10 cursor-pointer items-center justify-center border border-white/20 text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 aria-label="Cerrar zoom"
               >
                 <X size={18} />
               </button>
-              <motion.img
-                initial={{ scale: 0.92, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                src={activeImageUrl}
-                alt="Zoom"
-                className="max-h-[90vh] max-w-[90vw] object-contain"
-                onClick={(e) => e.stopPropagation()}
-              />
+
+              <TransformWrapper
+                key={activeIndex}
+                initialScale={1}
+                minScale={1}
+                maxScale={5}
+                centerOnInit
+                smooth={false}
+                wheel={{ step: 0.2 }}
+                doubleClick={{ mode: 'toggle', step: 1.8 }}
+                panning={{ velocityDisabled: true }}
+              >
+                <LightboxControls />
+                <TransformComponent>
+                  <img
+                    src={activeImageUrl}
+                    alt="Zoom"
+                    draggable={false}
+                    className="max-h-[92vh] max-w-[92vw] cursor-grab object-contain select-none active:cursor-grabbing"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
+                    }}
+                  />
+                </TransformComponent>
+              </TransformWrapper>
             </motion.div>
           )}
         </AnimatePresence>,
