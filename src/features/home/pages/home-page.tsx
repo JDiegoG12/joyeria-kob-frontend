@@ -50,6 +50,8 @@ import type { PromoBanner } from '@/features/promotions/types/promotion.types';
 import GOLD_INVESTMENT_IMAGE_LG from '@/assets/gold-investment-lg.webp';
 import GOLD_INVESTMENT_IMAGE_SM from '@/assets/gold-investment-sm.webp';
 import { SocialContentSection } from '../components/social-content-section';
+import { LocationSection } from '../components/location-section';
+import { buildLocalBusinessJsonLd } from '@/config/structured-data';
 
 /**
  * Construye la URL de destino de un banner de promoción según su tipo de enlace.
@@ -57,6 +59,9 @@ import { SocialContentSection } from '../components/social-content-section';
  * - CATEGORY → deep-link al catálogo filtrado por categoría (`?categoria=`).
  * - NONE     → sin enlace (banner informativo).
  */
+/** JSON-LD del negocio local. Constante: no depende de props ni estado. */
+const LOCAL_BUSINESS_JSON_LD = JSON.stringify(buildLocalBusinessJsonLd());
+
 const buildPromoLinkTo = (banner: PromoBanner): string | undefined => {
   if (banner.linkType === 'PRODUCT' && banner.linkProductId) {
     return `/catalogo?product=${banner.linkProductId}`;
@@ -225,6 +230,14 @@ export const HomePage = () => {
          */}
         {SERVER_URL && <link rel="preconnect" href={SERVER_URL} />}
         {SERVER_URL && <link rel="dns-prefetch" href={SERVER_URL} />}
+
+        {/*
+         * JSON-LD del negocio local (JewelryStore): dirección, geo, teléfono y
+         * horarios. Pieza SEO clave para búsquedas locales y Google Maps; se
+         * declara aquí porque la sección "Visítanos" vive en la home.
+         * PENDIENTE: espejar en el backend (json-ld.ts) para el HTML de bots.
+         */}
+        <script type="application/ld+json">{LOCAL_BUSINESS_JSON_LD}</script>
       </Helmet>
 
       {/* Hero como carrusel — slide 0 es el banner configurable desde admin */}
@@ -253,6 +266,13 @@ export const HomePage = () => {
       <SocialContentSection />
 
       <TestimonialsSection />
+
+      {/*
+       * Cierre de la home: ubicación física, horarios y contacto. Fondo
+       * `bg-grain` (alterna con el `bg-silk` de Testimonios) y `id="ubicacion"`
+       * por si se enlaza con scroll suave desde la navegación.
+       */}
+      <LocationSection />
     </div>
   );
 };

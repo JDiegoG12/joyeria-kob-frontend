@@ -460,7 +460,7 @@ const MainBannerSlide = ({
                 // - Desktop: 1.375rem (22px)
                 fontSize: 'clamp(1rem, 2vw, 1.375rem)',
                 lineHeight: 'var(--leading-relaxed)',
-                color: 'var(--announcement-text)',
+                color: 'var(--accent-text)',
               }}
             >
               {bannerSubtitle}
@@ -522,8 +522,8 @@ const MainBannerSlide = ({
             rel="noopener noreferrer"
             className="inline-flex cursor-pointer items-center justify-center gap-2 border px-5 py-2.5 transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
             style={{
-              borderColor: 'var(--announcement-text)',
-              color: 'var(--announcement-text)',
+              borderColor: 'var(--accent-text)',
+              color: 'var(--accent-text)',
               fontFamily: 'var(--font-ui)',
               fontSize: 'var(--text-sm)',
               fontWeight: 'var(--font-bold)',
@@ -604,7 +604,7 @@ const PromoSlideItem = ({
                   fontFamily: 'var(--font-body)',
                   fontSize: 'clamp(1rem, 2vw, 1.25rem)',
                   lineHeight: 'var(--leading-relaxed)',
-                  color: 'var(--announcement-text)',
+                  color: 'var(--accent-text)',
                 }}
               >
                 {slide.overlaySubtitle}

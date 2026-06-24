@@ -84,6 +84,10 @@
     --border-color: #dcdcdc;
     --border-strong: #c4c4c4;
     --border-accent: #131638;
+    /* Borde de las tarjetas destacadas (home). Hairline dorado que hace eco del
+       velo de oro del fondo .bg-silk en claro, distinguiéndolas del borde navy
+       del catálogo. En oscuro pasa al azul vivo (ver bloque .dark). */
+    --border-featured: #bea64b;
 
     /* Acento interactivo — centrado en el azul marino del cliente */
     --accent: #131638;
@@ -187,6 +191,17 @@
     --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
     /* Sombra de acento — usa el azul marino de la paleta del cliente */
     --shadow-accent: 0 4px 16px rgba(19, 22, 56, 0.18);
+    /* Sombra de las tarjetas destacadas (home). Capa 1 negra sutil = profundidad
+       real; capa 2 dorada difusa = eco del velo de oro del fondo .bg-silk en
+       claro. En oscuro la capa de color pasa al azul de marca (ver bloque .dark). */
+    --shadow-featured:
+      0 4px 10px rgba(0, 0, 0, 0.08),
+      0 12px 28px color-mix(in srgb, var(--warm-gold) 38%, transparent);
+    /* Versión diluida para el REPOSO (incl. móvil, donde no hay hover): el halo
+       dorado se ve siempre, y en desktop el hover sube a `--shadow-featured`. */
+    --shadow-featured-rest:
+      0 2px 6px rgba(0, 0, 0, 0.06),
+      0 6px 16px color-mix(in srgb, var(--warm-gold) 26%, transparent);
 
     /* Bordes redondeados */
     --radius-xs: 2px;
@@ -248,6 +263,9 @@
     --border-color: #2c2c2c;
     --border-strong: #3a3a3a;
     --border-accent: #e8e8e8;
+    /* Borde de tarjetas destacadas: azul vivo de marca, eco de los halos azules
+       del fondo .bg-silk en oscuro (en claro es el oro #bea64b). */
+    --border-featured: #4a50c4;
 
     /* Acento interactivo
            --accent como fondo: #131638 + texto blanco encima = ratio 12.6:1 ✓
@@ -281,6 +299,15 @@
     --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
     /* Sombra de acento — usa el azul marino de la marca */
     --shadow-accent: 0 4px 16px rgba(19, 22, 56, 0.5);
+    /* Sombra de tarjetas destacadas en oscuro: capa negra de profundidad + capa
+       azul difusa que hace eco de los halos azules del fondo .bg-silk. */
+    --shadow-featured:
+      0 4px 12px rgba(0, 0, 0, 0.35),
+      0 14px 32px color-mix(in srgb, var(--accent-vivid) 45%, transparent);
+    /* Reposo (incl. móvil): halo azul siempre visible; el hover sube al fuerte. */
+    --shadow-featured-rest:
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      0 8px 20px color-mix(in srgb, var(--accent-vivid) 35%, transparent);
 
     /* Logo — recorte sincronizado con bg-primary */
     --logo-body: #f3f3f3;

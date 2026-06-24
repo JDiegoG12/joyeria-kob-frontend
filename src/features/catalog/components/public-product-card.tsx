@@ -6,7 +6,7 @@
  * - Borde exterior en toda la card
  * - Imagen a sangre — ocupa todo el ancho de la card, sin marco interno
  * - Flechas de navegación izquierda/derecha sobre la imagen (solo si hay más de 1 imagen)
- * - Nombre y precio centrados debajo de la imagen
+ * - Nombre, peso y precio centrados debajo de la imagen
  * - Color azul de marca (--text-accent) para nombre y precio
  * - Click en la tarjeta abre el modal de detalle
  *
@@ -45,6 +45,20 @@ const FALLBACK_IMAGE =
  */
 const formatPrice = (price: number): string =>
   `$${price.toLocaleString('es-CO')}`;
+
+/**
+ * Formatea el peso del producto con una decimal y la unidad `g`.
+ * Si el peso es entero (sin parte decimal), se omite el `.0` redundante.
+ * Misma presentación que la tarjeta de productos destacados.
+ *
+ * @param weight - Peso en gramos.
+ * @returns Cadena formateada, ej. `5.2 g` o `8 g`.
+ */
+const formatWeight = (weight: number): string => {
+  const rounded = Math.round(weight * 10) / 10;
+  const text = Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
+  return `${text} g`;
+};
 
 /**
  * Resuelve la URL de una imagen de producto por índice.
@@ -325,6 +339,23 @@ export const PublicProductCard = ({
             product.name
           )}
         </h3>
+
+        {/*
+         * Peso de la joya — línea de altura constante (nunca envuelve), igual
+         * que en la tarjeta de destacados. Al sumar la misma altura a todas las
+         * tarjetas no rompe la uniformidad que garantizan `min-height: 2lh` en
+         * el nombre y el estiramiento de la grilla.
+         */}
+        <p
+          className="mt-1"
+          style={{
+            fontFamily: 'var(--font-ui)',
+            fontSize: 'var(--text-xs)',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          {formatWeight(product.baseWeight)}
+        </p>
 
         {hasDiscount ? (
           <div className="mt-1 flex items-baseline justify-center gap-2">
