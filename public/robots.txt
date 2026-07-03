@@ -8,4 +8,4 @@ Disallow: /restablecer-contrasena
 Disallow: /perfil
 Disallow: /favoritos
 
-Sitemap: https://api.joyeriakob.com/sitemap.xml
+Sitemap: https://www.joyeriakob.com/sitemap.xml
