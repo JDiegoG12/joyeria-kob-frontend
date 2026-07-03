@@ -6,6 +6,28 @@
   RewriteEngine On
   RewriteBase /
 
+  # ─── Canonicalización de host + protocolo (301) ─────
+  # Unifica todas las variantes de dominio hacia el canónico único:
+  #   http://joyeriakob.com/x, https://joyeriakob.com/x, http://www...   →
+  #   https://www.joyeriakob.com/x   (un ÚNICO salto 301)
+  #
+  # Por qué va aquí y no después: debe ejecutarse ANTES del dynamic rendering
+  # [R=302] y del fallback SPA, para que Google nunca vea una cadena
+  # 302→301 ni indexe duplicados no-www / http. Sin esta regla, joyeriakob.com
+  # y www.joyeriakob.com servían contenido idéntico (200), y GSC los reportaba
+  # como "Página alternativa con etiqueta canónica adecuada".
+  #
+  # La condición combina host y protocolo con [OR]: se dispara si el host NO es
+  # exactamente www.joyeriakob.com O si la conexión NO es HTTPS. En ambos casos
+  # el destino es el mismo (https://www...), así que se resuelve en UN solo 301.
+  #
+  # %{REQUEST_URI} preserva la ruta; mod_rewrite reañade el query string
+  # original automáticamente (el destino no lleva '?'), así que /x?y=z se
+  # conserva íntegro. [NE] evita que se re-escapen caracteres ya codificados.
+  RewriteCond %{HTTP_HOST} !^www\.joyeriakob\.com$ [NC,OR]
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^ https://www.joyeriakob.com%{REQUEST_URI} [R=301,L,NE]
+
   # ─── Dynamic rendering para bots (SEO) — ANTES del fallback SPA ────────
   # Si un crawler (Googlebot, Bingbot, redes sociales, etc.) pide una página
   # pública, se redirige (302) al backend, que devuelve HTML pre-renderizado
