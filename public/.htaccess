@@ -93,6 +93,37 @@
   </FilesMatch>
 </IfModule>
 
+# ─── Cabeceras de seguridad ────────────────────────────────────────────
+# Cabeceras HTTP que endurecen el navegador frente a clickjacking, sniffing de
+# MIME, fugas de referrer y downgrade a HTTP. Se aplican a todas las respuestas.
+<IfModule mod_headers.c>
+  # HSTS: fuerza HTTPS durante 1 año (incluye subdominios). La canonicalización
+  # a https://www ya ocurre arriba; esto evita el primer request en claro en
+  # visitas posteriores. Requiere que el sitio sirva siempre por HTTPS.
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+  # Impide que el sitio se cargue dentro de un <iframe> (clickjacking).
+  Header always set X-Frame-Options "DENY"
+
+  # El navegador no "adivina" el tipo MIME; respeta el Content-Type declarado.
+  Header always set X-Content-Type-Options "nosniff"
+
+  # No filtrar la ruta completa como referrer a otros orígenes.
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Desactiva APIs sensibles del navegador que la tienda no usa.
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+  # Content-Security-Policy en modo SOLO-REPORTE. No bloquea nada todavía: el
+  # navegador solo registra en consola lo que una CSP estricta rechazaría. Sirve
+  # para verificar, con la app real en producción, que los orígenes de Google
+  # (login/GA), la API y las imágenes están todos contemplados ANTES de activar
+  # el bloqueo. Cuando la consola no reporte violaciones legítimas, renombra la
+  # cabecera a `Content-Security-Policy` (sin `-Report-Only`) para que entre en
+  # vigor. Ajusta los dominios de `connect-src`/`img-src` al de tu API.
+  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' https://accounts.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.joyeriakob.com https://www.google-analytics.com; font-src 'self' data:; connect-src 'self' https://api.joyeriakob.com https://accounts.google.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+</IfModule>
+
 # ─── Compresión gzip ───────────────────────────────────────────────────
 # Reduce el tamaño de transferencia de JS/CSS/HTML ~70%. Hostinger soporta
 # mod_deflate por defecto.
