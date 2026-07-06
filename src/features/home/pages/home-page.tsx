@@ -109,7 +109,7 @@ const SERVICES = [
     icon: MessageSquareText,
     title: 'Asesoría',
     description:
-      'Te acompañamos durante todo el proceso para que escojas la joya perfeta.',
+      'Te acompañamos durante todo el proceso para que escojas la joya perfecta.',
     message:
       'Hola, me gustaría recibir Asesoría para elegir una joya. ¿Podrían orientarme?',
   },

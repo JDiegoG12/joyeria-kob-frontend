@@ -4,22 +4,18 @@
  * Inicializa el sistema de temas llamando a `useTheme()`, que sincroniza
  * el estado de Zustand con la clase `dark` del elemento `<html>`.
  * Monta el router y el sistema de notificaciones toast global.
+ *
+ * El `GoogleOAuthProvider` NO se monta aquí: vive dentro de `GoogleLoginButton`
+ * (solo en login/registro), para que el script `gsi/client` de Google y sus
+ * fuentes no se carguen en home/catálogo/producto y no alarguen la carga.
  */
 
 import { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useTheme } from '@/hooks/use-theme';
 import { router } from '@/router';
 import { initGA } from '@/analytics/google-analytics';
 import { ToastContainer } from '@/components/ui/toast/toast-container';
-
-/**
- * Client ID de Google (OAuth 2.0). Si no está configurado, el distribuidor se
- * monta igualmente pero los botones de Google no funcionarán: se controla
- * dentro de `GoogleLoginButton`.
- */
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
 
 /**
  * Punto de entrada visual de la aplicación.
@@ -38,10 +34,10 @@ const App = () => {
   }, []);
 
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <>
       <ToastContainer />
       <RouterProvider router={router} />
-    </GoogleOAuthProvider>
+    </>
   );
 };
 

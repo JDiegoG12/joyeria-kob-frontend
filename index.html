@@ -15,9 +15,125 @@
   <link rel="icon" href="./src/assets/LogoKOB.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Joyería KOB</title>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       Tema correcto ANTES del primer pintado (anti-FOUC de tema).
+       Resuelve el tema igual que el store (theme.store.ts): la preferencia
+       guardada en localStorage manda; si no hay ninguna (p. ej. incógnito),
+       sigue el tema del sistema (prefers-color-scheme). Debe ser IDÉNTICO al
+       store para que el overlay y el app pinten en el mismo tema (sin flash).
+       `kob-preload` congela las transiciones durante la carga inicial.
+       ══════════════════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      var theme = 'light';
+      try {
+        var raw = localStorage.getItem('kob-theme');
+        if (raw) {
+          theme = JSON.parse(raw).state.theme;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+      } catch (e) {}
+      if (theme === 'dark') document.documentElement.classList.add('dark');
+      document.documentElement.classList.add('kob-preload');
+    })();
+  </script>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       Pantalla de carga (overlay). CSS 100% inline → se pinta en el primer
+       frame, antes que cualquier asset. Tapa TODO el viewport hasta que React
+       monta, para que nunca se vea el contenido pre-renderizado sin estilos.
+       El pre-render hereda este bloque (composePage preserva el <head>/<body>
+       fuera de #root), así que aparece en TODAS las rutas. Sin dependencia de
+       hashes de Vite.
+       ══════════════════════════════════════════════════════════════════════ -->
+  <style>
+    /* Sin transiciones durante la carga, EXCEPTO el propio overlay (para que su
+       fade sí anime aunque las demás transiciones estén congeladas). */
+    html.kob-preload *:not(#kob-loader) { transition: none !important; }
+
+    #kob-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483647;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2.25rem;
+      background: #f3f3f3;            /* --bg-primary (light) */
+      transition: opacity 0.4s ease;
+    }
+    html.dark #kob-loader { background: #1a1a1a; }  /* --bg base (dark) */
+    #kob-loader.kob-loader--hidden { opacity: 0; pointer-events: none; }
+
+    /* El logo es un lockup blanco sobre teja: lo presentamos como un MEDALLÓN
+       (esquinas redondeadas, sombra suave y filete dorado) para que la teja se
+       lea como pieza de marca intencional en cualquier tema, no como una caja. */
+    #kob-loader .kob-loader__mark {
+      width: 104px;
+      height: 104px;
+      border-radius: 24px;
+      overflow: hidden;
+      /* elevación navy + filete oro (ambas sombras siguen el border-radius) */
+      box-shadow:
+        0 22px 55px -20px rgba(19, 22, 56, 0.55),
+        0 0 0 1px rgba(190, 166, 75, 0.4);
+      user-select: none;
+    }
+    #kob-loader .kob-loader__mark svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      -webkit-user-drag: none;
+    }
+
+    #kob-loader .kob-loader__spinner {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid rgba(190, 166, 75, 0.22);  /* --warm-gold @22% (pista) */
+      border-top-color: #bea64b;                    /* --warm-gold (indicador) */
+      animation: kob-spin 1.05s linear infinite;
+    }
+    @keyframes kob-spin { to { transform: rotate(360deg); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      #kob-loader { transition: none; }
+      #kob-loader .kob-loader__spinner { animation: none; }
+    }
+  </style>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       Cierre del overlay. Se define en el <head> (no en el bundle) para que
+       exista aunque el JS de la app falle o la red caiga. main.tsx lo llama
+       cuando React montó; la RED DE SEGURIDAD de 8 s garantiza que nadie
+       quede atrapado en la pantalla de carga pase lo que pase.
+       ══════════════════════════════════════════════════════════════════════ -->
+  <script>
+    window.__kobHideLoader = function () {
+      document.documentElement.classList.remove('kob-preload');
+      var el = document.getElementById('kob-loader');
+      if (!el || el.classList.contains('kob-loader--hidden')) return;
+      el.classList.add('kob-loader--hidden');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 450);
+    };
+    setTimeout(function () { window.__kobHideLoader(); }, 8000);
+  </script>
 </head>
 
 <body>
+  <!-- Overlay: hermano de #root. createRoot() solo reemplaza #root, así que
+       este nodo persiste hasta que lo retiramos por JS. aria-hidden → los
+       lectores de pantalla leen el contenido real de #root, no el spinner. -->
+  <div id="kob-loader" aria-hidden="true">
+    <div class="kob-loader__mark">
+    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="500" zoomAndPan="magnify" viewBox="0 0 375 374.999991" height="500" preserveAspectRatio="xMidYMid meet" version="1.0"><defs><g/><clipPath id="d569b9b0ab"><rect x="0" width="131" y="0" height="293"/></clipPath><clipPath id="89cb0010d9"><rect x="0" width="210" y="0" height="293"/></clipPath><clipPath id="87db7e67c7"><path d="M 114.714844 134.863281 L 255.714844 134.863281 L 255.714844 239.863281 L 114.714844 239.863281 Z M 114.714844 134.863281 " clip-rule="nonzero"/></clipPath><clipPath id="a7a8996d19"><path d="M 1 0.398438 L 151.800781 0.398438 L 151.800781 28 L 1 28 Z M 1 0.398438 " clip-rule="nonzero"/></clipPath><clipPath id="12904082fa"><rect x="0" width="152" y="0" height="28"/></clipPath></defs><rect x="-37.5" width="450" fill="#ffffff" y="-37.499999" height="449.999989" fill-opacity="1"/><rect x="-37.5" width="450" fill="#000000" y="-37.499999" height="449.999989" fill-opacity="1"/><g transform="matrix(1, 0, 0, 1, 229, 41)"><g clip-path="url(#d569b9b0ab)"><g fill="#ffffff" fill-opacity="1"><g transform="translate(1.316991, 211.622668)"><g><path d="M 85.3125 -93.9375 C 82.726562 -91.207031 79.785156 -89.195312 76.484375 -87.90625 C 90.554688 -85.882812 101.253906 -80.890625 108.578125 -72.921875 C 115.910156 -64.953125 119.578125 -55.222656 119.578125 -43.734375 C 119.578125 -29.804688 113.972656 -18.53125 102.765625 -9.90625 C 91.566406 -1.289062 76.84375 3.015625 58.59375 3.015625 C 40.351562 3.015625 26.0625 -1.46875 15.71875 -10.4375 C 5.382812 -19.414062 0.21875 -32.09375 0.21875 -48.46875 C 0.21875 -49.332031 0.21875 -50.195312 0.21875 -51.0625 L 2.59375 -51.484375 C 5.457031 -30.085938 14.359375 -16.226562 29.296875 -9.90625 L 29.296875 -135.296875 C 29.015625 -139.171875 27.546875 -142.363281 24.890625 -144.875 C 22.234375 -147.394531 19.035156 -148.65625 15.296875 -148.65625 L 12.71875 -148.65625 L 12.71875 -150.8125 L 48.90625 -150.8125 C 62.40625 -150.8125 73.210938 -147.722656 81.328125 -141.546875 C 89.441406 -135.367188 93.5 -127.285156 93.5 -117.296875 C 93.5 -107.316406 90.769531 -99.53125 85.3125 -93.9375 Z M 43.3125 -143.90625 L 43.3125 -6.03125 C 48.050781 -5.3125 53.503906 -4.953125 59.671875 -4.953125 C 73.460938 -4.953125 84.195312 -8.648438 91.875 -16.046875 C 99.5625 -23.441406 103.40625 -33.03125 103.40625 -44.8125 C 103.40625 -51.132812 102.21875 -56.734375 99.84375 -61.609375 C 97.476562 -66.492188 94.503906 -70.300781 90.921875 -73.03125 C 81.441406 -80.351562 68.082031 -84.015625 50.84375 -84.015625 C 50.695312 -84.015625 50.625 -84.015625 50.625 -84.015625 L 50.421875 -85.953125 C 50.554688 -85.953125 50.625 -85.953125 50.625 -85.953125 C 57.957031 -85.953125 64.242188 -88.359375 69.484375 -93.171875 C 74.722656 -97.984375 77.34375 -105.414062 77.34375 -115.46875 C 77.34375 -134.425781 66.929688 -143.90625 46.109375 -143.90625 Z M 43.3125 -143.90625 "/></g></g></g></g></g><g transform="matrix(1, 0, 0, 1, 23, 41)"><g clip-path="url(#89cb0010d9)"><g fill="#ffffff" fill-opacity="1"><g transform="translate(1.328406, 211.622668)"><g><path d="M 57.3125 -2.15625 L 60.109375 -2.15625 L 60.109375 0 L 12.921875 0 L 12.921875 -2.15625 L 15.734375 -2.15625 C 19.460938 -2.15625 22.65625 -3.484375 25.3125 -6.140625 C 27.96875 -8.796875 29.367188 -11.992188 29.515625 -15.734375 L 29.515625 -135.296875 C 29.367188 -139.023438 27.96875 -142.179688 25.3125 -144.765625 C 22.65625 -147.359375 19.460938 -148.65625 15.734375 -148.65625 L 12.921875 -148.65625 L 12.921875 -150.8125 L 60.109375 -150.8125 L 60.109375 -148.65625 L 57.3125 -148.65625 C 53.570312 -148.65625 50.375 -147.359375 47.71875 -144.765625 C 45.0625 -142.179688 43.660156 -139.023438 43.515625 -135.296875 L 43.515625 -15.734375 C 43.515625 -11.992188 44.878906 -8.796875 47.609375 -6.140625 C 50.335938 -3.484375 53.570312 -2.15625 57.3125 -2.15625 Z M 206.609375 32.3125 L 206.609375 34.46875 C 201.148438 35.757812 195.691406 36.40625 190.234375 36.40625 C 166.679688 36.40625 143.84375 24.628906 121.71875 1.078125 L 50.40625 -74.96875 L 101.25 -138.734375 C 102.40625 -140.171875 102.984375 -141.460938 102.984375 -142.609375 C 102.984375 -143.765625 102.765625 -144.773438 102.328125 -145.640625 C 101.179688 -147.796875 99.097656 -148.875 96.078125 -148.875 L 93.9375 -148.875 L 93.9375 -150.8125 L 139.390625 -150.8125 L 139.390625 -148.875 L 138.53125 -148.875 C 129.050781 -148.875 121.296875 -145.492188 115.265625 -138.734375 L 65.0625 -80.78125 L 138.3125 -2.578125 C 147.789062 7.609375 158.453125 15.96875 170.296875 22.5 C 182.148438 29.039062 194.253906 32.3125 206.609375 32.3125 Z M 206.609375 32.3125 "/></g></g></g></g></g><g clip-path="url(#87db7e67c7)"><path fill="#ffffff" d="M 213.644531 171.984375 L 247.898438 171.984375 L 191.054688 228.554688 Z M 185.347656 231.542969 L 161.453125 171.984375 L 209.117188 171.984375 Z M 122.796875 171.984375 L 156.96875 171.984375 L 179.644531 228.511719 Z M 165.683594 141.917969 L 156.863281 167.8125 L 124.921875 167.8125 Z M 152.210938 139.054688 L 162.378906 139.054688 L 133.449219 157.433594 Z M 181.875 149.097656 L 162.589844 163.980469 L 170.609375 140.402344 Z M 194.863281 139.054688 L 185.285156 146.445312 L 175.707031 139.054688 Z M 206.085938 167.8125 L 164.503906 167.8125 L 185.304688 151.75 Z M 208.003906 163.980469 L 188.714844 149.097656 L 199.960938 140.402344 Z M 245.773438 167.8125 L 213.730469 167.8125 L 204.90625 141.917969 Z M 218.488281 139.054688 L 237.308594 157.496094 L 208.214844 139.054688 Z M 220.191406 134.863281 L 150.503906 134.863281 L 114.734375 169.878906 L 185.347656 240.132812 L 255.964844 169.878906 L 220.191406 134.863281 " fill-opacity="1" fill-rule="nonzero"/></g><g transform="matrix(1, 0, 0, 1, 105, 158)"><g clip-path="url(#12904082fa)"><g clip-path="url(#a7a8996d19)"><path fill="#000000" d="M 8.53125 0.691406 L 144.820312 0.691406 C 146.601562 0.691406 148.3125 1.398438 149.570312 2.65625 C 150.832031 3.917969 151.539062 5.625 151.539062 7.40625 L 151.539062 20.84375 C 151.539062 22.625 150.832031 24.335938 149.570312 25.59375 C 148.3125 26.855469 146.601562 27.5625 144.820312 27.5625 L 8.53125 27.5625 C 4.820312 27.5625 1.8125 24.554688 1.8125 20.84375 L 1.8125 7.40625 C 1.8125 3.699219 4.820312 0.691406 8.53125 0.691406 Z M 8.53125 0.691406 " fill-opacity="1" fill-rule="nonzero"/></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(13.296999, 19.213859)"><g><path d="M 3.265625 0.15625 C 2.335938 0.15625 1.546875 -0.0546875 0.890625 -0.484375 C 0.234375 -0.921875 -0.210938 -1.554688 -0.453125 -2.390625 L 1.71875 -3.359375 C 1.875 -2.960938 2.070312 -2.664062 2.3125 -2.46875 C 2.550781 -2.28125 2.859375 -2.1875 3.234375 -2.1875 C 3.609375 -2.1875 3.898438 -2.304688 4.109375 -2.546875 C 4.328125 -2.785156 4.4375 -3.148438 4.4375 -3.640625 L 4.4375 -11.578125 L 7.109375 -11.578125 L 7.109375 -3.921875 C 7.109375 -2.628906 6.769531 -1.625 6.09375 -0.90625 C 5.425781 -0.195312 4.484375 0.15625 3.265625 0.15625 Z M 3.265625 0.15625 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(31.390011, 19.213859)"><g><path d="M 6.421875 0.15625 C 5.203125 0.164062 4.15625 -0.0507812 3.28125 -0.5 C 2.414062 -0.957031 1.75 -1.613281 1.28125 -2.46875 C 0.820312 -3.332031 0.59375 -4.367188 0.59375 -5.578125 C 0.59375 -6.773438 0.835938 -7.835938 1.328125 -8.765625 C 1.816406 -9.703125 2.515625 -10.429688 3.421875 -10.953125 C 4.328125 -11.472656 5.398438 -11.734375 6.640625 -11.734375 C 7.734375 -11.734375 8.691406 -11.492188 9.515625 -11.015625 C 10.335938 -10.535156 10.976562 -9.867188 11.4375 -9.015625 C 11.90625 -8.160156 12.140625 -7.160156 12.140625 -6.015625 C 12.140625 -4.773438 11.894531 -3.691406 11.40625 -2.765625 C 10.914062 -1.847656 10.238281 -1.132812 9.375 -0.625 C 8.507812 -0.113281 7.523438 0.144531 6.421875 0.15625 Z M 6.328125 -2.203125 C 7.242188 -2.203125 7.988281 -2.535156 8.5625 -3.203125 C 9.144531 -3.867188 9.4375 -4.796875 9.4375 -5.984375 C 9.4375 -7.015625 9.175781 -7.835938 8.65625 -8.453125 C 8.132812 -9.066406 7.429688 -9.375 6.546875 -9.375 C 5.910156 -9.375 5.347656 -9.210938 4.859375 -8.890625 C 4.367188 -8.578125 3.984375 -8.140625 3.703125 -7.578125 C 3.429688 -7.023438 3.296875 -6.375 3.296875 -5.625 C 3.296875 -4.539062 3.5625 -3.695312 4.09375 -3.09375 C 4.632812 -2.5 5.378906 -2.203125 6.328125 -2.203125 Z M 6.328125 -2.203125 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(54.046048, 19.213859)"><g><path d="M 10.3125 -11.578125 L 6.34375 -5.171875 L 6.34375 0 L 3.671875 0 L 3.671875 -5.0625 L -0.4375 -11.578125 L 2.546875 -11.578125 L 5.09375 -7.484375 L 7.53125 -11.578125 Z M 10.3125 -11.578125 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(73.931684, 19.213859)"><g><path d="M 9.015625 -9.265625 L 3.703125 -9.265625 L 3.703125 -6.96875 L 8.671875 -6.96875 L 8.671875 -4.671875 L 3.703125 -4.671875 L 3.703125 -2.296875 L 9.171875 -2.296875 L 9.015625 0 L 1.09375 0 L 1.09375 -11.578125 L 9.015625 -11.578125 Z M 9.015625 -9.265625 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(93.295832, 19.213859)"><g><path d="M 10.734375 -2.5 L 11.359375 -0.4375 C 11.117188 -0.25 10.8125 -0.101562 10.4375 0 C 10.0625 0.101562 9.679688 0.15625 9.296875 0.15625 C 8.585938 0.15625 7.96875 0.015625 7.4375 -0.265625 C 6.90625 -0.554688 6.460938 -0.976562 6.109375 -1.53125 L 4.71875 -3.75 C 4.5625 -4.007812 4.40625 -4.191406 4.25 -4.296875 C 4.09375 -4.398438 3.910156 -4.457031 3.703125 -4.46875 L 3.703125 0 L 1.09375 0 L 1.09375 -11.578125 L 4.890625 -11.578125 C 6.484375 -11.578125 7.679688 -11.253906 8.484375 -10.609375 C 9.285156 -9.960938 9.6875 -9.078125 9.6875 -7.953125 C 9.6875 -7.054688 9.410156 -6.328125 8.859375 -5.765625 C 8.304688 -5.203125 7.601562 -4.832031 6.75 -4.65625 C 7.101562 -4.488281 7.414062 -4.203125 7.6875 -3.796875 L 8.25 -2.953125 C 8.59375 -2.429688 9.046875 -2.171875 9.609375 -2.171875 C 9.816406 -2.171875 10.015625 -2.191406 10.203125 -2.234375 C 10.390625 -2.285156 10.566406 -2.375 10.734375 -2.5 Z M 4.75 -9.40625 L 3.703125 -9.40625 L 3.703125 -6.53125 L 4.71875 -6.53125 C 5.539062 -6.53125 6.128906 -6.644531 6.484375 -6.875 C 6.847656 -7.113281 7.03125 -7.484375 7.03125 -7.984375 C 7.03125 -8.484375 6.828125 -8.84375 6.421875 -9.0625 C 6.015625 -9.289062 5.457031 -9.40625 4.75 -9.40625 Z M 4.75 -9.40625 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(113.914813, 19.213859)"><g><path d="M 1.09375 0 L 1.09375 -11.578125 L 3.75 -11.578125 L 3.75 0 Z M 1.34375 -12.609375 L 3.328125 -15.5 L 5.859375 -14.859375 L 3.515625 -12.609375 Z M 1.34375 -12.609375 "/></g></g></g><g fill="#ffffff" fill-opacity="1"><g transform="translate(128.683347, 19.213859)"><g><path d="M -0.390625 0 L 4.625 -11.578125 L 6.859375 -11.578125 L 11.6875 0 L 8.984375 0 L 8.046875 -2.359375 L 3.28125 -2.359375 L 2.3125 0 Z M 4.1875 -4.578125 L 7.171875 -4.578125 L 5.703125 -8.3125 Z M 4.1875 -4.578125 "/></g></g></g></g></g></svg>
+    </div>
+    <div class="kob-loader__spinner" role="status" aria-label="Cargando"></div>
+  </div>
+
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

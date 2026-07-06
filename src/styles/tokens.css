@@ -130,10 +130,13 @@
            TIPOGRAFÍA
         ════════════════════════════════════════════════════════════ */
 
-    --font-display: 'FELIXTI', serif;
-    --font-heading: 'Montserrat', sans-serif;
-    --font-body: 'Montserrat', sans-serif;
-    --font-ui: 'Montserrat', sans-serif;
+    /* FELIXTI (propia, aún sin licenciar) va primera: al añadir su @font-face
+       toma precedencia sin tocar estos tokens. Cinzel Variable es el display
+       interino self-host. Montserrat Variable es el cuerpo (self-host, swap). */
+    --font-display: 'FELIXTI', 'Cinzel Variable', serif;
+    --font-heading: 'Montserrat Variable', 'Montserrat', system-ui, sans-serif;
+    --font-body: 'Montserrat Variable', 'Montserrat', system-ui, sans-serif;
+    --font-ui: 'Montserrat Variable', 'Montserrat', system-ui, sans-serif;
 
     /* Escala de tamaños */
     --text-xs: 0.75rem;

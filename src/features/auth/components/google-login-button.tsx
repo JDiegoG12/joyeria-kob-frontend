@@ -7,14 +7,19 @@
  * (`POST /auth/google`), que lo verifica, crea/vincula la cuenta y devuelve la
  * sesión. En éxito persiste la sesión y redirige a la ruta indicada.
  *
- * El distribuidor `<GoogleOAuthProvider>` se monta en `App.tsx`; si falta el
+ * El distribuidor `<GoogleOAuthProvider>` se monta AQUÍ (envuelve solo el
+ * botón), no en `App.tsx`: así el script `gsi/client` de Google y sus fuentes
+ * se cargan únicamente en las páginas de login/registro. Si falta el
  * `VITE_GOOGLE_CLIENT_ID` el botón de Google no se renderiza correctamente.
  */
 
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { useToastStore } from '@/store/toast.store';
 import { AuthService } from '@/features/auth/services/auth.service';
+
+/** Client ID de Google (OAuth 2.0). Sin él, el botón de Google no funciona. */
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
 
 interface GoogleLoginButtonProps {
   /** Ruta a la que se redirige tras un login exitoso. Por defecto, el inicio. */
@@ -47,16 +52,18 @@ export const GoogleLoginButton = ({
   };
 
   return (
-    <div className="flex w-full justify-center">
-      <GoogleLogin
-        onSuccess={(resp) => handleSuccess(resp.credential)}
-        onError={() =>
-          showToast('error', 'No se pudo iniciar sesión con Google.')
-        }
-        text="continue_with"
-        shape="rectangular"
-        width="320"
-      />
-    </div>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <div className="flex w-full justify-center">
+        <GoogleLogin
+          onSuccess={(resp) => handleSuccess(resp.credential)}
+          onError={() =>
+            showToast('error', 'No se pudo iniciar sesión con Google.')
+          }
+          text="continue_with"
+          shape="rectangular"
+          width="320"
+        />
+      </div>
+    </GoogleOAuthProvider>
   );
 };

@@ -31,6 +31,26 @@ import { persist } from 'zustand/middleware';
 /** Valores posibles para el tema de la aplicación. */
 export type Theme = 'light' | 'dark';
 
+/**
+ * Tema inicial cuando NO hay preferencia guardada (primera visita, incógnito):
+ * sigue el tema del sistema operativo (`prefers-color-scheme`). DEBE coincidir
+ * con el script inline del `<head>` de `index.html` para que el overlay de
+ * carga y el app pinten en el mismo tema (sin flash claro↔oscuro).
+ *
+ * Para volver al comportamiento anterior ("siempre claro"), cambiar el cuerpo
+ * por `return 'light';` aquí Y quitar la rama `prefers-color-scheme` del script
+ * inline en `index.html`.
+ */
+const getInitialTheme = (): Theme => {
+    if (
+        typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-color-scheme: dark)').matches
+    ) {
+        return 'dark';
+    }
+    return 'light';
+};
+
 /** Forma del estado y las acciones del store de tema. */
 interface ThemeState {
     /**
@@ -81,7 +101,7 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
     persist(
         (set, get) => ({
-            theme: 'light',
+            theme: getInitialTheme(),
 
             toggleTheme: () => {
                 const next: Theme = get().theme === 'light' ? 'dark' : 'light';

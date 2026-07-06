@@ -4,7 +4,7 @@
  * horarios de atención y vías de contacto de Joyería KOB.
  *
  * ## Responsabilidad
- * Cierra la home (antes del footer) invitando a visitar la tienda en El Bordo.
+ * Cierra la home (antes del footer) invitando a visitar el taller en El Bordo.
  * Combina un **mapa de Google Maps embebido** (iframe perezoso, sin API key ni
  * coste, envuelto en un contenedor con `aspect-ratio` para no provocar CLS) con
  * un panel de datos: estado "Abierto/Cerrado" en vivo, horarios con el día de
@@ -154,7 +154,7 @@ export const LocationSection = () => {
               lineHeight: 'var(--leading-normal)',
             }}
           >
-            Te esperamos en nuestra tienda en El Bordo para acompañarte a
+            Te esperamos en nuestro taller en El Bordo para acompañarte a
             encontrar la joya perfecta.
           </p>
         </motion.div>
