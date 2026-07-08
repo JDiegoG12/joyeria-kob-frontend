@@ -6,6 +6,7 @@
  * ```
  * /                          → Página principal pública (MainLayout)
  * /catalogo                  → Catálogo público de joyas (MainLayout)
+ * /producto/:slug            → Detalle público de una joya (MainLayout)
  * /favoritos                 → Placeholder de favoritos (MainLayout)
  * /perfil                    → Perfil del usuario autenticado (MainLayout)
  * /informacion/terminos      → Términos y condiciones de uso (MainLayout)
@@ -58,7 +59,7 @@
  * de inmediato y el Suspense spinner no aparezca sobre un layout vacío.
  */
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { RootLayout } from '@/layouts/root-layout';
@@ -80,6 +81,13 @@ const HomePage = lazy(() =>
 const CatalogPage = lazy(() =>
   import('@/features/catalog/pages/catalog-page').then((m) => ({
     default: m.CatalogPage,
+  })),
+);
+
+// Chunk: página completa de detalle de producto (ruta indexable /producto/:slug).
+const ProductPage = lazy(() =>
+  import('@/features/catalog/pages/product-page').then((m) => ({
+    default: m.ProductPage,
   })),
 );
 
@@ -210,8 +218,26 @@ const NotFoundPage = lazy(() =>
  * @param element - El componente de página cargado con `React.lazy`.
  * @returns El mismo elemento envuelto en `<Suspense>`.
  */
+/**
+ * Retira la pantalla de carga inicial (`#kob-loader` de index.html) en cuanto el
+ * contenido de la ruta se monta — es decir, cuando el chunk de la página ya
+ * resolvió su `<Suspense>`. Así el overlay tapa TODO el arranque (incluido el
+ * `PageLoader` del Suspense) y hace el relevo directo a contenido real, sin que
+ * se vean dos indicadores de carga a la vez. En navegaciones siguientes es
+ * no-op (el overlay ya no existe en el DOM).
+ */
+const BootOverlayDismiss = () => {
+  useEffect(() => {
+    window.__kobHideLoader?.();
+  }, []);
+  return null;
+};
+
 const withSuspense = (element: React.ReactNode) => (
-  <Suspense fallback={<PageLoader />}>{element}</Suspense>
+  <Suspense fallback={<PageLoader />}>
+    <BootOverlayDismiss />
+    {element}
+  </Suspense>
 );
 
 /**
@@ -238,6 +264,10 @@ export const router = createBrowserRouter([
       {
         path: '/catalogo',
         element: withSuspense(<CatalogPage />),
+      },
+      {
+        path: '/producto/:slug',
+        element: withSuspense(<ProductPage />),
       },
       {
         path: '/favoritos',

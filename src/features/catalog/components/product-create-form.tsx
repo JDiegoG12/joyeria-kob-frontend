@@ -80,7 +80,7 @@ const EMPTY_FORM: ProductFormState = {
   description: '',
   baseWeight: '',
   additionalValue: '0',
-  stock: '',
+  stock: '1',
 };
 
 /** Prefijo de los `id` de los campos, usado por el scroll-a-error. */
@@ -198,7 +198,7 @@ export const ProductCreateForm = ({
       form.description.trim() !== '' ||
       form.baseWeight !== '' ||
       form.additionalValue !== EMPTY_FORM.additionalValue ||
-      form.stock !== '' ||
+      form.stock !== EMPTY_FORM.stock ||
       resolvedCategoryId !== null ||
       images.length > 0 ||
       specEntries.some((e) => e.key.trim() !== '' || e.value.trim() !== '')

@@ -3,18 +3,19 @@
  * @description Logo SVG de Joyería KOB para el navbar y el sidebar admin.
  *
  * ## Soporte de modo oscuro
- * El SVG usa dos tokens semánticos en lugar de valores hardcodeados:
+ * El SVG usa un token semántico en lugar de valores hardcodeados:
  *
- * - `var(--logo-body)`: cuerpo del logo (letras KOB + símbolo de joya + barra).
+ * - `var(--logo-body)`: todo el logo (letras KOB + símbolo de joya + texto
+ *   "JOYERIA"). Es monocromo, así que todas las piezas comparten este color.
  *   - Claro:  `#1a1a1a`
  *   - Oscuro: `#ffffff`
  *
- * - `var(--logo-cutout)`: recorte interior sobre la barra (texto tallado).
- *   - Claro:  `#ffffff`
- *   - Oscuro: `#1a1a1a`
+ * El token se define en `tokens.css` y cambia automáticamente con la clase
+ * `dark` en `<html>`. No se necesita lógica en React.
  *
- * Ambos tokens se definen en `tokens.css` y cambian automáticamente
- * con la clase `dark` en `<html>`. No se necesita lógica en React.
+ * > Nota: el diseño anterior tenía una barra de fondo con el texto recortado
+ * > (`var(--logo-cutout)`). Ese token ya no lo usa este componente; puede
+ * > seguir definido en `tokens.css` sin efecto.
  *
  * ## Tokens requeridos en `tokens.css`
  * ```css
@@ -29,8 +30,9 @@
  * ```
  *
  * ## Cómo reemplazar el SVG en el futuro
- * 1. Identificar qué paths son "cuerpo" → `fill="var(--logo-body)"`
- * 2. Identificar qué paths son "recorte interior" → `fill="var(--logo-cutout)"`
+ * 1. Usar siempre un SVG vectorial (paths), nunca uno con imágenes raster
+ *    incrustadas (`<image data:image/png...>`): rompe el escalado y el dark mode.
+ * 2. Todos los paths del logo llevan `fill="var(--logo-body)"`.
  * 3. Nunca usar `fill="#000"`, `fill="#fff"` ni `fill` implícito (negro por defecto).
  */
 
@@ -73,10 +75,24 @@ export const KobLogo = ({
       <clipPath id="kob-logo-clip">
         <path d="M123.16 159.063h104.25v77.25H123.16Zm0 0" />
       </clipPath>
+
+      {/*
+        Máscara "knockout": recorta una banda horizontal del diamante para
+        dejar espacio limpio donde va el texto "JOYERIA". Reemplaza a la antigua
+        barra de fondo: el blanco mantiene visible el diamante y el negro
+        (la banda) lo vuelve transparente, sin pintar ningún fondo sólido.
+      */}
+      <mask id="kob-joyeria-knockout">
+        <rect x="0" y="0" width="375" height="375" fill="#fff" />
+        <path
+          fill="#000"
+          d="M122.29 176.625h100.456a4.946 4.946 0 0 1 4.95 4.95v9.905a4.946 4.946 0 0 1-4.95 4.95H122.29a4.951 4.951 0 0 1-4.953-4.95v-9.906a4.951 4.951 0 0 1 4.953-4.949Zm0 0"
+        />
+      </mask>
     </defs>
 
     {/*
-      Cuerpo principal: letras KOB + barra horizontal.
+      Cuerpo principal: letras KOB.
       Usa --logo-body para invertirse en modo oscuro.
     */}
     <path
@@ -84,26 +100,28 @@ export const KobLogo = ({
       d="M271.245 176.625c-1.907 2.011-4.075 3.492-6.5 4.437 10.375 1.492 18.257 5.172 23.656 11.047 5.394 5.875 8.094 13.047 8.094 21.516 0 10.273-4.133 18.586-12.391 24.937-8.25 6.344-19.102 9.516-32.547 9.516-13.45 0-23.984-3.305-31.61-9.922-7.616-6.613-11.421-15.957-11.421-28.031v-1.907l1.75-.312c2.113 15.773 8.676 25.992 19.687 30.656V146.14c-.21-2.863-1.293-5.218-3.25-7.062-1.96-1.852-4.32-2.781-7.078-2.781h-1.906v-1.594h26.687c9.946 0 17.91 2.277 23.891 6.828 5.988 4.555 8.984 10.512 8.984 17.875 0 7.355-2.015 13.094-6.046 17.219ZM240.29 139.78v101.625c3.489.531 7.508.797 12.063.797 10.164 0 18.078-2.723 23.734-8.172 5.664-5.457 8.5-12.523 8.5-21.203 0-4.656-.875-8.781-2.625-12.375-1.742-3.602-3.933-6.41-6.578-8.422-6.992-5.406-16.84-8.11-29.547-8.11h-.156l-.156-1.421h.156c5.395 0 10.024-1.77 13.89-5.313 3.864-3.55 5.798-9.031 5.798-16.437 0-13.977-7.672-20.969-23.016-20.969ZM98.776 244.265h2.062v1.594H66.073v-1.594h2.062c2.75 0 5.102-.976 7.063-2.937 1.957-1.957 2.988-4.313 3.094-7.063V146.14c-.106-2.757-1.137-5.086-3.094-6.984-1.961-1.906-4.313-2.86-7.063-2.86h-2.062v-1.593h34.765v1.594h-2.062c-2.75 0-5.106.953-7.063 2.859-1.96 1.898-2.992 4.227-3.093 6.984v88.125c0 2.75 1.004 5.106 3.015 7.063 2.008 1.96 4.39 2.937 7.14 2.937Zm110.047 25.407v1.593a51.963 51.963 0 0 1-12.063 1.438c-17.367 0-34.199-8.684-50.5-26.047l-52.562-56.063 37.484-47c.844-1.062 1.266-2.015 1.266-2.859 0-.844-.164-1.582-.485-2.219-.843-1.593-2.375-2.39-4.593-2.39h-1.594v-1.422h33.5v1.422h-.625c-6.992 0-12.711 2.492-17.156 7.468l-37 42.72 54 57.64c6.976 7.52 14.832 13.687 23.562 18.5 8.738 4.812 17.66 7.219 26.766 7.219Zm0 0"
     />
 
-    {/* Símbolo de joya (diamante) — mismo token que el cuerpo */}
-    <g clipPath="url(#kob-logo-clip)">
+    {/*
+      Símbolo de joya (diamante) — mismo token que el cuerpo.
+      La máscara recorta la banda central para que las facetas no choquen
+      con el texto "JOYERIA" que se dibuja encima.
+    */}
+    <g clipPath="url(#kob-logo-clip)" mask="url(#kob-joyeria-knockout)">
       <path
         fill="var(--logo-body)"
         d="M196.078 186.422h25.25l-41.898 41.695Zm-20.855 43.898-17.614-43.898h35.133Zm-46.106-43.898h25.188l16.71 41.664Zm31.613-22.16-6.503 19.086h-23.54Zm-9.933-2.11h7.496L136.969 175.7Zm21.863 7.403-14.21 10.968 5.91-17.378Zm9.578-7.403-7.062 5.446-7.059-5.446Zm8.27 21.196h-30.649l15.332-11.84Zm1.41-2.825-14.215-10.968 8.29-6.41Zm27.84 2.825H196.14l-6.5-19.086Zm-20.11-21.196 13.872 13.594-21.446-13.594Zm1.258-3.09H149.54l-26.363 25.81 52.047 51.78 52.047-51.78-26.364-25.81"
       />
     </g>
 
-    {/* Barra horizontal que enmarca el símbolo */}
-    <path
-      fill="var(--logo-body)"
-      d="M122.29 176.625h100.456a4.946 4.946 0 0 1 4.95 4.95v9.905a4.946 4.946 0 0 1-4.95 4.95H122.29a4.951 4.951 0 0 1-4.953-4.95v-9.906a4.951 4.951 0 0 1 4.953-4.949Zm0 0"
-    />
-
     {/*
-      Texto tallado sobre la barra (recorte interior).
-      Usa --logo-cutout: blanco en claro, negro en oscuro.
+      Texto "JOYERIA" sobre el símbolo.
+
+      El diseño anterior dibujaba una barra de fondo y recortaba el texto
+      sobre ella (--logo-cutout). El nuevo diseño de marca elimina esa barra
+      y deja el texto en el mismo color que el resto del logo (--logo-body),
+      de modo que se invierte automáticamente con el tema claro/oscuro.
     */}
     <path
-      fill="var(--logo-cutout)"
+      fill="var(--logo-body)"
       d="M128.21 190.403c-.688 0-1.278-.16-1.766-.485-.48-.32-.805-.789-.985-1.406l1.61-.703c.113.281.257.496.437.64.176.149.399.22.672.22.281 0 .5-.087.656-.266.156-.176.235-.442.235-.797v-5.86h1.968v5.64c0 .95-.246 1.688-.734 2.22-.492.53-1.188.797-2.094.797ZM143.873 190.403c-.898 0-1.668-.165-2.312-.5a3.446 3.446 0 0 1-1.47-1.454c-.343-.632-.515-1.394-.515-2.28 0-.884.18-1.673.547-2.36a3.999 3.999 0 0 1 1.531-1.61c.664-.382 1.457-.578 2.375-.578.813 0 1.52.18 2.125.532a3.665 3.665 0 0 1 1.422 1.484c.344.625.516 1.36.516 2.203 0 .918-.184 1.719-.547 2.406a3.846 3.846 0 0 1-1.5 1.578c-.637.375-1.36.567-2.172.579Zm-.078-1.75c.688 0 1.238-.243 1.656-.735.426-.488.64-1.172.64-2.047 0-.758-.194-1.363-.577-1.812-.387-.457-.903-.688-1.547-.688-.469 0-.887.117-1.25.344-.356.23-.637.555-.844.969-.21.418-.312.902-.312 1.453 0 .805.195 1.422.593 1.86.395.437.942.656 1.641.656ZM163.447 181.746l-2.937 4.719v3.813h-1.969v-3.735l-3.031-4.797h2.203l1.89 3.016 1.782-3.016ZM177.136 183.434h-3.907v1.703h3.657v1.687h-3.657v1.766h4.032l-.125 1.688h-5.829v-8.532h5.829ZM192.69 188.434l.453 1.515c-.18.137-.407.246-.688.329a2.922 2.922 0 0 1-.844.125c-.523 0-.98-.106-1.375-.313a2.74 2.74 0 0 1-.968-.937l-1.016-1.641a1.37 1.37 0 0 0-.36-.39.776.776 0 0 0-.39-.141v3.297h-1.922v-8.532h2.797c1.176 0 2.055.242 2.64.719.594.469.891 1.121.891 1.953 0 .656-.203 1.195-.609 1.61-.406.417-.93.687-1.563.812.27.125.504.34.704.64l.406.626c.258.386.598.578 1.015.578.145 0 .286-.016.422-.047.133-.04.27-.11.407-.203Zm-4.422-5.094h-.766v2.125h.75c.602 0 1.035-.082 1.297-.25.258-.176.39-.453.39-.828 0-.363-.148-.629-.437-.797-.293-.164-.703-.25-1.234-.25ZM200.778 190.278v-8.532h1.953v8.532Zm.172-9.297 1.468-2.125 1.875.468-1.734 1.657ZM210.57 190.278l3.687-8.532h1.656l3.547 8.532h-1.984l-.688-1.75h-3.515l-.72 1.75Zm3.375-3.375h2.187l-1.078-2.75Zm0 0"
     />
   </svg>

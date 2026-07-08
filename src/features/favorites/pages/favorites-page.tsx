@@ -19,6 +19,7 @@ import { useFavoriteStore } from '../store/favorite.store';
 // Reutilizamos la tarjeta del catálogo público en lugar de una tarjeta
 // dedicada: una sola fuente de verdad visual para "tarjeta de producto".
 import { PublicProductCard } from '@/features/catalog/components/public-product-card';
+import { buildProductPath } from '@/features/catalog/utils/product-slug';
 import { FavoritesWhatsAppButton } from '../components/favorites-whatsapp';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -418,6 +419,7 @@ export const FavoritesPage = () => {
                       >
                         <PublicProductCard
                           product={item.product}
+                          to={buildProductPath(item.product)}
                           onClick={() => handleViewDetail(item.product.id)}
                         />
                       </motion.div>

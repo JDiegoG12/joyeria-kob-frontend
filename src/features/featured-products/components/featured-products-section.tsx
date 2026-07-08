@@ -179,10 +179,7 @@ export const FeaturedProductsSection = () => {
   }
 
   return (
-    <section
-      className="py-12 sm:py-14 lg:py-16"
-      style={{ backgroundColor: 'var(--bg-primary)' }}
-    >
+    <section className="bg-silk py-12 sm:py-14 lg:py-16">
       <div
         className="mx-auto px-5 sm:px-6 lg:px-10"
         style={{ maxWidth: 'var(--content-max-width)' }}

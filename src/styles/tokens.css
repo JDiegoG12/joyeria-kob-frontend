@@ -84,6 +84,10 @@
     --border-color: #dcdcdc;
     --border-strong: #c4c4c4;
     --border-accent: #131638;
+    /* Borde de las tarjetas destacadas (home). Hairline dorado que hace eco del
+       velo de oro del fondo .bg-silk en claro, distinguiéndolas del borde navy
+       del catálogo. En oscuro pasa al azul vivo (ver bloque .dark). */
+    --border-featured: #bea64b;
 
     /* Acento interactivo — centrado en el azul marino del cliente */
     --accent: #131638;
@@ -96,6 +100,17 @@
        el azul marino contrasta de sobra (12.6:1); su par en dark sube a un azul
        más luminoso para no desaparecer sobre #1A1A1A. Mismo token, ambos temas. */
     --accent-vivid: #131638;
+    /* Marcador del storefront cliente (rieles, pulgares, barras finas). Sigue la
+       regla de marca "azul principal en claro → blanco en oscuro": navy en light,
+       blanco (#F3F3F3) en dark. El azul --accent-vivid (#4a50c4 en dark) queda
+       reservado para el panel admin. */
+    --accent-marker: #131638;
+
+    /* Oro cálido — único acento dorado de la marca. NO se usa como texto ni
+       relleno de botón (contraste insuficiente): vive solo como velo decorativo
+       de muy baja opacidad en el fondo "seda" (.bg-silk) del modo claro. El modo
+       oscuro de ese fondo usa el azul de marca (--accent-vivid), no el oro. */
+    --warm-gold: #bea64b;
 
     /* Favoritos — rojo semántico del corazón "me gusta".
        Independiente del azul de marca para que el estado activo se lea sobre
@@ -115,10 +130,13 @@
            TIPOGRAFÍA
         ════════════════════════════════════════════════════════════ */
 
-    --font-display: 'FELIXTI', serif;
-    --font-heading: 'Montserrat', sans-serif;
-    --font-body: 'Montserrat', sans-serif;
-    --font-ui: 'Montserrat', sans-serif;
+    /* FELIXTI (propia, aún sin licenciar) va primera: al añadir su @font-face
+       toma precedencia sin tocar estos tokens. Cinzel Variable es el display
+       interino self-host. Montserrat Variable es el cuerpo (self-host, swap). */
+    --font-display: 'FELIXTI', 'Cinzel Variable', serif;
+    --font-heading: 'Montserrat Variable', 'Montserrat', system-ui, sans-serif;
+    --font-body: 'Montserrat Variable', 'Montserrat', system-ui, sans-serif;
+    --font-ui: 'Montserrat Variable', 'Montserrat', system-ui, sans-serif;
 
     /* Escala de tamaños */
     --text-xs: 0.75rem;
@@ -160,6 +178,9 @@
     --sidebar-width-collapsed: 4rem;
     --footer-height: auto;
     --content-max-width: 80rem;
+    /* Ancho de la ficha completa de producto (/producto/:slug): más angosto que
+       el catálogo para centrar galería + info sin que se estiren de más. */
+    --product-max-width: 64rem;
 
     /* ════════════════════════════════════════════════════════════
            EFECTOS VISUALES
@@ -173,6 +194,17 @@
     --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
     /* Sombra de acento — usa el azul marino de la paleta del cliente */
     --shadow-accent: 0 4px 16px rgba(19, 22, 56, 0.18);
+    /* Sombra de las tarjetas destacadas (home). Capa 1 negra sutil = profundidad
+       real; capa 2 dorada difusa = eco del velo de oro del fondo .bg-silk en
+       claro. En oscuro la capa de color pasa al azul de marca (ver bloque .dark). */
+    --shadow-featured:
+      0 4px 10px rgba(0, 0, 0, 0.08),
+      0 12px 28px color-mix(in srgb, var(--warm-gold) 38%, transparent);
+    /* Versión diluida para el REPOSO (incl. móvil, donde no hay hover): el halo
+       dorado se ve siempre, y en desktop el hover sube a `--shadow-featured`. */
+    --shadow-featured-rest:
+      0 2px 6px rgba(0, 0, 0, 0.06),
+      0 6px 16px color-mix(in srgb, var(--warm-gold) 26%, transparent);
 
     /* Bordes redondeados */
     --radius-xs: 2px;
@@ -234,6 +266,9 @@
     --border-color: #2c2c2c;
     --border-strong: #3a3a3a;
     --border-accent: #e8e8e8;
+    /* Borde de tarjetas destacadas: azul vivo de marca, eco de los halos azules
+       del fondo .bg-silk en oscuro (en claro es el oro #bea64b). */
+    --border-featured: #4a50c4;
 
     /* Acento interactivo
            --accent como fondo: #131638 + texto blanco encima = ratio 12.6:1 ✓
@@ -245,6 +280,9 @@
     --accent-text: #ffffff;
     --accent-subtle: rgba(19, 22, 56, 0.18);
     --accent-vivid: #4a50c4;
+    /* En dark el marcador del storefront cliente pasa a blanco (#F3F3F3), no al
+       azul admin de --accent-vivid. Ver nota en el bloque light. */
+    --accent-marker: #f3f3f3;
 
     /* Favoritos — rojo más luminoso para destacar sobre fondos/fotos oscuras.
        Contraste de #FF5277 sobre chip oscuro (#1A1A1A) ≈ 5.6:1. */
@@ -264,6 +302,15 @@
     --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
     /* Sombra de acento — usa el azul marino de la marca */
     --shadow-accent: 0 4px 16px rgba(19, 22, 56, 0.5);
+    /* Sombra de tarjetas destacadas en oscuro: capa negra de profundidad + capa
+       azul difusa que hace eco de los halos azules del fondo .bg-silk. */
+    --shadow-featured:
+      0 4px 12px rgba(0, 0, 0, 0.35),
+      0 14px 32px color-mix(in srgb, var(--accent-vivid) 45%, transparent);
+    /* Reposo (incl. móvil): halo azul siempre visible; el hover sube al fuerte. */
+    --shadow-featured-rest:
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      0 8px 20px color-mix(in srgb, var(--accent-vivid) 35%, transparent);
 
     /* Logo — recorte sincronizado con bg-primary */
     --logo-body: #f3f3f3;

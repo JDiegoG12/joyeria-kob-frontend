@@ -12,6 +12,7 @@ export const MaterialsPage = () => (
   <LegalPageLayout
     title={MATERIALS_POLICY.title}
     lastUpdated={MATERIALS_POLICY.lastUpdated}
+    description="Materiales de las joyas de Joyería KOB: oro 18k, piedras y acabados. Conoce la calidad y el cuidado de nuestras piezas personalizadas."
   >
     {MATERIALS_POLICY.sections.map((section, i) => (
       <PolicySection key={i} section={section} />

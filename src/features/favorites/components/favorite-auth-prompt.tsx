@@ -53,6 +53,15 @@ export const FavoriteAuthPrompt = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, close]);
 
+  // Bloquea el scroll del fondo mientras el modal está abierto.
+  useEffect(() => {
+    if (!isOpen) return;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const goToLogin = () => {

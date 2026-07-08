@@ -234,7 +234,7 @@ export const TestimonialsCarousel = ({
                 height: '8px',
                 borderRadius: '999px',
                 backgroundColor: isActive
-                  ? 'var(--accent)'
+                  ? 'var(--accent-marker)'
                   : 'var(--border-strong)',
                 opacity: isActive ? 1 : 0.5,
                 border: 'none',

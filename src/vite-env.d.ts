@@ -14,3 +14,12 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface Window {
+  /**
+   * Retira la pantalla de carga inicial (`#kob-loader`, definida en index.html).
+   * Se define en el `<head>` para sobrevivir aunque el bundle falle; la app la
+   * invoca cuando el contenido de la primera ruta ya montó (ver router).
+   */
+  __kobHideLoader?: () => void;
+}

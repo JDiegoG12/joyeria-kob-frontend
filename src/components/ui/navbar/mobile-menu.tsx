@@ -60,6 +60,14 @@ const FAVORITES_PATH = '/favoritos';
 /** Anchor de la sección de servicios dentro de la home. */
 const SERVICES_ANCHOR = 'servicios';
 
+/**
+ * Umbrales para cerrar el panel arrastrando (swipe).
+ * El cierre se dispara si el usuario arrastra más de `OFFSET` px hacia el borde
+ * de origen, o si suelta con una velocidad superior a `VELOCITY` px/s (flick).
+ */
+const SWIPE_CLOSE_OFFSET = 80;
+const SWIPE_CLOSE_VELOCITY = 400;
+
 const SOCIAL_LINKS = [
   {
     label: 'Instagram',
@@ -104,8 +112,9 @@ const panelVariants: Variants = {
       duration: 0.45,
       ease: [0.22, 1, 0.36, 1],
       when: 'beforeChildren',
-      staggerChildren: 0.05,
-      delayChildren: 0.12,
+      // Cascada de ítems al doble de velocidad: stagger y delay a la mitad.
+      staggerChildren: 0.025,
+      delayChildren: 0.06,
     },
   },
   exit: {
@@ -136,7 +145,8 @@ const itemVariants: Variants = {
   visible: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+    // Duración a la mitad para que cada ítem aparezca al doble de velocidad.
+    transition: { duration: 0.175, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
@@ -315,12 +325,31 @@ export const MobileMenu = ({
             initial="hidden"
             animate="visible"
             exit="exit"
+            /*
+             * Swipe-to-close (solo móvil; el panel está oculto en ≥lg).
+             * El panel entra desde la izquierda, así que se cierra arrastrándolo
+             * hacia ese mismo borde. `dragElastic` solo deja movimiento hacia la
+             * izquierda (la derecha queda anclada en 0 para no abrir un hueco).
+             */
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={{ left: 0.9, right: 0, top: 0, bottom: 0 }}
+            dragMomentum={false}
+            onDragEnd={(_, info) => {
+              if (
+                info.offset.x < -SWIPE_CLOSE_OFFSET ||
+                info.velocity.x < -SWIPE_CLOSE_VELOCITY
+              ) {
+                onClose();
+              }
+            }}
             className="fixed top-0 bottom-0 left-0 z-50 flex w-[min(90vw,22.5rem)] flex-col overflow-y-auto border-r lg:hidden"
             style={{
               backgroundColor: 'var(--bg-topbar)',
               borderColor: 'var(--border-color)',
               color: 'var(--text-secondary)',
               boxShadow: 'var(--shadow-lg)',
+              touchAction: 'pan-y',
             }}
             role="dialog"
             aria-modal="true"

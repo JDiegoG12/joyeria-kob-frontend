@@ -24,6 +24,7 @@
 
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   Hammer,
@@ -46,8 +47,11 @@ import { buildWhatsAppUrl } from '@/config/contact';
 import { SERVER_URL } from '@/api/server-url';
 import { usePromoBannerStore } from '@/store/promo-banner.store';
 import type { PromoBanner } from '@/features/promotions/types/promotion.types';
-import GOLD_INVESTMENT_IMAGE from '@/assets/GOLD_INVESTMENT_IMAGE.jpg';
+import GOLD_INVESTMENT_IMAGE_LG from '@/assets/gold-investment-lg.webp';
+import GOLD_INVESTMENT_IMAGE_SM from '@/assets/gold-investment-sm.webp';
 import { SocialContentSection } from '../components/social-content-section';
+import { LocationSection } from '../components/location-section';
+import { buildLocalBusinessJsonLd } from '@/config/structured-data';
 
 /**
  * Construye la URL de destino de un banner de promoción según su tipo de enlace.
@@ -55,6 +59,9 @@ import { SocialContentSection } from '../components/social-content-section';
  * - CATEGORY → deep-link al catálogo filtrado por categoría (`?categoria=`).
  * - NONE     → sin enlace (banner informativo).
  */
+/** JSON-LD del negocio local. Constante: no depende de props ni estado. */
+const LOCAL_BUSINESS_JSON_LD = JSON.stringify(buildLocalBusinessJsonLd());
+
 const buildPromoLinkTo = (banner: PromoBanner): string | undefined => {
   if (banner.linkType === 'PRODUCT' && banner.linkProductId) {
     return `/catalogo?product=${banner.linkProductId}`;
@@ -102,7 +109,7 @@ const SERVICES = [
     icon: MessageSquareText,
     title: 'Asesoría',
     description:
-      'Te acompañamos durante todo el proceso para que escojas la joya perfeta.',
+      'Te acompañamos durante todo el proceso para que escojas la joya perfecta.',
     message:
       'Hola, me gustaría recibir Asesoría para elegir una joya. ¿Podrían orientarme?',
   },
@@ -138,7 +145,7 @@ const TESTIMONIALS = [
 /**
  * Página de inicio pública con orden editorial definido por mockups:
  * hero (carrusel), barra de navegación rápida, productos destacados,
- * inversión en oro, servicios y testimonios.
+ * servicios, inversión en oro, redes y testimonios.
  *
  * ─── Scroll a sección por navegación externa ─────────────────────────────────
  * Al llegar desde otra ruta con `location.state.scrollTo = '<id>'` (por
@@ -207,6 +214,32 @@ export const HomePage = () => {
 
   return (
     <div className="overflow-x-hidden">
+      <Helmet>
+        <title>Joyería KOB | Joyas de oro 18k personalizadas en El Bordo</title>
+        <meta
+          name="description"
+          content="Diseñamos y fabricamos joyas de oro 18k a la medida: anillos, collares, dijes y pulseras personalizadas. Pide tu diseño único en Joyería KOB."
+        />
+        {/*
+         * El banner del hero (candidato a LCP) vive en el backend de archivos
+         * (`SERVER_URL`), de dominio distinto. Su URL no se conoce hasta el
+         * fetch de `/api/banner`, así que no se puede precargar; pero sí
+         * calentamos la conexión (DNS + TCP + TLS) para que, en cuanto el fetch
+         * resuelva, la descarga de la imagen empiece sin ese coste. Acelera el
+         * LCP móvil sin precargar bytes que quizá no se usen.
+         */}
+        {SERVER_URL && <link rel="preconnect" href={SERVER_URL} />}
+        {SERVER_URL && <link rel="dns-prefetch" href={SERVER_URL} />}
+
+        {/*
+         * JSON-LD del negocio local (JewelryStore): dirección, geo, teléfono y
+         * horarios. Pieza SEO clave para búsquedas locales y Google Maps; se
+         * declara aquí porque la sección "Visítanos" vive en la home.
+         * PENDIENTE: espejar en el backend (json-ld.ts) para el HTML de bots.
+         */}
+        <script type="application/ld+json">{LOCAL_BUSINESS_JSON_LD}</script>
+      </Helmet>
+
       {/* Hero como carrusel — slide 0 es el banner configurable desde admin */}
       <HeroCarousel promoSlides={promoSlides} />
 
@@ -219,18 +252,27 @@ export const HomePage = () => {
       <CatalogNavBar />
 
       <FeaturedProductsSection />
-      <GoldInvestmentSection />
 
       {/*
        * id="servicios" expuesto para que tanto el botón "SERVICIOS" de
        * `CatalogNavBar` (desktop) como el ítem "Servicios" del menú móvil
-       * puedan hacer scroll suave hasta esta sección.
+       * puedan hacer scroll suave hasta esta sección. Va en segunda posición
+       * (antes de "Invierte en Oro") por decisión editorial del cliente.
        */}
       <ServicesSection />
 
-      <TestimonialsSection />
+      <GoldInvestmentSection />
 
       <SocialContentSection />
+
+      <TestimonialsSection />
+
+      {/*
+       * Cierre de la home: ubicación física, horarios y contacto. Fondo
+       * `bg-grain` (alterna con el `bg-silk` de Testimonios) y `id="ubicacion"`
+       * por si se enlaza con scroll suave desde la navegación.
+       */}
+      <LocationSection />
     </div>
   );
 };
@@ -250,10 +292,7 @@ export const HomePage = () => {
  * lo que produce mejores quiebres en cualquier viewport.
  */
 const GoldInvestmentSection = () => (
-  <section
-    className="py-16 sm:py-20 lg:py-24"
-    style={{ backgroundColor: 'var(--bg-primary)' }}
-  >
+  <section className="bg-silk py-16 sm:py-20 lg:py-24">
     <div
       className="mx-auto grid items-center gap-10 px-5 sm:px-6 lg:grid-cols-[0.86fr_1.14fr] lg:gap-16 lg:px-10"
       style={{ maxWidth: 'var(--content-max-width)' }}
@@ -299,10 +338,13 @@ const GoldInvestmentSection = () => (
           style={{ backgroundColor: 'var(--bg-tertiary)' }}
         >
           <img
-            src={GOLD_INVESTMENT_IMAGE}
+            src={GOLD_INVESTMENT_IMAGE_LG}
+            srcSet={`${GOLD_INVESTMENT_IMAGE_SM} 640w, ${GOLD_INVESTMENT_IMAGE_LG} 1067w`}
+            sizes="(min-width: 1024px) 680px, 100vw"
             alt="Detalle de joya de oro con piedras sobre fondo de marca"
             className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-[1.025] motion-reduce:transition-none motion-reduce:hover:scale-100"
             loading="lazy"
+            decoding="async"
           />
         </div>
       </RevealBlock>
@@ -330,11 +372,7 @@ const GoldInvestmentSection = () => (
  * (desktop) y desde el ítem "Servicios" del menú móvil.
  */
 const ServicesSection = () => (
-  <section
-    id="servicios"
-    className="py-16 sm:py-20"
-    style={{ backgroundColor: 'var(--bg-secondary)' }}
-  >
+  <section id="servicios" className="bg-grain py-16 sm:py-20">
     <div
       className="mx-auto px-5 sm:px-6 lg:px-10"
       style={{ maxWidth: 'var(--content-max-width)' }}
@@ -371,10 +409,7 @@ const ServicesSection = () => (
  * componente `TestimonialCard`, evitando divergencias de contenido.
  */
 const TestimonialsSection = () => (
-  <section
-    className="py-16 sm:py-20 lg:py-24"
-    style={{ backgroundColor: 'var(--bg-primary)' }}
-  >
+  <section className="bg-silk py-16 sm:py-20 lg:py-24">
     <div
       className="mx-auto px-5 sm:px-6 lg:px-10"
       style={{ maxWidth: 'var(--content-max-width)' }}

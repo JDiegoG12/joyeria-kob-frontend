@@ -35,7 +35,11 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHeroBannerStore } from '@/store/hero-banner.store';
 import { WhatsAppIcon } from '@/components/ui/social-icons';
 import { buildWhatsAppUrl, WHATSAPP_MESSAGES } from '@/config/contact';
-import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.jpg';
+import {
+  buildUploadsSrcSet,
+  BANNER_IMAGE_WIDTHS,
+} from '@/shared/utils/image-srcset';
+import DEFAULT_HERO_IMAGE from '@/assets/HERO_IMAGE.webp';
 
 /** Duración en ms entre cambios automáticos de slide. */
 const AUTO_ADVANCE_DELAY = 6000;
@@ -154,8 +158,6 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
     touchStartX.current = null;
   };
 
-  const heroImage = bannerImageUrl ?? DEFAULT_HERO_IMAGE;
-
   return (
     <section
       className="relative overflow-hidden"
@@ -179,20 +181,23 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
       {/* ── Pista de slides ─────────────────────────────────────────────── */}
       <div className="relative h-full w-full">
         {/* Slide 0: Banner principal configurable.
-         * Mientras el banner aún no ha cargado del backend mostramos un
-         * skeleton sobre el fondo de marca, en vez de los valores por
-         * defecto — así evitamos el parpadeo cuando llega el dato real. */}
-        {hasLoaded ? (
-          <MainBannerSlide
-            imageUrl={heroImage}
-            bannerText={bannerText}
-            bannerSubtitle={bannerSubtitle}
-            isActive={currentIndex === 0}
-            prefersReducedMotion={prefersReducedMotion}
-          />
-        ) : (
-          <HeroSkeleton prefersReducedMotion={prefersReducedMotion} />
-        )}
+         *
+         * La <img> está en el primer render (no se monta/desmonta por el estado
+         * de carga del backend), es `eager` y `fetchpriority="high"`. Detrás hay
+         * un placeholder de color de marca del tamaño exacto de la imagen, así
+         * que nunca se ve un hueco ni un estado roto; la imagen real aparece con
+         * un fade sobre ese color. Ver `MainBannerSlide` para el detalle.
+         *
+         * Solo el texto (título/subtítulo, que sí dependen del backend) muestra
+         * un skeleton hasta que `hasLoaded` es true. */}
+        <MainBannerSlide
+          bannerImageUrl={bannerImageUrl}
+          bannerText={bannerText}
+          bannerSubtitle={bannerSubtitle}
+          hasLoaded={hasLoaded}
+          isActive={currentIndex === 0}
+          prefersReducedMotion={prefersReducedMotion}
+        />
 
         {/* Slides 1+: Imágenes promocionales */}
         {promoSlides.map((slide, index) => (
@@ -289,9 +294,15 @@ export const HeroCarousel = ({ promoSlides = [] }: HeroCarouselProps) => {
 // ─── Slide principal ───────────────────────────────────────────────────────────
 
 interface MainBannerSlideProps {
-  imageUrl: string;
+  /**
+   * URL remota del banner (`/uploads/banners/...`), o `null` si todavía no
+   * llegó del backend o no hay banner configurado.
+   */
+  bannerImageUrl: string | null;
   bannerText: string;
   bannerSubtitle: string;
+  /** `true` cuando ya llegó el banner del backend (texto real vs. skeleton). */
+  hasLoaded: boolean;
   isActive: boolean;
   prefersReducedMotion: boolean;
 }
@@ -300,41 +311,50 @@ interface MainBannerSlideProps {
  * Slide principal del carrusel con texto configurable y CTAs fijos.
  * Ocupa el 100% del área del carrusel y siempre es el slide 0.
  *
- * El padding inferior se redujo de `pb-14` a `pb-10` para acompañar la menor
- * altura del contenedor y mantener los botones siempre visibles.
- */
-// ─── Slide principal ───────────────────────────────────────────────────────────
-
-interface MainBannerSlideProps {
-  imageUrl: string;
-  bannerText: string;
-  bannerSubtitle: string;
-  isActive: boolean;
-  prefersReducedMotion: boolean;
-}
-
-/**
- * Slide principal del carrusel con texto configurable y CTAs fijos.
- * Ocupa el 100% del área del carrusel y siempre es el slide 0.
+ * ── Carga del banner: LCP medible + CERO parpadeo ───────────────────────────
+ * La imagen es el candidato a LCP de la home. Para lograr LCP rápido/medible y
+ * sin ningún flash de imagen por defecto:
+ *
+ * - **Placeholder de color**: un degradado de marca SIEMPRE visible, del tamaño
+ *   exacto de la imagen. Nunca se ve un hueco, un salto de layout ni un estado
+ *   "roto"; solo color de marca hasta que la foto aparece encima.
+ * - **Un solo `src`, sin swap**: antes se pintaba la imagen por defecto y luego
+ *   se intercambiaba por la remota — ese swap era el "parpadeo feo" y, además,
+ *   al cambiar el contenido del candidato a LCP, impedía medirlo (NO_LCP). Ahora
+ *   el `src` se fija UNA vez cuando el fetch resuelve:
+ *     · con banner configurado → la imagen remota (con `srcset`/miniatura);
+ *     · 404 (sin banner) → la imagen por defecto empaquetada.
+ *   Como la URL remota no se conoce hasta el fetch, no es posible pintarla antes
+ *   sin mostrar primero la de por defecto (lo que el negocio rechaza): el
+ *   placeholder de color cubre esa fracción de segundo.
+ * - **`<img>` en el primer render**: nunca se monta/desmonta por estado; es
+ *   `eager`, `fetchpriority="high"` y se desvanece (opacity) al decodificarse.
  *
  * El padding inferior se redujo de `pb-14` a `pb-10` para acompañar la menor
  * altura del contenedor y mantener los botones siempre visibles.
  */
 const MainBannerSlide = ({
-  imageUrl,
+  bannerImageUrl,
   bannerText,
   bannerSubtitle,
+  hasLoaded,
   isActive,
   prefersReducedMotion,
 }: MainBannerSlideProps) => {
-  /*
-   * `imageReady` se activa cuando la imagen del banner ha terminado de
-   * decodificarse. Hasta entonces el slide solo muestra el fondo de marca
-   * (igual que el skeleton previo), de modo que la imagen + texto aparecen
-   * juntos con un fade-in y nunca se ve un cambio brusco entre la imagen
-   * por defecto y la imagen remota del servidor.
-   */
-  const [imageReady, setImageReady] = useState(false);
+  // Se activa cuando la imagen del banner termina de decodificarse, para
+  // desvanecerla sobre el placeholder de color.
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  // Fuente final, decidida una sola vez cuando el fetch resolvió. Antes de eso
+  // queda `undefined` (solo se ve el placeholder de color), evitando el flash
+  // de la imagen por defecto cuando sí hay un banner configurado.
+  const resolvedSrc =
+    bannerImageUrl ?? (hasLoaded ? DEFAULT_HERO_IMAGE : undefined);
+  // Miniatura/srcset solo para la imagen remota; la de por defecto (empaquetada)
+  // no vive en /uploads y se sirve tal cual.
+  const srcSet = bannerImageUrl
+    ? buildUploadsSrcSet(bannerImageUrl, BANNER_IMAGE_WIDTHS)
+    : undefined;
 
   return (
     <div
@@ -343,27 +363,38 @@ const MainBannerSlide = ({
         opacity: isActive ? 1 : 0,
         transition: prefersReducedMotion ? 'none' : 'opacity 600ms ease',
         zIndex: isActive ? 1 : 0,
-        backgroundColor: 'var(--accent)',
       }}
       aria-hidden={!isActive}
     >
-      {/* Contenido del banner (imagen + overlay + texto). Aparece con un
-       * fade-in cuando la imagen está lista; mientras tanto queda el fondo
-       * de marca debajo, sin parpadeos. */}
-      <div
-        className="absolute inset-0"
-        style={{
-          opacity: prefersReducedMotion || imageReady ? 1 : 0,
-          transition: prefersReducedMotion ? 'none' : 'opacity 500ms ease',
-        }}
-      >
-        {/* Imagen de fondo */}
+      <div className="absolute inset-0">
+        {/* Placeholder: degradado de color de marca, del tamaño exacto de la
+         * imagen. Es lo que se ve mientras la foto carga — nunca un hueco. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              'linear-gradient(135deg, var(--accent) 0%, var(--accent-active) 100%)',
+          }}
+          aria-hidden="true"
+        />
+
+        {/* Imagen del banner — candidato a LCP. Carga prioritaria y se desvanece
+         * sobre el placeholder. `src` undefined hasta que el fetch resuelve. */}
         <img
-          src={imageUrl}
+          src={resolvedSrc}
+          srcSet={srcSet}
+          sizes="100vw"
           alt="Banner principal de Joyería KOB"
           className="absolute inset-0 h-full w-full object-cover"
-          onLoad={() => setImageReady(true)}
-          onError={() => setImageReady(true)}
+          fetchPriority="high"
+          loading="eager"
+          decoding="async"
+          onLoad={() => setImgLoaded(true)}
+          onError={() => setImgLoaded(true)}
+          style={{
+            opacity: prefersReducedMotion || imgLoaded ? 1 : 0,
+            transition: prefersReducedMotion ? 'none' : 'opacity 300ms ease',
+          }}
         />
 
     {/* Overlay degradado para legibilidad del texto.
@@ -395,41 +426,74 @@ const MainBannerSlide = ({
       style={{ maxWidth: 'var(--content-max-width)' }}
     >
       <div className="max-w-3xl">
-        {/* Título principal (configurable) - TAMAÑO AUMENTADO */}
-        <h1
-          className="leading-tight tracking-display"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontWeight: 'var(--font-bold)',
-            lineHeight: 'var(--leading-tight)',
-            letterSpacing: 'var(--tracking-display)',
-            color: 'var(--accent-text)',
-            // Tamaño responsivo muy grande:
-            // - Móvil: 2.75rem (44px)
-            // - Tablet: 4.5rem (72px)
-            // - Desktop: 6.5rem (104px) - casi del tamaño del mockup
-            fontSize: 'clamp(2.75rem, 8vw, 6.5rem)',
-          }}
-        >
-          {bannerText}
-        </h1>
+        {/* Título y subtítulo: texto real una vez cargado el banner; mientras
+         * tanto, barras skeleton (la imagen y los CTAs ya están visibles). */}
+        {hasLoaded ? (
+          <>
+            {/* Título principal (configurable) - TAMAÑO AUMENTADO */}
+            <h1
+              className="leading-tight tracking-display"
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 'var(--font-bold)',
+                lineHeight: 'var(--leading-tight)',
+                letterSpacing: 'var(--tracking-display)',
+                color: 'var(--accent-text)',
+                // Tamaño responsivo muy grande:
+                // - Móvil: 2.75rem (44px)
+                // - Tablet: 4.5rem (72px)
+                // - Desktop: 6.5rem (104px) - casi del tamaño del mockup
+                fontSize: 'clamp(2.75rem, 8vw, 6.5rem)',
+              }}
+            >
+              {bannerText}
+            </h1>
 
-        {/* Subtítulo (configurable) - TAMAÑO MODERADAMENTE AUMENTADO
-         * Oculto en pantallas muy pequeñas para ganar espacio */}
-        <p
-          className="mt-3 max-w-2xl sm:mt-4"
-          style={{
-            fontFamily: 'var(--font-body)',
-            // Tamaño aumentado moderadamente:
-            // - Mobile: 1rem (16px) - se muestra en móvil ahora
-            // - Desktop: 1.375rem (22px)
-            fontSize: 'clamp(1rem, 2vw, 1.375rem)',
-            lineHeight: 'var(--leading-relaxed)',
-            color: 'var(--announcement-text)',
-          }}
-        >
-          {bannerSubtitle}
-        </p>
+            {/* Subtítulo (configurable) - TAMAÑO MODERADAMENTE AUMENTADO
+             * Oculto en pantallas muy pequeñas para ganar espacio */}
+            <p
+              className="mt-3 max-w-2xl sm:mt-4"
+              style={{
+                fontFamily: 'var(--font-body)',
+                // Tamaño aumentado moderadamente:
+                // - Mobile: 1rem (16px) - se muestra en móvil ahora
+                // - Desktop: 1.375rem (22px)
+                fontSize: 'clamp(1rem, 2vw, 1.375rem)',
+                lineHeight: 'var(--leading-relaxed)',
+                color: 'var(--accent-text)',
+              }}
+            >
+              {bannerSubtitle}
+            </p>
+          </>
+        ) : (
+          <div
+            className={prefersReducedMotion ? '' : 'animate-pulse'}
+            aria-hidden="true"
+          >
+            <div
+              className="h-12 w-3/4 sm:h-16 lg:h-20"
+              style={{
+                backgroundColor:
+                  'color-mix(in srgb, var(--accent-text) 22%, transparent)',
+              }}
+            />
+            <div
+              className="mt-3 h-12 w-1/2 sm:h-16 lg:h-20"
+              style={{
+                backgroundColor:
+                  'color-mix(in srgb, var(--accent-text) 22%, transparent)',
+              }}
+            />
+            <div
+              className="mt-6 h-4 w-full max-w-2xl sm:h-5"
+              style={{
+                backgroundColor:
+                  'color-mix(in srgb, var(--accent-text) 22%, transparent)',
+              }}
+            />
+          </div>
+        )}
 
         {/* CTAs fijos */}
         <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
@@ -458,8 +522,8 @@ const MainBannerSlide = ({
             rel="noopener noreferrer"
             className="inline-flex cursor-pointer items-center justify-center gap-2 border px-5 py-2.5 transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
             style={{
-              borderColor: 'var(--announcement-text)',
-              color: 'var(--announcement-text)',
+              borderColor: 'var(--accent-text)',
+              color: 'var(--accent-text)',
               fontFamily: 'var(--font-ui)',
               fontSize: 'var(--text-sm)',
               fontWeight: 'var(--font-bold)',
@@ -473,76 +537,6 @@ const MainBannerSlide = ({
           </a>
         </div>
       </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── Skeleton del banner principal ──────────────────────────────────────────────
-
-interface HeroSkeletonProps {
-  prefersReducedMotion: boolean;
-}
-
-/**
- * Placeholder del banner hero mostrado mientras `hasLoaded === false`.
- *
- * Ocupa todo el área del carrusel sobre el fondo de marca (`--accent`) y
- * replica la posición del título, subtítulo y CTAs con barras `animate-pulse`
- * (mismo patrón que el skeleton de productos destacados). Así no hay saltos de
- * layout y, sobre todo, no se ven los valores por defecto del banner antes de
- * que llegue el dato real del servidor.
- *
- * @internal
- */
-const HeroSkeleton = ({ prefersReducedMotion }: HeroSkeletonProps) => {
-  // Color de las barras: tinte claro derivado de --accent-text para que
-  // contraste sobre el fondo azul del hero.
-  const barColor = 'color-mix(in srgb, var(--accent-text) 22%, transparent)';
-  const pulse = prefersReducedMotion ? '' : 'animate-pulse';
-
-  return (
-    <div
-      className="absolute inset-0"
-      style={{ backgroundColor: 'var(--accent)', zIndex: 1 }}
-      role="status"
-      aria-label="Cargando banner"
-    >
-      <div
-        className="relative z-10 mx-auto flex h-full items-end px-5 pb-10 pt-16 sm:px-6 sm:pb-12 lg:px-10"
-        style={{ maxWidth: 'var(--content-max-width)' }}
-      >
-        <div className={`w-full max-w-3xl ${pulse}`}>
-          {/* Título (2 líneas) */}
-          <div
-            className="h-12 w-3/4 sm:h-16 lg:h-20"
-            style={{ backgroundColor: barColor }}
-          />
-          <div
-            className="mt-3 h-12 w-1/2 sm:h-16 lg:h-20"
-            style={{ backgroundColor: barColor }}
-          />
-          {/* Subtítulo */}
-          <div
-            className="mt-6 h-4 w-full max-w-2xl sm:h-5"
-            style={{ backgroundColor: barColor }}
-          />
-          <div
-            className="mt-2 h-4 w-2/3 max-w-2xl sm:h-5"
-            style={{ backgroundColor: barColor }}
-          />
-          {/* CTAs */}
-          <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
-            <div
-              className="h-10 w-40"
-              style={{ backgroundColor: barColor }}
-            />
-            <div
-              className="h-10 w-48"
-              style={{ backgroundColor: barColor }}
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -610,7 +604,7 @@ const PromoSlideItem = ({
                   fontFamily: 'var(--font-body)',
                   fontSize: 'clamp(1rem, 2vw, 1.25rem)',
                   lineHeight: 'var(--leading-relaxed)',
-                  color: 'var(--announcement-text)',
+                  color: 'var(--accent-text)',
                 }}
               >
                 {slide.overlaySubtitle}

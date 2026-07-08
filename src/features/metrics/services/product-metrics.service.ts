@@ -51,8 +51,9 @@ function mapStatusSummary(
  * Convierte la respuesta agrupada por categoría en una lista ordenada
  * descendentemente por cantidad. Las categorías sin productos se descartan.
  *
+ *
  * @param data - Bloque `data` recibido de `GET /products/stats?agrupar=categoria`.
- * @returns Puntos listos para una gráfica de barras horizontales.
+ * @returns Puntos listos para la lista de distribución por categoría.
  */
 function mapCategoryCounts(
   data: ProductStatsResponse['data'],

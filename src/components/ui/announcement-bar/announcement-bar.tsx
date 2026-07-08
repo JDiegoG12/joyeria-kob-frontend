@@ -161,7 +161,10 @@ export const AnnouncementBar = () => {
       style={{
         height: 'var(--announcement-height)',
         backgroundColor: 'var(--announcement-bg)',
-        color: 'var(--announcement-text)',
+        // Texto en blanco neutro (--accent-text, #fff en ambos temas) en vez del
+        // lavanda de --announcement-text: más cómodo de leer sobre el navy en
+        // modo oscuro, igual que el footer.
+        color: 'var(--accent-text)',
       }}
       role="marquee"
       aria-label="Anuncios de la tienda"
@@ -188,7 +191,7 @@ export const AnnouncementBar = () => {
                 <span
                   className="ml-4 h-1 w-1 rounded-full"
                   style={{
-                    backgroundColor: 'var(--announcement-text)',
+                    backgroundColor: 'var(--accent-text)',
                     opacity: 0.35,
                   }}
                   aria-hidden="true"

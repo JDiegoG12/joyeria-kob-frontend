@@ -4,20 +4,21 @@
  * durante la carga perezosa (lazy loading) de los chunks de página.
  *
  * ## Cuándo se muestra
- * Aparece mientras el navegador descarga el chunk JS de una ruta
- * que aún no ha sido visitada en esta sesión. En visitas siguientes
- * el chunk está en caché y este componente no se llega a renderizar.
+ * Aparece mientras el navegador descarga el chunk JS de una ruta que aún no ha
+ * sido visitada en esta sesión (navegación interna). En el ARRANQUE inicial no
+ * se ve: la pantalla de carga de `index.html` (`#kob-loader`) tapa todo hasta
+ * que el contenido está listo (ver `BootOverlayDismiss` en el router), así que
+ * nunca coinciden dos indicadores de carga.
  *
  * ## Diseño
  * - Ocupa toda la ventana para que no haya saltos de layout.
- * - Usa tokens de diseño del sistema (`--accent`, `--bg-primary`) para
- *   respetar el tema claro/oscuro sin importar CSS externo.
- * - Sin dependencias externas: solo HTML/CSS inline para que cargue
- *   instantáneamente (es parte del bundle inicial).
+ * - Mismo lenguaje visual que `#kob-loader` (fondo de tema + spinner dorado),
+ *   para que el arranque y las navegaciones internas se sientan uniformes.
+ * - Sin dependencias externas: HTML/CSS inline, parte del bundle inicial.
  *
  * ## Uso
  * ```tsx
- * import { PageLoader } from '@/features/shared/components/page-loader';
+ * import { PageLoader } from '@/features/shared/pages/page-loader';
  *
  * <Suspense fallback={<PageLoader />}>
  *   <MiPaginaLazy />
@@ -32,10 +33,10 @@ export const PageLoader = () => (
     aria-label="Cargando página"
   >
     <div
-      className="h-9 w-9 animate-spin rounded-full border-2"
+      className="h-7.5 w-7.5 animate-spin rounded-full border-2"
       style={{
-        borderColor: 'var(--border-color)',
-        borderTopColor: 'var(--accent)',
+        borderColor: 'rgba(190, 166, 75, 0.22)', // --warm-gold @22% (pista)
+        borderTopColor: '#bea64b', // --warm-gold (indicador)
       }}
     />
   </div>

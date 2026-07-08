@@ -12,7 +12,9 @@
  */
 
 import { motion, useReducedMotion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 
+import { SITE_NAME } from '@/config/seo';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import {
   BackToHomeButton,
@@ -45,6 +47,11 @@ interface LegalPageLayoutProps {
   lastUpdated: string;
   /** Etiqueta del último eslabón del breadcrumb. Por defecto, el `title`. */
   breadcrumbLabel?: string;
+  /**
+   * Meta description única de la página para SEO. Si se omite, no se inyecta
+   * `<meta name="description">` (el `<title>` sí se establece siempre).
+   */
+  description?: string;
   /** Contenido del documento (normalmente una lista de `PolicySection`). */
   children: React.ReactNode;
 }
@@ -59,12 +66,18 @@ export const LegalPageLayout = ({
   title,
   lastUpdated,
   breadcrumbLabel,
+  description,
   children,
 }: LegalPageLayoutProps) => {
   const shouldReduceMotion = useReducedMotion();
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <Helmet>
+        <title>{`${title} | ${SITE_NAME}`}</title>
+        {description && <meta name="description" content={description} />}
+      </Helmet>
+
       {/* Navegación entre secciones (sidebar fijo en desktop, tira en móvil) */}
       <InformationNav />
 

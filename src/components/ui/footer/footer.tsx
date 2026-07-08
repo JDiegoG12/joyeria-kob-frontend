@@ -79,10 +79,40 @@ export const Footer = () => {
   <footer
     style={{
       backgroundColor: 'var(--announcement-bg)',
-      color: 'var(--announcement-text)',
+      color: 'var(--accent-text)',
       fontFamily: 'var(--font-ui)',
     }}
   >
+    {/*
+     * Subrayado animado de los enlaces de texto (categorías, contacto e
+     * información). Se dibuja con un degradado de `currentColor` posicionado
+     * abajo y se anima su `background-size` de 0% → 100% en hover/focus: crece
+     * desde la izquierda como las líneas separadoras del footer, sin reflow.
+     * La técnica de degradado (vs. un <span> absoluto) respeta el texto que
+     * envuelve a varias líneas, subrayando cada renglón. Color base
+     * `--accent-text` (blanco neutro en claro y oscuro) → adiós al lavanda
+     * incómodo sobre el navy en modo oscuro.
+     */}
+    <style>{`
+      .footer-link {
+        color: var(--accent-text);
+        opacity: 0.85;
+        background-image: linear-gradient(currentColor, currentColor);
+        background-position: 0 100%;
+        background-repeat: no-repeat;
+        background-size: 0% 1.5px;
+        transition: background-size 220ms ease, opacity 200ms ease;
+      }
+      .footer-link:hover,
+      .footer-link:focus-visible {
+        opacity: 1;
+        background-size: 100% 1.5px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .footer-link { transition: none; }
+      }
+    `}</style>
+
     <div
       className="mx-auto grid gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-[0.8fr_1fr_1.65fr_1.2fr] lg:gap-9 lg:px-10 lg:py-16"
       style={{ maxWidth: 'var(--content-max-width)' }}
@@ -134,7 +164,7 @@ export const Footer = () => {
         </ul>
       </FooterColumn>
 
-      <FooterColumn title="Proveedores">
+      <FooterColumn title="Distribuidores">
         <div className="space-y-3">
           <FooterText>
             ¿Eres fabricante o importador directo de joyería en oro, plata,
@@ -147,9 +177,9 @@ export const Footer = () => {
             </strong>
           </FooterText>
 
-          {/* CTA de proveedor — abre WhatsApp; incluye ícono para reforzar el canal */}
+          {/* CTA de distribuidor — abre WhatsApp; incluye ícono para reforzar el canal */}
           <a
-            href={buildWhatsAppUrl(WHATSAPP_MESSAGES.supplier)}
+            href={buildWhatsAppUrl(WHATSAPP_MESSAGES.distributor)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex cursor-pointer items-center justify-center gap-2 border px-5 py-2.5 text-center transition-[transform,box-shadow,opacity] duration-200 hover:-translate-y-0.5 hover:opacity-85 hover:shadow-[var(--shadow-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
@@ -160,7 +190,7 @@ export const Footer = () => {
               fontWeight: 'var(--font-bold)',
             }}
           >
-            Quiero ser proveedor
+            Quiero ser distribuidor
             {/* Ícono de WhatsApp — indica explícitamente el canal de contacto */}
             <WhatsAppIcon size={16} aria-hidden="true" />
           </a>
@@ -179,7 +209,7 @@ export const Footer = () => {
       <p
         style={{
           fontSize: 'var(--text-xs)',
-          color: 'var(--announcement-text)',
+          color: 'var(--accent-text)',
           opacity: 0.78,
         }}
       >
@@ -197,7 +227,7 @@ export const Footer = () => {
             style={{
               borderColor:
                 'color-mix(in srgb, var(--announcement-text) 68%, transparent)',
-              color: 'var(--announcement-text)',
+              color: 'var(--accent-text)',
             }}
             aria-label={label}
           >
@@ -224,7 +254,7 @@ const FooterColumn = ({ title, children }: FooterColumnProps) => (
      * translate="no" impide que Google Translate (u otros motores) muten
      * el textContent del título cuando el usuario activa la traducción desde
      * el navegador (p. ej. en Chrome mobile vía ngrok). Sin este atributo,
-     * palabras como "Proveedores" pueden quedar en minúscula o mal traducidas
+     * palabras como "Distribuidores" pueden quedar en minúscula o mal traducidas
      * porque el motor reemplaza el nodo de texto directamente en el DOM.
      */}
     <h2
@@ -257,12 +287,8 @@ const FooterLink = ({
 }) => (
   <Link
     to={to}
-    className="transition-opacity duration-200 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
-    style={{
-      fontSize: 'var(--text-sm)',
-      color: 'var(--announcement-text)',
-      opacity: 0.82,
-    }}
+    className="footer-link focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
+    style={{ fontSize: 'var(--text-sm)' }}
   >
     {children}
   </Link>
@@ -279,14 +305,10 @@ const FooterCategoryButton = ({
   <button
     type="button"
     onClick={onClick}
-    className="cursor-pointer text-left transition-opacity duration-200 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
+    className="footer-link cursor-pointer border-0 bg-transparent p-0 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
     style={{
-      background: 'none',
-      border: 'none',
-      padding: 0,
+      fontFamily: 'inherit',
       fontSize: 'var(--text-sm)',
-      color: 'var(--announcement-text)',
-      opacity: 0.82,
     }}
   >
     {children}
@@ -305,12 +327,8 @@ const FooterAnchor = ({
     href={href}
     target={href.startsWith('http') ? '_blank' : undefined}
     rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
-    className="transition-opacity duration-200 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
-    style={{
-      fontSize: 'var(--text-sm)',
-      color: 'var(--announcement-text)',
-      opacity: 0.82,
-    }}
+    className="footer-link focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-text)]"
+    style={{ fontSize: 'var(--text-sm)' }}
   >
     {children}
   </a>
@@ -322,7 +340,7 @@ const FooterText = ({ children }: { children: React.ReactNode }) => (
     style={{
       fontSize: 'var(--text-sm)',
       lineHeight: 'var(--leading-normal)',
-      color: 'var(--announcement-text)',
+      color: 'var(--accent-text)',
       opacity: 0.82,
     }}
   >

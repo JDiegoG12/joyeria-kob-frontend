@@ -15,6 +15,8 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@fontsource-variable/cinzel": "^5.2.8",
+    "@fontsource-variable/montserrat": "^5.2.8",
     "@react-oauth/google": "^0.13.5",
     "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.14.0",
@@ -23,8 +25,10 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-ga4": "^3.0.1",
+    "react-helmet-async": "^3.0.0",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.14.0",
+    "react-zoom-pan-pinch": "^4.0.3",
     "recharts": "^3.8.1",
     "tailwindcss": "^4.2.2",
     "zustand": "^5.0.12"

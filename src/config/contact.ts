@@ -46,6 +46,12 @@ export const PHONE_DISPLAY = `+${COUNTRY_CODE} ${NATIONAL_DISPLAY}`;
 /** Número para mostrar a personas, solo parte nacional. @example '313 500 7459' */
 export const PHONE_DISPLAY_NATIONAL = NATIONAL_DISPLAY;
 
+/** Correo de contacto público de la joyería. Fuente única (footer, ubicación…). */
+export const EMAIL = 'kobjoyeria@gmail.com';
+
+/** `href` listo para enlaces `mailto:`. */
+export const EMAIL_HREF = `mailto:${EMAIL}`;
+
 /**
  * Construye una URL de WhatsApp con un mensaje pre-redactado opcional.
  *
@@ -71,7 +77,10 @@ export const WHATSAPP_MESSAGES = {
   /** CTA "Hablar con asesor" del hero. */
   heroAdvisor:
     'Hola, me gustaría hablar con un asesor de Joyería KOB para conocer sus joyas. ¿Podrían orientarme?',
-  /** CTA "Quiero ser proveedor" del footer. */
-  supplier:
-    'Hola, soy fabricante o importador de joyería y me gustaría ser proveedor de Joyería KOB. Me gustaría enviarles mi catálogo.',
+  /** CTA "Quiero ser distribuidor" del footer. */
+  distributor:
+    'Hola, soy fabricante o importador de joyería y me gustaría ser distribuidor de Joyería KOB. Me gustaría enviarles mi catálogo.',
+  /** CTA de la sección "Visítanos" (ubicación/horarios de la home). */
+  visit:
+    'Hola, me gustaría visitar Joyería KOB en El Bordo. ¿Podrían confirmarme su ubicación y horario de atención?',
 } as const;
