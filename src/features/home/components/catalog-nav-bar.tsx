@@ -104,13 +104,43 @@ import type { Category } from '@/features/categories/types/category.types';
 const NAV_BAR_HEIGHT = 40;
 
 /**
- * Ancho mínimo del panel de subcategorías en px.
+ * Ancho mínimo del panel de subcategorías en px (variante de UNA columna).
  *
- * Calibrado para 4-7 items en una sola columna con padding generoso.
+ * Calibrado para hasta 8 items en una sola columna con padding generoso.
  * Más estrecho se sentiría apretado; más ancho desperdicia espacio en
  * categorías con pocos hijos.
  */
 const PANEL_MIN_WIDTH_PX = 380;
+
+/**
+ * Máximo de subcategorías por columna antes de abrir una columna adicional.
+ *
+ * Con más de 8 items una sola columna se alarga demasiado (a ~46px por item,
+ * 9+ superan los ~420px de alto) y el panel empieza a desbordar el viewport
+ * en pantallas lg de poca altura. El mega-menú reparte los items en columnas:
+ * 1-8 → 1 col · 9-16 → 2 · 17-24 → 3 · 25+ → 4.
+ */
+const MAX_ITEMS_PER_PANEL_COLUMN = 8;
+
+/**
+ * Tope de columnas del mega-menú.
+ *
+ * 4 columnas × PANEL_COLUMN_MIN_WIDTH_PX ≈ 960px: cabe dentro de
+ * `--content-max-width` (1280px) incluso anclado a la izquierda del primer
+ * ítem de categoría. Más allá de 32 subcategorías las columnas crecen en
+ * filas, nunca en más columnas.
+ */
+const MAX_PANEL_COLUMNS = 4;
+
+/**
+ * Ancho mínimo por columna en la variante multi-columna.
+ *
+ * Menor que PANEL_MIN_WIDTH_PX: con varias columnas el aire lateral se
+ * multiplica solo, y 240px por columna evita que un panel de 4 columnas
+ * desborde viewports de 1024px. Cada columna crece por contenido
+ * (max-content) si algún nombre es más largo.
+ */
+const PANEL_COLUMN_MIN_WIDTH_PX = 240;
 
 // ─── Curvas de animación premium ──────────────────────────────────────────────
 
@@ -174,7 +204,9 @@ const subItemVariants: Variants = {
   visible: (i: number) => ({
     opacity: 1,
     transition: {
-      delay: i * 0.05,
+      // Tope de 0.3s: en paneles multi-columna (14+ items) un stagger lineal
+      // sin tope haría esperar >0.7s a los últimos items de la cascada.
+      delay: Math.min(i * 0.05, 0.3),
       duration: 0.32,
       ease: EASE_OUT_PREMIUM,
     },
@@ -186,7 +218,7 @@ const subItemVariantsReduced: Variants = {
   hidden: { opacity: 0 },
   visible: (i: number) => ({
     opacity: 1,
-    transition: { delay: i * 0.02, duration: 0.1 },
+    transition: { delay: Math.min(i * 0.02, 0.12), duration: 0.1 },
   }),
 };
 
@@ -544,8 +576,10 @@ interface CategoryItemProps {
  * y ocupa espacio que corresponde a las subcategorías.
  *
  * ── Panel claro y editorial ──────────────────────────────────────────────────
- * `minWidth: PANEL_MIN_WIDTH_PX` (380px) garantiza que ningún ítem se sienta
- * comprimido y que haya aire suficiente para el arrow lateral en hover.
+ * Con ≤8 subcategorías: una columna con `minWidth: PANEL_MIN_WIDTH_PX` (380px).
+ * Con más: mega-menú de 2-4 columnas (ver MAX_ITEMS_PER_PANEL_COLUMN) con
+ * ancho mínimo de PANEL_COLUMN_MIN_WIDTH_PX por columna. Las subcategorías se
+ * ordenan alfabéticamente y fluyen en vertical, columna a columna.
  *
  * ── Continuidad de hover (sin paddingBottom) ────────────────────────────────
  * El panel se posiciona con `top: 100%` del contenedor, pegado al borde
@@ -572,6 +606,30 @@ const CategoryItem = ({
 
   const subCategories = category.children ?? [];
   const hasSubCategories = subCategories.length > 0;
+
+  /*
+   * Orden alfabético (locale es): el backend no expone campo `order` ni
+   * `featured`, y el orden de inserción (id) no significa nada para el
+   * usuario. A-Z además hace escaneable el layout en columnas: se lee de
+   * arriba a abajo y se continúa en la siguiente columna.
+   */
+  const sortedSubCategories = [...subCategories].sort((a, b) =>
+    a.name.localeCompare(b.name, 'es'),
+  );
+
+  /*
+   * Mega-menú multi-columna: 1-8 items → 1 col · 9-16 → 2 · 17-24 → 3 · 25+ → 4.
+   * `rowCount` fija las filas del grid para que `grid-auto-flow: column`
+   * reparta los items en bloques equilibrados columna a columna.
+   */
+  const columnCount = Math.max(
+    1,
+    Math.min(
+      Math.ceil(sortedSubCategories.length / MAX_ITEMS_PER_PANEL_COLUMN),
+      MAX_PANEL_COLUMNS,
+    ),
+  );
+  const rowCount = Math.ceil(sortedSubCategories.length / columnCount);
 
   // Cierre al hacer click fuera del contenedor completo (botón + panel).
   useEffect(() => {
@@ -727,7 +785,10 @@ const CategoryItem = ({
               style={{
                 top: '100%',
                 left: 0,
-                minWidth: `${PANEL_MIN_WIDTH_PX}px`,
+                minWidth:
+                  columnCount === 1
+                    ? `${PANEL_MIN_WIDTH_PX}px`
+                    : `${columnCount * PANEL_COLUMN_MIN_WIDTH_PX}px`,
                 backgroundColor: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
                 borderTop: 'none',
@@ -737,20 +798,40 @@ const CategoryItem = ({
               }}
             >
               {/*
-               * Lista de subcategorías — sin separadores entre items.
+               * Grid de subcategorías — sin separadores entre items.
                * El hover (background tintado + trazo izquierdo + arrow)
                * marca cada item con suficiente claridad. Los separadores
-               * horizontales fragmentan visualmente y se leen como UI
-               * funcional, no editorial.
+               * fragmentan visualmente y se leen como UI funcional, no
+               * editorial.
+               *
+               * `grid-auto-flow: column` + filas fijas (`rowCount`): los items
+               * fluyen de arriba a abajo y saltan a la siguiente columna, de
+               * modo que el orden alfabético se lee en vertical (patrón de
+               * mega-menú editorial). Con una sola columna el grid degenera
+               * en la lista vertical de siempre — mismo código para ambos
+               * casos.
+               *
+               * `minmax(max-content, 1fr)`: ninguna columna trunca su nombre
+               * más largo (los labels son nowrap) y el espacio sobrante del
+               * panel se reparte por igual, así el hover de cada item cubre
+               * el ancho completo de su columna.
                *
                * Padding vertical del contenedor: 8px arriba y abajo da
                * respiro al bloque sin desperdiciar altura.
                */}
               <ul
                 role="presentation"
-                style={{ listStyle: 'none', margin: 0, padding: '8px 0' }}
+                style={{
+                  listStyle: 'none',
+                  margin: 0,
+                  padding: '8px 0',
+                  display: 'grid',
+                  gridAutoFlow: 'column',
+                  gridTemplateRows: `repeat(${rowCount}, auto)`,
+                  gridTemplateColumns: `repeat(${columnCount}, minmax(max-content, 1fr))`,
+                }}
               >
-                {subCategories.map((sub, i) => (
+                {sortedSubCategories.map((sub, i) => (
                   <motion.li
                     key={sub.id}
                     role="presentation"
